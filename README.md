@@ -134,6 +134,7 @@ User Controls
 ## 🎯 Development Roadmap
 
 - [x] Project initialization
+- [x] Array visualizer
 - [ ] Sorting visualizer
 - [ ] Search visualizer
 - [ ] Tree visualizer
