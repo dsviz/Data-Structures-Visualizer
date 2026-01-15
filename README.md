@@ -106,7 +106,11 @@ User Controls
 3. **Centralized Animation**: Single animation engine handles all visualizations
 4. **Type Safety**: Full TypeScript coverage for reliability
 
-## 📚 Algorithm Categories
+## 📚 Algorithm & Data Structure Categories
+
+### Data Structures
+- **Arrays** (Insert, Remove, Update, Linear Search, Binary Search)
+- **Linked Lists** (Singly, Doubly, Circular - Insert, Remove, Search)
 
 ### Sorting Algorithms
 - Bubble Sort
@@ -134,9 +138,9 @@ User Controls
 ## 🎯 Development Roadmap
 
 - [x] Project initialization
-- [x] Array visualizer
+- [x] Array Operations visualizer
+- [x] Linked List visualizer
 - [ ] Sorting visualizer
-- [ ] Search visualizer
 - [ ] Tree visualizer
 - [ ] Graph visualizer
 - [ ] Stack & Queue visualizer
