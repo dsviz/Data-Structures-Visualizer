@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+
 
 // --- Types ---
 interface TreeNode {
@@ -30,7 +30,7 @@ interface Step {
 
 // --- Layout Constants ---
 const LEVEL_HEIGHT = 80;
-const NODE_RADIUS = 28; // w-14 = 3.5rem = 56px diam -> 28px radius
+
 
 const Recursion = () => {
     // --- State ---
@@ -285,8 +285,8 @@ const Recursion = () => {
                                             fib({frame.n})
                                         </span>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wide ${frame.status === 'active' ? 'text-primary bg-primary/10' :
-                                                frame.status === 'returning' ? 'text-emerald-500 bg-emerald-500/10' :
-                                                    'text-gray-500 border border-gray-200 dark:border-[#272546]'
+                                            frame.status === 'returning' ? 'text-emerald-500 bg-emerald-500/10' :
+                                                'text-gray-500 border border-gray-200 dark:border-[#272546]'
                                             }`}>
                                             {frame.status}
                                         </span>
@@ -398,8 +398,8 @@ const Recursion = () => {
                                         style={{ left: node.x, top: node.y }}
                                     >
                                         <span className={`font-mono text-sm font-bold ${node.status === 'active' ? 'text-slate-900 dark:text-white' :
-                                                node.status === 'computed' ? 'text-emerald-600 dark:text-emerald-400' :
-                                                    'text-gray-400 dark:text-gray-600'
+                                            node.status === 'computed' ? 'text-emerald-600 dark:text-emerald-400' :
+                                                'text-gray-400 dark:text-gray-600'
                                             }`}>
                                             {node.val !== undefined ? node.val : node.n}
                                         </span>
