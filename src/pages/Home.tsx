@@ -1,6 +1,20 @@
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CATEGORIES, DASHBOARD_CARDS, Category } from '../data/learningPaths'
 
 const Home = () => {
+  const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const [mode, setMode] = useState<'training' | 'visualizer'>('visualizer');
+  const contentSectionRef = useRef<HTMLElement>(null);
+
+  const filteredCards = DASHBOARD_CARDS.filter(card =>
+    activeCategory === 'All' || card.category.includes(activeCategory)
+  );
+
+  const handleStartLearning = () => {
+    contentSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
       <section className="relative py-16 px-6 overflow-hidden">
@@ -16,14 +30,26 @@ const Home = () => {
           </div>
           <div className="inline-flex bg-gray-100 dark:bg-[#272546] p-1.5 rounded-xl shadow-lg border border-gray-200 dark:border-white/5">
             <label className="cursor-pointer relative">
-              <input className="peer sr-only" name="mode" type="radio" />
+              <input
+                className="peer sr-only"
+                name="mode"
+                type="radio"
+                checked={mode === 'training'}
+                onChange={() => setMode('training')}
+              />
               <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">school</span>
                 Training Mode
               </div>
             </label>
             <label className="cursor-pointer relative">
-              <input defaultChecked className="peer sr-only" name="mode" type="radio" />
+              <input
+                className="peer sr-only"
+                name="mode"
+                type="radio"
+                checked={mode === 'visualizer'}
+                onChange={() => setMode('visualizer')}
+              />
               <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">visibility</span>
                 Visualizer Mode
@@ -31,7 +57,10 @@ const Home = () => {
             </label>
           </div>
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="bg-white dark:bg-white text-gray-900 dark:text-[#131221] hover:bg-gray-50 dark:hover:bg-gray-100 px-8 py-3 rounded-xl font-bold transition-transform hover:scale-105 active:scale-95 shadow-xl dark:shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-2">
+            <button
+              onClick={handleStartLearning}
+              className="bg-white dark:bg-white text-gray-900 dark:text-[#131221] hover:bg-gray-50 dark:hover:bg-gray-100 px-8 py-3 rounded-xl font-bold transition-transform hover:scale-105 active:scale-95 shadow-xl dark:shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-2"
+            >
               <span>Start Learning Now</span>
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
@@ -50,181 +79,78 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="flex-1 px-6 pb-20">
+      <section ref={contentSectionRef} className="flex-1 px-6 pb-20">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap gap-3 mb-10 justify-center">
-            <button className="px-5 py-2 rounded-lg bg-primary text-white text-sm font-semibold shadow-lg shadow-primary/25 transition-transform active:scale-95">All Topics</button>
-            <button className="px-5 py-2 rounded-lg bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors border border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10 active:scale-95 shadow-sm">Sorting</button>
-            <button className="px-5 py-2 rounded-lg bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors border border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10 active:scale-95 shadow-sm">Trees</button>
-            <button className="px-5 py-2 rounded-lg bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors border border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10 active:scale-95 shadow-sm">Graphs</button>
-            <button className="px-5 py-2 rounded-lg bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors border border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10 active:scale-95 shadow-sm">Data Structures</button>
-            <button className="px-5 py-2 rounded-lg bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors border border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10 active:scale-95 shadow-sm">Algorithms</button>
+            {CATEGORIES.map(category => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors border shadow-sm active:scale-95 ${activeCategory === category
+                  ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25 font-semibold'
+                  : 'bg-white dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] hover:bg-gray-50 dark:hover:bg-[#323055] hover:text-gray-900 dark:hover:text-white border-gray-200 dark:border-transparent hover:border-gray-300 dark:hover:border-white/10'
+                  }`}
+              >
+                {category === 'All' ? 'All Topics' : category}
+              </button>
+            ))}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Sorting */}
-            <Link to="/sorting" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-900/50 dark:to-purple-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Sorting Bars Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-indigo-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">bar_chart</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Sorting</h3>
-                  <span className="bg-green-500/10 text-green-400 text-xs font-mono px-2 py-1 rounded border border-green-500/20">Easy</span>
+            {filteredCards.map((card, index) => (
+              card.isPlaceholder ? (
+                // Placeholder Card
+                <div key={index} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
+                  <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} flex items-center justify-center relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                    <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                      <span className={`bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20`}>{card.difficulty}</span>
+                    </div>
+                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
+                    <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
+                      <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
+                      Coming Soon
+                    </div>
+                  </div>
                 </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Bubble, Merge, Quick, Heap, Radix Sort</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  8 Algorithms
-                </div>
-              </div>
-            </Link>
-
-            {/* Linked Lists */}
-            <Link to="/linked-list" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-blue-500 to-cyan-500 dark:from-blue-900/50 dark:to-cyan-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Chain Link Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-cyan-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">link</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Linked Lists</h3>
-                  <span className="bg-green-500/10 text-green-400 text-xs font-mono px-2 py-1 rounded border border-green-500/20">Easy</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Singly, Doubly, Circular, Stack, Queue</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  5 Structures
-                </div>
-              </div>
-            </Link>
-
-            {/* Arrays (Not in original design but needed for existing route) - Using Hash Table style for now or just generic */}
-            <Link to="/arrays" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-pink-500 to-rose-500 dark:from-pink-900/50 dark:to-rose-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Key Value Grid Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-pink-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">data_array</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Arrays</h3>
-                  <span className="bg-green-500/10 text-green-400 text-xs font-mono px-2 py-1 rounded border border-green-500/20">Easy</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Search, Insert, Delete, Kadane's</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  4 Concepts
-                </div>
-              </div>
-            </Link>
-
-
-            {/* Binary Tree */}
-            <Link to="/trees" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-emerald-500 to-teal-500 dark:from-emerald-900/50 dark:to-teal-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Tree Branching Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-emerald-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">account_tree</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Binary Tree</h3>
-                  <span className="bg-yellow-500/10 text-yellow-400 text-xs font-mono px-2 py-1 rounded border border-yellow-500/20">Medium</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Insertion, Deletion, Traversal, AVL</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  4 Operations
-                </div>
-              </div>
-            </Link>
-
-            {/* Graphs */}
-            <Link to="/graphs" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-orange-500 to-red-500 dark:from-orange-900/50 dark:to-red-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Network Nodes Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-orange-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">hub</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Graphs</h3>
-                  <span className="bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20">Hard</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">BFS, DFS, Dijkstra, Prim, Kruskal</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  6 Algorithms
-                </div>
-              </div>
-            </Link>
-
-            {/* Recursion (Placeholder) */}
-            <Link to="/recursion" className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-              <div className="h-40 bg-gradient-to-br from-violet-500 to-fuchsia-500 dark:from-violet-900/50 dark:to-fuchsia-900/50 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Infinite Loop Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-white dark:text-fuchsia-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">all_inclusive</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Recursion</h3>
-                  <span className="bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20">Hard</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Fibonacci, Tower of Hanoi, Factorial</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                  3 Algorithms
-                </div>
-              </div>
-            </Link>
-
-            {/* Backtracking (Placeholder) */}
-            <div className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
-              <div className="h-40 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Maze Path Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-slate-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">undo</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Backtracking</h3>
-                  <span className="bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20">Hard</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">N-Queens, Knight's Tour, Sudoku</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
-                  Coming Soon
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic Prog (Placeholder) */}
-            <div className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
-              <div className="h-40 bg-gradient-to-br from-blue-600/20 to-indigo-600/20 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt="Abstract Optimized Path Pattern"></div>
-                <span className="material-symbols-outlined text-6xl text-blue-400 drop-shadow-lg group-hover:scale-110 transition-transform duration-300">memory</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">Dynamic Prog.</h3>
-                  <span className="bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20">Hard</span>
-                </div>
-                <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">Knapsack, Coin Change, LCS</p>
-                <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                  <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
-                  Coming Soon
-                </div>
-              </div>
-            </div>
-
+              ) : (
+                // Active Card
+                <Link key={index} to={card.path} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
+                  <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo} flex items-center justify-center relative overflow-hidden`}>
+                    <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                    <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                      <span className={`text-xs font-mono px-2 py-1 rounded border ${card.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                        card.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                          'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>{card.difficulty}</span>
+                    </div>
+                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
+                    <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
+                      <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
+                      {card.count} {card.countLabel}
+                    </div>
+                  </div>
+                </Link>
+              )
+            ))}
           </div>
         </div>
       </section>
 
       <footer className="border-t border-gray-200 dark:border-[#272546] bg-gray-50 dark:bg-[#131221] py-8 px-6 text-center text-gray-500 dark:text-[#9794c7] text-sm">
         <div className="flex justify-center gap-6 mb-4">
-          <a className="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">About</a>
-          <a className="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">Team</a>
-          <a className="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">Terms</a>
-          <a className="hover:text-gray-900 dark:hover:text-white transition-colors" href="#">Privacy</a>
+          <Link to="/about" className="hover:text-gray-900 dark:hover:text-white transition-colors">About</Link>
+          <Link to="/team" className="hover:text-gray-900 dark:hover:text-white transition-colors">Team</Link>
+          <Link to="/terms" className="hover:text-gray-900 dark:hover:text-white transition-colors">Terms</Link>
+          <Link to="/privacy" className="hover:text-gray-900 dark:hover:text-white transition-colors">Privacy</Link>
         </div>
         <p>© 2026 Data Structure Visualizer. Made for students, by students.</p>
       </footer>
