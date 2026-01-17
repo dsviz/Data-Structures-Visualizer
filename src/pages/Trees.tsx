@@ -135,7 +135,7 @@ const Trees = () => {
           </filter>
         </defs>
         {/* Edges */}
-        <g className="stroke-slate-300 dark:stroke-[#383564]" strokeWidth="2">
+        <g className="stroke-slate-400 dark:stroke-[#383564]" strokeWidth="2">
           <line x1="400" x2="200" y1="50" y2="150"></line>
           <line className="stroke-primary dark:stroke-primary opacity-50" strokeWidth="3" x1="400" x2="600" y1="50" y2="150"></line>
           <line x1="200" x2="100" y1="150" y2="250"></line>
@@ -149,28 +149,28 @@ const Trees = () => {
 
         {/* Nodes */}
         <g transform="translate(400, 50)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">50</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">50</text>
         </g>
         <g transform="translate(200, 150)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">30</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">30</text>
         </g>
         <g transform="translate(600, 150)">
           <circle className="fill-primary/20 stroke-primary" r="24" strokeWidth="2"></circle>
           <text className="fill-primary dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">70</text>
         </g>
         <g transform="translate(100, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">20</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">20</text>
         </g>
         <g transform="translate(300, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">40</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">40</text>
         </g>
         <g transform="translate(500, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">60</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">60</text>
         </g>
         <g transform="translate(700, 250)">
           <circle className="fill-primary shadow-[0_0_15px_rgba(66,54,231,0.5)]" r="26"></circle>
@@ -178,12 +178,12 @@ const Trees = () => {
           <text className="fill-primary text-xs font-bold uppercase tracking-wide" textAnchor="middle" y="-35">Current</text>
         </g>
         <g transform="translate(250, 350)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">35</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">35</text>
         </g>
         <g transform="translate(350, 350)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-300 dark:stroke-[#383564]" r="24" strokeWidth="2"></circle>
-          <text className="fill-slate-700 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">45</text>
+          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">45</text>
         </g>
         <g className="opacity-70" transform="translate(750, 350)">
           <circle className="fill-transparent stroke-primary stroke-dasharray-4" r="24" strokeDasharray="4 4" strokeWidth="2"></circle>
