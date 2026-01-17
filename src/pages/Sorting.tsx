@@ -111,8 +111,8 @@ const Sorting = () => {
               key={algo}
               onClick={() => setActiveAlgorithm(algo)}
               className={`flex flex-col items-center justify-center border-b-[3px] pb-3 px-2 transition-colors whitespace-nowrap ${activeAlgorithm === algo
-                  ? 'border-primary text-primary dark:text-white font-bold'
-                  : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
+                ? 'border-primary text-primary dark:text-white font-bold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
                 }`}
             >
               <span className="text-sm tracking-[0.015em]">{algo}</span>
@@ -167,7 +167,8 @@ const Sorting = () => {
             className={`flex-1 max-w-[4rem] rounded-t-lg relative group transition-all duration-300
                         ${i === 3 ? 'bg-[#f59e0b] shadow-[0_0_40px_-8px_rgba(245,158,11,0.5)] z-10' :
                 i === 4 ? 'bg-[#6366f1] shadow-[0_0_40px_-8px_rgba(99,102,241,0.5)] z-20' :
-                  'bg-slate-300 dark:bg-[#2d2b42]'}`}
+                  i === 4 ? 'bg-[#6366f1] shadow-[0_0_40px_-8px_rgba(99,102,241,0.5)] z-20' :
+                    'bg-indigo-200 dark:bg-[#2d2b42] border border-indigo-300/50 dark:border-transparent'}`}
             style={{ height: `${val}%` }}
           >
             {/* Labels for active nodes */}
