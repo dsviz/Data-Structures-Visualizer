@@ -93,13 +93,13 @@ const Home = () => {
                 Visualize memory allocation, stack frames, and variable states in real-time for C, C++, Java, and Python.
               </p>
               <div className="mt-10 flex justify-center gap-6">
-                <Link
-                  to="/code-visualizer"
-                  className="rounded-xl bg-primary px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                <button
+                  disabled
+                  className="rounded-xl bg-gray-500/50 px-8 py-3.5 text-sm font-semibold text-white/50 shadow-sm cursor-not-allowed flex items-center gap-2 border border-white/10"
                 >
                   <span className="material-symbols-outlined">terminal</span>
-                  Try Code Visualizer
-                </Link>
+                  Code Visualizer (In Dev)
+                </button>
               </div>
             </div>
 
