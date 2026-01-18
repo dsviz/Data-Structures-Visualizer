@@ -15,6 +15,7 @@ import Terms from '../pages/Terms'
 import Privacy from '../pages/Privacy'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
+import CodeVisualizer from '../pages/CodeVisualizer'
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/code-visualizer" element={<CodeVisualizer />} />
           </Routes>
         </main>
       </div>

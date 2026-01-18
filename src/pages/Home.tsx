@@ -79,6 +79,45 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Code Visualizer Banner - INSERTED HERE */}
+      <section className="px-6 pb-12">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-gray-900 to-[#1e1d32] px-6 py-16 sm:px-16 sm:py-24 shadow-2xl">
+            <div className="relative max-w-2xl mx-auto text-center space-y-6 z-10">
+              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Real-Time Code Visualizer
+                <br />
+                <span className="text-primary">See your code run line by line.</span>
+              </h2>
+              <p className="mx-auto mt-6 max-w-xl text-lg text-gray-300">
+                Visualize memory allocation, stack frames, and variable states in real-time for C, C++, Java, and Python.
+              </p>
+              <div className="mt-10 flex justify-center gap-6">
+                <Link
+                  to="/code-visualizer"
+                  className="rounded-xl bg-primary px-8 py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined">terminal</span>
+                  Try Code Visualizer
+                </Link>
+              </div>
+            </div>
+
+            {/* Background Decorations */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/20 blur-[100px] rounded-full pointer-events-none"></div>
+            <svg viewBox="0 0 1024 1024" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]" aria-hidden="true">
+              <circle cx="512" cy="512" r="512" fill="url(#gradient)" fillOpacity="0.7" />
+              <defs>
+                <radialGradient id="gradient">
+                  <stop stopColor="#4f46e5" />
+                  <stop offset="1" stopColor="#80caff" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </section>
+
       <section ref={contentSectionRef} className="flex-1 px-6 pb-20">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap gap-3 mb-10 justify-center">
@@ -97,50 +136,104 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredCards.map((card, index) => (
-              card.isPlaceholder ? (
-                // Placeholder Card
-                <div key={index} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
-                  <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} flex items-center justify-center relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                    <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
-                  </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
-                      <span className={`bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20`}>{card.difficulty}</span>
+            {mode === 'training' ? (
+              // Training Mode Cards
+              [
+                {
+                  title: 'Quizzes & Flashcards',
+                  description: 'Test your knowledge with multiple-choice questions for each topic.',
+                  icon: 'quiz',
+                  color: 'text-yellow-500',
+                  bg: 'bg-yellow-500/10'
+                },
+                {
+                  title: 'Code Challenges',
+                  description: 'Implement algorithms yourself in our built-in code editor.',
+                  icon: 'code',
+                  color: 'text-blue-500',
+                  bg: 'bg-blue-500/10'
+                },
+                {
+                  title: 'Guided Paths',
+                  description: 'Follow a linear "Zero to Hero" curriculum for each data structure.',
+                  icon: 'map',
+                  color: 'text-green-500',
+                  bg: 'bg-green-500/10'
+                },
+                {
+                  title: 'Progress Tracking',
+                  description: 'Track your completion status across all modules and quizzes.',
+                  icon: 'analytics',
+                  color: 'text-purple-500',
+                  bg: 'bg-purple-500/10'
+                }
+              ].map((feature, idx) => (
+                <div key={idx} className="flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden cursor-not-allowed opacity-75 grayscale-[0.3]">
+                  <div className="p-6 flex flex-col flex-1 relative">
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-bold px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
+                        IN DEV
+                      </span>
                     </div>
-                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
-                    <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                      <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
-                      Coming Soon
+                    <div className={`size-12 rounded-xl ${feature.bg} flex items-center justify-center mb-4`}>
+                      <span className={`material-symbols-outlined text-2xl ${feature.color}`}>{feature.icon}</span>
+                    </div>
+                    <h3 className="text-gray-900 dark:text-white text-lg font-bold mb-2">{feature.title}</h3>
+                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono leading-relaxed mb-4">{feature.description}</p>
+                    <div className="mt-auto">
+                      <button disabled className="w-full py-2 bg-gray-50 dark:bg-[#272546] text-gray-400 dark:text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed border border-gray-100 dark:border-[#323055]">
+                        Coming Soon
+                      </button>
                     </div>
                   </div>
                 </div>
-              ) : (
-                // Active Card
-                <Link key={index} to={card.path} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-                  <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo} flex items-center justify-center relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                    <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
-                  </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
-                      <span className={`text-xs font-mono px-2 py-1 rounded border ${card.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
-                        card.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                          'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>{card.difficulty}</span>
+              ))
+            ) : (
+              // Visualizer Mode Cards
+              filteredCards.map((card, index) => (
+                card.isPlaceholder ? (
+                  // Placeholder Card
+                  <div key={index} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
+                    <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} flex items-center justify-center relative overflow-hidden`}>
+                      <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                      <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
                     </div>
-                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
-                    <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                      <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                      {card.count} {card.countLabel}
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                        <span className={`bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20`}>{card.difficulty}</span>
+                      </div>
+                      <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
+                      <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
+                        <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
+                        Coming Soon
+                      </div>
                     </div>
                   </div>
-                </Link>
-              )
-            ))}
+                ) : (
+                  // Active Card
+                  <Link key={index} to={card.path} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
+                    <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo} flex items-center justify-center relative overflow-hidden`}>
+                      <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                      <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                        <span className={`text-xs font-mono px-2 py-1 rounded border ${card.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                          card.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                            'bg-red-500/10 text-red-400 border-red-500/20'
+                          }`}>{card.difficulty}</span>
+                      </div>
+                      <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
+                      <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
+                        <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
+                        {card.count} {card.countLabel}
+                      </div>
+                    </div>
+                  </Link>
+                )
+              )))}
           </div>
         </div>
       </section>
