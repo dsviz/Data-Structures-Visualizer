@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useLayout } from '../../context/LayoutContext';
 
 interface VisualizationLayoutProps {
     title: string;
@@ -17,10 +18,10 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
     sidebarPosition = 'left',
     contentClassName
 }) => {
-    const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+    const { isSidebarOpen, setIsSidebarOpen } = useLayout();
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
+        <div className="flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 
             <div className="flex flex-1 overflow-hidden relative">

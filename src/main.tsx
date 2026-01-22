@@ -5,12 +5,18 @@ import { ThemeProvider } from './context/ThemeContext'
 import './styles/globals.css'
 
 import { AuthProvider } from './context/AuthContext'
+import { HeaderProvider } from './context/HeaderContext.tsx'
+import { LayoutProvider } from './context/LayoutContext.tsx'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <App />
+        <HeaderProvider>
+          <LayoutProvider>
+            <App />
+          </LayoutProvider>
+        </HeaderProvider>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>,

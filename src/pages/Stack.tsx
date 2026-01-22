@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useHeader } from '../context/HeaderContext';
 
 const Stack = () => {
     // --- State ---
@@ -122,6 +123,32 @@ const Stack = () => {
         </div>
     );
 
+    const { setHeaderContent } = useHeader();
+
+    useEffect(() => {
+        setHeaderContent(
+            <div className="flex justify-center items-center gap-8 text-sm font-mono text-gray-500 dark:text-gray-400 h-full">
+                <div className="flex items-center gap-2">
+                    <span className="uppercase tracking-wider text-xs">STACK</span>
+                    <div className="px-3 py-1 bg-white dark:bg-[#1e1c33] rounded border border-gray-200 dark:border-[#323055]">
+                        Top Index: <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stack.length > 0 ? stack.length - 1 : -1}</span>
+                    </div>
+                </div>
+
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-700"></div>
+
+                <div className="flex items-center gap-2">
+                    <span>current_op:</span>
+                    <span className={`px-2 py-0.5 rounded ${message === 'Idle' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
+                        {message}
+                    </span>
+                </div>
+            </div>
+        );
+
+        return () => setHeaderContent(null);
+    }, [stack.length, message, setHeaderContent]);
+
     return (
         <VisualizationLayout
             title="Stack & Queue"
@@ -129,25 +156,8 @@ const Stack = () => {
             sidebarPosition="left"
         >
             <div className="flex flex-col w-full h-full">
-                {/* Top Info Bar */}
-                <div className="flex justify-center items-center gap-8 mb-12 text-sm font-mono text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                        <span className="uppercase tracking-wider text-xs">STACK</span>
-                        <div className="px-3 py-1 bg-white dark:bg-[#1e1c33] rounded border border-gray-200 dark:border-[#323055]">
-                            Top Index: <span className="text-indigo-600 dark:text-indigo-400 font-bold">{stack.length > 0 ? stack.length - 1 : -1}</span>
-                        </div>
-                    </div>
+                {/* Top Info Bar moved to Header */}
 
-                    {/* Placeholder for Queue info if needed later */}
-                    <div className="w-px h-6 bg-gray-300 dark:bg-gray-700"></div>
-
-                    <div className="flex items-center gap-2">
-                        <span>current_op:</span>
-                        <span className={`px-2 py-0.5 rounded ${message === 'Idle' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
-                            {message}
-                        </span>
-                    </div>
-                </div>
 
                 {/* Visualization Area */}
                 <div className="flex-1 flex items-center justify-center relative">
