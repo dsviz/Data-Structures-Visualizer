@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useLayout } from '../context/LayoutContext'; // Import useLayout
 
 // --- Types ---
 type Operation = 'create' | 'search' | 'insert' | 'remove' | 'update' | null;
@@ -108,25 +109,14 @@ const Arrays = () => {
     const [updateIndex, setUpdateIndex] = useState('');
     const [updateValue, setUpdateValue] = useState('');
 
-    // Dragging - Canvas
+    // Toggle States for Panels
+    const [showPseudocode, setShowPseudocode] = useState(false);
+    const [showInternalState, setShowInternalState] = useState(false);
+
+    // Canvas Dragging (Keep this)
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-
-    // Dragging - Pseudocode
-    const [pseudoPos, setPseudoPos] = useState({ x: 0, y: 0 });
-    const [isDraggingPseudo, setIsDraggingPseudo] = useState(false);
-    const [pseudoDragStart, setPseudoDragStart] = useState({ x: 0, y: 0 });
-
-    // Dragging - Controls
-    const [controlsPos, setControlsPos] = useState({ x: 0, y: 0 });
-    const [isDraggingControls, setIsDraggingControls] = useState(false);
-    const [controlsDragStart, setControlsDragStart] = useState({ x: 0, y: 0 });
-
-    // Dragging - Internal State
-    const [internalPos, setInternalPos] = useState({ x: 0, y: 0 });
-    const [isDraggingInternal, setIsDraggingInternal] = useState(false);
-    const [internalDragStart, setInternalDragStart] = useState({ x: 0, y: 0 });
 
     const timerRef = useRef<number | null>(null);
 
@@ -475,86 +465,7 @@ const Arrays = () => {
     };
     const handleMouseUp = () => setIsDragging(false);
 
-    // Draggable Logic - Pseudocode (Window level for smoothness)
-    useEffect(() => {
-        const handleWindowMouseMove = (e: MouseEvent) => {
-            if (!isDraggingPseudo) return;
-            const dx = e.clientX - pseudoDragStart.x;
-            const dy = e.clientY - pseudoDragStart.y;
-            setPseudoPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-            setPseudoDragStart({ x: e.clientX, y: e.clientY });
-        };
-        const handleWindowMouseUp = () => setIsDraggingPseudo(false);
-
-        if (isDraggingPseudo) {
-            window.addEventListener('mousemove', handleWindowMouseMove);
-            window.addEventListener('mouseup', handleWindowMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleWindowMouseMove);
-            window.removeEventListener('mouseup', handleWindowMouseUp);
-        };
-    }, [isDraggingPseudo, pseudoDragStart]);
-
-    const handlePseudoMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent canvas drag
-        setIsDraggingPseudo(true);
-        setPseudoDragStart({ x: e.clientX, y: e.clientY });
-    };
-
-    // Draggable Logic - Controls
-    useEffect(() => {
-        const handleWindowMouseMove = (e: MouseEvent) => {
-            if (!isDraggingControls) return;
-            const dx = e.clientX - controlsDragStart.x;
-            const dy = e.clientY - controlsDragStart.y;
-            setControlsPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-            setControlsDragStart({ x: e.clientX, y: e.clientY });
-        };
-        const handleWindowMouseUp = () => setIsDraggingControls(false);
-
-        if (isDraggingControls) {
-            window.addEventListener('mousemove', handleWindowMouseMove);
-            window.addEventListener('mouseup', handleWindowMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleWindowMouseMove);
-            window.removeEventListener('mouseup', handleWindowMouseUp);
-        };
-    }, [isDraggingControls, controlsDragStart]);
-
-    const handleControlsMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent canvas drag
-        setIsDraggingControls(true);
-        setControlsDragStart({ x: e.clientX, y: e.clientY });
-    };
-
-    // Draggable Logic - Internal State
-    useEffect(() => {
-        const handleWindowMouseMove = (e: MouseEvent) => {
-            if (!isDraggingInternal) return;
-            const dx = e.clientX - internalDragStart.x;
-            const dy = e.clientY - internalDragStart.y;
-            setInternalPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-            setInternalDragStart({ x: e.clientX, y: e.clientY });
-        };
-        const handleWindowMouseUp = () => setIsDraggingInternal(false);
-
-        if (isDraggingInternal) {
-            window.addEventListener('mousemove', handleWindowMouseMove);
-            window.addEventListener('mouseup', handleWindowMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleWindowMouseMove);
-            window.removeEventListener('mouseup', handleWindowMouseUp);
-        };
-    }, [isDraggingInternal, internalDragStart]);
-
-    const handleInternalMouseDown = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsDraggingInternal(true);
-        setInternalDragStart({ x: e.clientX, y: e.clientY });
-    };
+    // Derivations
 
 
     // Derivations
@@ -573,6 +484,46 @@ const Arrays = () => {
 
     const currentComplexity = activeOp === 'search' ? COMPLEXITY[searchType] : (activeOp ? COMPLEXITY[activeOp] : COMPLEXITY['insert']);
     const currentPseudocode = activeOp === 'search' ? PSEUDOCODE[searchType] : (activeOp ? PSEUDOCODE[activeOp] : []);
+
+    // Layout Context
+    const { isSidebarOpen } = useLayout();
+
+    // Zoom & Pan State
+    const [scale, setScale] = useState(1);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    // Auto-Resize Logic
+    useEffect(() => {
+        if (containerRef.current && contentRef.current) {
+            const containerWidth = containerRef.current.clientWidth;
+            // Approximate width: each box is w-14 (3.5rem=56px) + gap
+            const contentWidth = currentFrame.array.length * 70 + 100; // rough estimate
+
+            if (contentWidth > containerWidth) {
+                const newScale = Math.max(0.5, containerWidth / contentWidth);
+                // Only scale down, don't auto-scale up above 1 unless user wants to
+                if (newScale < 1) setScale(newScale * 0.9); // 90% fit
+            } else {
+                // Reset to 1 if it fits comfortably
+                setScale(1);
+            }
+        }
+    }, [currentFrame.array.length, isSidebarOpen]);
+
+    // Zoom Handler
+    const handleWheel = (e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey || true) { // Always Zoom on wheel for this area? Or just Ctrl? User asked "zoom in when scroll up ... cursor on visualized image" matches standard map behavior usually without ctrl.
+            // Let's rely on standard scroll unless ctrl is pressed? 
+            // User "zoom in when scrool up" -> implied direct mapping.
+            e.preventDefault();
+            const delta = -e.deltaY;
+            setScale(prev => {
+                const newScale = prev + (delta * 0.001);
+                return Math.min(Math.max(0.2, newScale), 3); // Limit 0.2x to 3x
+            });
+        }
+    };
 
     return (
         <VisualizationLayout
@@ -715,45 +666,76 @@ const Arrays = () => {
         >
             {/* Top Bar: Internal State REMOVED */}
 
-            {/* Complexity Toggle */}
-            < div className="absolute top-16 right-6 z-30 flex flex-col items-end pointer-events-none" >
-                <div className="pointer-events-auto relative">
+            {/* Top Right Toggles */}
+            <div className="absolute top-6 right-6 z-30 flex flex-col gap-2 pointer-events-none">
+                <div className="pointer-events-auto flex items-center gap-2">
+                    {/* Internal State Button */}
+                    <button
+                        onClick={() => setShowInternalState(prev => !prev)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showInternalState
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
+                            }`}
+                        title="Internal State"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">memory</span>
+                    </button>
+
+                    {/* Pseudocode Button */}
+                    <button
+                        onClick={() => setShowPseudocode(prev => !prev)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showPseudocode
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
+                            }`}
+                        title="Pseudocode"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">code</span>
+                    </button>
+
+                    {/* Complexity Button */}
                     <button
                         onClick={() => setIsComplexityOpen(prev => !prev)}
-                        className={`relative z-50 h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${isComplexityOpen
+                        className={`relative h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${isComplexityOpen
                             ? 'bg-primary text-white border-primary'
-                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-primary'
+                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
                             }`}
+                        title="Complexity Analysis"
                     >
-                        <span className="material-symbols-outlined transition-transform duration-300" style={{ transform: isComplexityOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                        <span className="material-symbols-outlined text-[20px] transition-transform duration-300" style={{ transform: isComplexityOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                             {isComplexityOpen ? 'close' : 'query_stats'}
                         </span>
                     </button>
-                    <div className={`absolute top-0 right-0 pt-12 transition-all duration-300 origin-top-right ${isComplexityOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
-                        <div className="w-64 backdrop-blur-xl bg-white/80 dark:bg-[#1c1a32]/80 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden p-4 text-xs font-mono text-gray-400">
-                            <div className="flex justify-between border-b border-white/10 pb-2 mb-2"><span className="text-white font-bold uppercase">{activeOp || 'Insert'}</span><span className="text-primary">{currentComplexity.avg}</span></div>
-                            <div className="space-y-1">
-                                <div className="flex justify-between"><span>Best</span><span className="text-emerald-400">{currentComplexity.best}</span></div>
-                                <div className="flex justify-between"><span>Avg</span><span className="text-amber-400">{currentComplexity.avg}</span></div>
-                                <div className="flex justify-between"><span>Worst</span><span className="text-rose-400">{currentComplexity.worst}</span></div>
-                                <div className="flex justify-between border-t border-white/10 pt-1 mt-1"><span>Space</span><span className="text-blue-400">{currentComplexity.space}</span></div>
-                            </div>
+                </div>
+
+                {/* Complexity Panel */}
+                <div className={`transition-all duration-300 origin-top-right ${isComplexityOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}>
+                    <div className="w-64 backdrop-blur-xl bg-white/90 dark:bg-[#1c1a32]/90 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden p-4 text-xs font-mono text-gray-400 ml-auto">
+                        <div className="flex justify-between border-b border-white/10 pb-2 mb-2"><span className="text-gray-900 dark:text-white font-bold uppercase">{activeOp || 'Insert'}</span><span className="text-primary">{currentComplexity.avg}</span></div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between"><span>Best</span><span className="text-emerald-500">{currentComplexity.best}</span></div>
+                            <div className="flex justify-between"><span>Avg</span><span className="text-amber-500">{currentComplexity.avg}</span></div>
+                            <div className="flex justify-between"><span>Worst</span><span className="text-rose-500">{currentComplexity.worst}</span></div>
+                            <div className="flex justify-between border-t border-white/10 pt-1 mt-1"><span>Space</span><span className="text-blue-500">{currentComplexity.space}</span></div>
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
 
             {/* Canvas */}
-            < div
+            <div
+                ref={containerRef}
                 className={`flex-1 flex flex-col items-center justify-start pt-32 overflow-hidden relative z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
+                onWheel={handleWheel}
             >
                 <div
+                    ref={contentRef}
                     className="flex flex-col items-start gap-2 transition-transform duration-75 ease-out origin-center"
-                    style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(1.1)` }}
+                    style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}
                 >
                     {/* Indices */}
                     <div className="flex gap-1 ml-1 select-none">
@@ -801,107 +783,102 @@ const Arrays = () => {
                 </div>
             </div >
 
-            {/* Pseudocode Panel */}
-            < div
-                className="absolute bottom-40 right-8 w-80 backdrop-blur-xl bg-white/70 dark:bg-[#1c1a32]/70 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700"
-                style={{ transform: `translate(${pseudoPos.x}px, ${pseudoPos.y}px)` }}
-            >
-                <div
-                    className="bg-gray-100/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center cursor-move select-none active:cursor-grabbing"
-                    onMouseDown={handlePseudoMouseDown}
-                >
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Pseudocode</span>
-                    <span className="material-symbols-outlined text-gray-400 text-sm">drag_indicator</span>
-                </div>
-                <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400">
-                    <div className="space-y-1">
-                        {currentPseudocode.map((line: string, idx: number) => (
-                            <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
-                                {idx + 1}. {line}
-                            </p>
-                        ))}
-                        {currentPseudocode.length === 0 && <span className="text-gray-500 italic">Select an operation...</span>}
+            {/* Pseudocode Panel (Fixed Position, Toggleable) */}
+            {showPseudocode && (
+                <div className="absolute top-20 right-6 w-80 backdrop-blur-xl bg-white/90 dark:bg-[#1c1a32]/90 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-20">
+                    <div className="bg-gray-50/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Pseudocode</span>
                     </div>
-                </div>
-            </div >
-
-            {/* Internal State Panel */}
-            <div
-                className="absolute bottom-40 left-8 w-80 backdrop-blur-xl bg-white/70 dark:bg-[#1c1a32]/70 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700"
-                style={{ transform: `translate(${internalPos.x}px, ${internalPos.y}px)` }}
-            >
-                <div
-                    className="bg-gray-100/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center cursor-move select-none active:cursor-grabbing"
-                    onMouseDown={handleInternalMouseDown}
-                >
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Internal State</span>
-                    <span className="material-symbols-outlined text-gray-400 text-sm">drag_indicator</span>
-                </div>
-                <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400">
-                    <div className="space-y-2">
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Capacity</span>
-                            <span className="text-primary font-bold">{currentFrame.internalState.capacity}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Size (N)</span>
-                            <span className="text-slate-900 dark:text-white font-bold">{currentFrame.internalState.size}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Current Op</span>
-                            <span className="text-orange-400 font-bold uppercase">{currentFrame.internalState.currentOp}</span>
+                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400">
+                        <div className="space-y-1">
+                            {currentPseudocode.map((line: string, idx: number) => (
+                                <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
+                                    {idx + 1}. {line}
+                                </p>
+                            ))}
+                            {currentPseudocode.length === 0 && <span className="text-gray-500 italic">Select an operation...</span>}
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Floating Controls */}
-            < div
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[600px] h-20 bg-white/80 dark:bg-[#1c1a32]/80 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl flex items-center px-8 gap-6 z-20 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700"
-                style={{ transform: `translate(calc(-50% + ${controlsPos.x}px), ${controlsPos.y}px)` }}
-            >
-                {/* Drag Handle */}
-                < div
-                    className="absolute top-0 left-0 w-full h-full cursor-move z-0 rounded-2xl group"
-                    onMouseDown={handleControlsMouseDown}
-                >
-                    {/* Visual hint for drag on hover */}
-                    < div className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-300 dark:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" ></div >
-                </div >
-
-                {/* Content Overlay - so buttons work */}
-                < div className="relative z-10 flex items-center gap-6 w-full pointer-events-none" >
-                    {/* Playback Controls */}
-                    < div className="flex items-center gap-2 pointer-events-auto" >
-                        <button onClick={() => setCurrentStep(0)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors" title="Start"><span className="material-symbols-outlined text-[20px]">skip_previous</span></button>
-                        <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors" title="Prev"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
-                        <button onClick={() => setIsPlaying(!isPlaying)} className={`size-10 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-red-500' : 'bg-primary'}`}>
-                            <span className="material-symbols-outlined text-[24px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
-                        </button>
-                        <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors" title="Next"><span className="material-symbols-outlined text-[20px]">fast_forward</span></button>
-                        <button onClick={() => setCurrentStep(frames.length - 1)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors" title="End"><span className="material-symbols-outlined text-[20px]">skip_next</span></button>
-                    </div >
-                    {/* Progress Bar */}
-                    < div className="flex-1 flex flex-col justify-center gap-1.5 pointer-events-auto" >
-                        <div className="flex justify-between text-xs font-medium text-gray-400">
-                            <span>Step {currentStep + 1}/{frames.length || 1}</span>
-                            <span className="truncate max-w-[200px]">{currentFrame.description}</span>
+            {/* Internal State Panel (Fixed Position, Toggleable) */}
+            {showInternalState && (
+                <div className="absolute top-20 right-[24rem] w-64 backdrop-blur-xl bg-white/90 dark:bg-[#1c1a32]/90 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-20">
+                    <div className="bg-gray-50/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Internal State</span>
+                    </div>
+                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400">
+                        <div className="space-y-2">
+                            <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
+                                <span>Capacity</span>
+                                <span className="text-primary font-bold">{currentFrame.internalState.capacity}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
+                                <span>Size (N)</span>
+                                <span className="text-slate-900 dark:text-white font-bold">{currentFrame.internalState.size}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span>Current Op</span>
+                                <span className="text-orange-400 font-bold uppercase">{currentFrame.internalState.currentOp}</span>
+                            </div>
                         </div>
-                        <div className="h-1.5 w-full bg-[#272546] rounded-full overflow-hidden relative cursor-pointer" onClick={(e) => {
+                    </div>
+                </div>
+            )}
+
+            {/* Fixed Bottom Playback Controls */}
+            <div className={`fixed bottom-0 right-0 ${isSidebarOpen ? 'left-80' : 'left-0'} bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 z-50 flex items-center justify-between gap-8 h-20 transition-all duration-300`}>
+
+                {/* Playback Buttons */}
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
+                    <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+
+                    <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className={`size-12 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'}`}
+                    >
+                        <span className="material-symbols-outlined text-[28px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                    </button>
+
+                    <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
+                    <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
+                </div>
+
+                {/* Timeline / Scrub Bar */}
+                <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+                        <span>Step {currentStep + 1}/{frames.length || 1}</span>
+                        <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
+                        onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const pct = (e.clientX - rect.left) / rect.width;
                             setCurrentStep(Math.floor(pct * (frames.length - 1)));
-                        }}>
-                            <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
-                        </div>
-                    </div >
-                    {/* Speed */}
-                    < div className="flex items-center gap-3 w-32 border-l border-[#272546] pl-4 pointer-events-auto" >
-                        <span className="material-symbols-outlined text-gray-500 text-sm">speed</span>
-                        <input type="range" min="0.5" max="3" step="0.5" value={playbackSpeed} onChange={e => setPlaybackSpeed(parseFloat(e.target.value))} className="w-full h-1 bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary" />
-                    </div >
-                </div >
-            </div >
+                        }}
+                    >
+                        <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
+                    </div>
+                </div>
+
+                {/* Speed Control */}
+                <div className="flex items-center gap-3 w-40 pl-6 border-l border-gray-200 dark:border-[#272546]">
+                    <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.5"
+                        value={playbackSpeed}
+                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
+                </div>
+
+            </div>
 
         </VisualizationLayout >
     );

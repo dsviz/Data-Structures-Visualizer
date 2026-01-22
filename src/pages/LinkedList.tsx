@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useLayout } from '../context/LayoutContext';
 
 // --- Types ---
 type Operation = 'create' | 'insert' | 'remove' | 'search' | null;
@@ -107,19 +108,16 @@ const LinkedList = () => {
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+
+    // Zoom & Layout
+    const { isSidebarOpen } = useLayout();
     const [scale, setScale] = useState(1);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-    // Floating Panels State
-    const [pseudoPos, setPseudoPos] = useState({ x: 0, y: 0 });
-    const [isDraggingPseudo, setIsDraggingPseudo] = useState(false);
-    const [pseudoDragStart, setPseudoDragStart] = useState({ x: 0, y: 0 });
-
-    const [controlsPos, setControlsPos] = useState({ x: 0, y: 0 });
-    const [isDraggingControls, setIsDraggingControls] = useState(false);
-    const [controlsDragStart, setControlsDragStart] = useState({ x: 0, y: 0 });
+    // Toggle Panels
+    const [showPseudocode, setShowPseudocode] = useState(false);
 
     const timerRef = useRef<number | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     // --- Generator Helpers ---
     const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[]): Frame => ({
@@ -387,8 +385,15 @@ const LinkedList = () => {
         if (!containerRef.current) return;
         const totalWidth = initialNodes.length * 150;
         const available = containerRef.current.clientWidth - 20;
-        setScale(Math.max(0.6, Math.min(1, available / totalWidth)));
-    }, [initialNodes.length]);
+
+        // Auto-resize logic
+        if (totalWidth > available) {
+            const newScale = Math.max(0.5, available / totalWidth);
+            if (newScale < 1) setScale(newScale * 0.9);
+        } else {
+            setScale(1);
+        }
+    }, [initialNodes.length, isSidebarOpen]);
 
     useEffect(() => {
         if (isPlaying && frames.length > 0) {
@@ -403,25 +408,19 @@ const LinkedList = () => {
         return () => clearInterval(timerRef.current!);
     }, [isPlaying, frames, playbackSpeed]);
 
-    // Window Drag Listeners for Pseudo/Controls
-    useEffect(() => {
-        const onMove = (e: MouseEvent) => {
-            if (isDraggingPseudo) {
-                setPseudoPos(p => ({ x: p.x + e.clientX - pseudoDragStart.x, y: p.y + e.clientY - pseudoDragStart.y }));
-                setPseudoDragStart({ x: e.clientX, y: e.clientY });
-            }
-            if (isDraggingControls) {
-                setControlsPos(p => ({ x: p.x + e.clientX - controlsDragStart.x, y: p.y + e.clientY - controlsDragStart.y }));
-                setControlsDragStart({ x: e.clientX, y: e.clientY });
-            }
-        };
-        const onUp = () => { setIsDraggingPseudo(false); setIsDraggingControls(false); };
-        if (isDraggingPseudo || isDraggingControls) {
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
+    const handleWheel = (e: React.WheelEvent) => {
+        // e.preventDefault(); // Let it bubble if not prevented, but we want zoom
+        if (e.ctrlKey || e.metaKey || true) {
+            const delta = -e.deltaY;
+            setScale(prev => {
+                const newScale = prev + (delta * 0.001);
+                return Math.min(Math.max(0.2, newScale), 3);
+            });
         }
-        return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    }, [isDraggingPseudo, isDraggingControls, pseudoDragStart, controlsDragStart]);
+    };
+
+
+
 
     const currentFrame = frames[currentStep] || { nodes: initialNodes, highlights: [], pointers: [], codeLine: -1, description: "Ready", listType, pseudoLines: [] };
 
@@ -549,6 +548,7 @@ const LinkedList = () => {
                     if (isDragging) { setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y })); setLastMousePos({ x: e.clientX, y: e.clientY }); }
                 }}
                 onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)}
+                onWheel={handleWheel}
             >
                 <div className="flex items-center transition-transform duration-100 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}>
                     {currentFrame.nodes.length === 0 ? <div className="opacity-30 text-2xl font-bold uppercase">Empty List</div> : (
@@ -563,9 +563,6 @@ const LinkedList = () => {
                             if (i === currentFrame.nodes.length - 1 && !nodePointers.some(p => p.label === 'TAIL')) {
                                 nodePointers.push({ index: i, label: 'TAIL', color: 'green' });
                             }
-                            // Sort so Head/Tail usually appear at top or bottom? 
-                            // Current CSS flex-col-reverse: last in DOM is top visually.
-                            // We want HEAD/TAIL ideally at the very top (last in array).
 
                             return (
                                 <div key={i} className="flex items-center group relative">
@@ -609,59 +606,86 @@ const LinkedList = () => {
                 <svg className="absolute w-0 h-0"><defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="currentColor" /></marker></defs></svg>
             </div>
 
-            {/* Draggable Pseudocode */}
-            <div className="absolute right-8 bottom-40 w-80 backdrop-blur-xl bg-white/70 dark:bg-[#1c1a32]/70 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-700"
-                style={{ transform: `translate(${pseudoPos.x}px, ${pseudoPos.y}px)` }}
-            >
-                <div className="bg-gray-100/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center cursor-move select-none active:cursor-grabbing"
-                    onMouseDown={(e) => { e.stopPropagation(); setIsDraggingPseudo(true); setPseudoDragStart({ x: e.clientX, y: e.clientY }); }}
-                >
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Pseudocode</span>
-                    <span className="material-symbols-outlined text-gray-400 text-sm">drag_indicator</span>
-                </div>
-                <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    {currentFrame.pseudoLines.length > 0 ? currentFrame.pseudoLines.map((line, idx) => (
-                        <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
-                            {idx}. {line}
-                        </p>
-                    )) : <span className="text-gray-500 italic">Select an operation...</span>}
+            {/* Toggle Buttons (Top Right) */}
+            <div className="absolute top-6 right-6 z-30 flex flex-col gap-2 pointer-events-none">
+                <div className="pointer-events-auto flex items-center gap-2">
+                    <button
+                        onClick={() => setShowPseudocode(prev => !prev)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showPseudocode
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
+                            }`}
+                        title="Pseudocode"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">code</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Draggable Controls */}
-            <div className="absolute bottom-8 left-1/2 w-[600px] h-20 bg-white/80 dark:bg-[#1c1a32]/80 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl flex items-center px-8 gap-6 z-20 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700"
-                style={{ transform: `translate(calc(-50% + ${controlsPos.x}px), ${controlsPos.y}px)` }}>
-                <div className="absolute top-0 left-0 w-full h-full cursor-move z-0 rounded-2xl group"
-                    onMouseDown={(e) => { e.stopPropagation(); setIsDraggingControls(true); setControlsDragStart({ x: e.clientX, y: e.clientY }); }}>
-                    <div className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-300 dark:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </div>
-                <div className="relative z-10 flex items-center gap-6 w-full pointer-events-none">
-                    <div className="flex items-center gap-2 pointer-events-auto">
-                        <button onClick={() => setCurrentStep(0)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors"><span className="material-symbols-outlined text-[20px]">skip_previous</span></button>
-                        <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
-                        <button onClick={() => setIsPlaying(!isPlaying)} className={`size-10 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-red-500' : 'bg-primary'}`}>
-                            <span className="material-symbols-outlined text-[24px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
-                        </button>
-                        <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors"><span className="material-symbols-outlined text-[20px]">fast_forward</span></button>
-                        <button onClick={() => setCurrentStep(frames.length - 1)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors"><span className="material-symbols-outlined text-[20px]">skip_next</span></button>
+            {/* Pseudocode Panel (Fixed) */}
+            {showPseudocode && (
+                <div className="absolute top-20 right-6 w-80 backdrop-blur-xl bg-white/90 dark:bg-[#1c1a32]/90 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-20">
+                    <div className="bg-gray-50/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Pseudocode</span>
                     </div>
-                    <div className="flex-1 flex flex-col justify-center gap-1.5 pointer-events-auto">
-                        <div className="flex justify-between text-xs font-medium text-gray-400">
-                            <span>Step {currentStep + 1}/{frames.length || 1}</span>
-                            <span className="truncate max-w-[200px]">{currentFrame.description}</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#272546] rounded-full overflow-hidden relative cursor-pointer" onClick={(e) => {
+                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                        {currentFrame.pseudoLines.length > 0 ? currentFrame.pseudoLines.map((line, idx) => (
+                            <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
+                                {idx}. {line}
+                            </p>
+                        )) : <span className="text-gray-500 italic">Select an operation...</span>}
+                    </div>
+                </div>
+            )}
+
+            {/* Fixed Bottom Playback Controls */}
+            <div className={`fixed bottom-0 right-0 ${isSidebarOpen ? 'left-80' : 'left-0'} bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 z-50 flex items-center justify-between gap-8 h-20 transition-all duration-300`}>
+                {/* Playback Buttons */}
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
+                    <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+
+                    <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className={`size-12 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'}`}
+                    >
+                        <span className="material-symbols-outlined text-[28px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                    </button>
+
+                    <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
+                    <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
+                </div>
+
+                {/* Timeline / Scrub Bar */}
+                <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+                        <span>Step {currentStep + 1}/{frames.length || 1}</span>
+                        <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
+                        onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const pct = (e.clientX - rect.left) / rect.width;
                             setCurrentStep(Math.floor(pct * (frames.length - 1)));
-                        }}>
-                            <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
-                        </div>
+                        }}
+                    >
+                        <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
                     </div>
-                    <div className="flex items-center gap-3 w-32 border-l border-[#272546] pl-4 pointer-events-auto">
-                        <span className="material-symbols-outlined text-gray-500 text-sm">speed</span>
-                        <input type="range" min="0.5" max="3" step="0.5" value={playbackSpeed} onChange={e => setPlaybackSpeed(parseFloat(e.target.value))} className="w-full h-1 bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary" />
-                    </div>
+                </div>
+
+                {/* Speed Control */}
+                <div className="flex items-center gap-3 w-40 pl-6 border-l border-gray-200 dark:border-[#272546]">
+                    <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.5"
+                        value={playbackSpeed}
+                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
                 </div>
             </div>
         </VisualizationLayout>
