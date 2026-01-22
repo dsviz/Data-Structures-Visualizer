@@ -1,6 +1,45 @@
+import { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useLayout } from '../context/LayoutContext';
 
 const Trees = () => {
+  // Zoom & Pan
+  const { isSidebarOpen } = useLayout();
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-Resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const contentWidth = 800; // SVG viewBox width
+    const availableWidth = containerRef.current.clientWidth;
+
+    if (contentWidth > availableWidth) {
+      const newScale = Math.max(0.4, availableWidth / contentWidth);
+      if (newScale < 1) setScale(newScale * 0.9);
+    } else {
+      // Optional: Scale up if huge space? Nah, 1 is fine.
+    }
+  }, [isSidebarOpen]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey || true) {
+      const delta = -e.deltaY;
+      setScale(prev => {
+        const newScale = prev + (delta * 0.001);
+        return Math.min(Math.max(0.2, newScale), 3);
+      });
+    }
+  };
+
+  const handleReset = () => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  };
+
   const sidebar = (
     <div className="flex flex-col h-full">
       {/* Status Card */}
@@ -126,74 +165,87 @@ const Trees = () => {
 
   return (
     <VisualizationLayout title="Binary Search Tree" sidebar={sidebar} sidebarPosition="right" controls={controls}>
-      {/* SVG Tree Visualization */}
-      <svg className="w-full h-full pointer-events-none select-none" height="500" viewBox="0 0 800 500" width="800">
-        <defs>
-          <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
-            <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
-          </filter>
-        </defs>
-        {/* Edges */}
-        <g className="stroke-slate-400 dark:stroke-[#383564]" strokeWidth="2">
-          <line x1="400" x2="200" y1="50" y2="150"></line>
-          <line className="stroke-primary dark:stroke-primary opacity-50" strokeWidth="3" x1="400" x2="600" y1="50" y2="150"></line>
-          <line x1="200" x2="100" y1="150" y2="250"></line>
-          <line x1="200" x2="300" y1="150" y2="250"></line>
-          <line x1="600" x2="500" y1="150" y2="250"></line>
-          <line className="stroke-primary dark:stroke-primary opacity-80" strokeWidth="3" x1="600" x2="700" y1="150" y2="250"></line>
-          <line x1="300" x2="250" y1="250" y2="350"></line>
-          <line x1="300" x2="350" y1="250" y2="350"></line>
-          <line className="stroke-primary dark:stroke-primary" strokeDasharray="5 5" strokeWidth="3" x1="700" x2="750" y1="250" y2="350"></line>
-        </g>
+      <div
+        ref={containerRef}
+        className={`flex-1 relative w-full h-full overflow-hidden flex items-center justify-center ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        onMouseDown={(e) => { setIsDragging(true); setLastMousePos({ x: e.clientX, y: e.clientY }); }}
+        onMouseMove={(e) => {
+          if (isDragging) { setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y })); setLastMousePos({ x: e.clientX, y: e.clientY }); }
+        }}
+        onMouseUp={() => setIsDragging(false)}
+        onMouseLeave={() => setIsDragging(false)}
+        onWheel={handleWheel}
+      >
+        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transformOrigin: 'center', transition: 'transform 0.1s ease-out' }}>
+          <svg className="pointer-events-none select-none" height="500" viewBox="0 0 800 500" width="800">
+            <defs>
+              <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
+                <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+              </filter>
+            </defs>
+            {/* Edges */}
+            <g className="stroke-slate-400 dark:stroke-[#383564]" strokeWidth="2">
+              <line x1="400" x2="200" y1="50" y2="150"></line>
+              <line className="stroke-primary dark:stroke-primary opacity-50" strokeWidth="3" x1="400" x2="600" y1="50" y2="150"></line>
+              <line x1="200" x2="100" y1="150" y2="250"></line>
+              <line x1="200" x2="300" y1="150" y2="250"></line>
+              <line x1="600" x2="500" y1="150" y2="250"></line>
+              <line className="stroke-primary dark:stroke-primary opacity-80" strokeWidth="3" x1="600" x2="700" y1="150" y2="250"></line>
+              <line x1="300" x2="250" y1="250" y2="350"></line>
+              <line x1="300" x2="350" y1="250" y2="350"></line>
+              <line className="stroke-primary dark:stroke-primary" strokeDasharray="5 5" strokeWidth="3" x1="700" x2="750" y1="250" y2="350"></line>
+            </g>
 
-        {/* Nodes */}
-        <g transform="translate(400, 50)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">50</text>
-        </g>
-        <g transform="translate(200, 150)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">30</text>
-        </g>
-        <g transform="translate(600, 150)">
-          <circle className="fill-primary/20 stroke-primary" r="24" strokeWidth="2"></circle>
-          <text className="fill-primary dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">70</text>
-        </g>
-        <g transform="translate(100, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">20</text>
-        </g>
-        <g transform="translate(300, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">40</text>
-        </g>
-        <g transform="translate(500, 250)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">60</text>
-        </g>
-        <g transform="translate(700, 250)">
-          <circle className="fill-primary shadow-[0_0_15px_rgba(66,54,231,0.5)]" r="26"></circle>
-          <text className="fill-white text-sm font-bold font-display" textAnchor="middle" y="5">80</text>
-          <text className="fill-primary text-xs font-bold uppercase tracking-wide" textAnchor="middle" y="-35">Current</text>
-        </g>
-        <g transform="translate(250, 350)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">35</text>
-        </g>
-        <g transform="translate(350, 350)">
-          <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-          <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">45</text>
-        </g>
-        <g className="opacity-70" transform="translate(750, 350)">
-          <circle className="fill-transparent stroke-primary stroke-dasharray-4" r="24" strokeDasharray="4 4" strokeWidth="2"></circle>
-          <text className="fill-primary text-sm font-bold font-display" textAnchor="middle" y="5">85?</text>
-        </g>
-      </svg>
+            {/* Nodes */}
+            <g transform="translate(400, 50)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">50</text>
+            </g>
+            <g transform="translate(200, 150)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">30</text>
+            </g>
+            <g transform="translate(600, 150)">
+              <circle className="fill-primary/20 stroke-primary" r="24" strokeWidth="2"></circle>
+              <text className="fill-primary dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">70</text>
+            </g>
+            <g transform="translate(100, 250)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">20</text>
+            </g>
+            <g transform="translate(300, 250)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">40</text>
+            </g>
+            <g transform="translate(500, 250)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">60</text>
+            </g>
+            <g transform="translate(700, 250)">
+              <circle className="fill-primary shadow-[0_0_15px_rgba(66,54,231,0.5)]" r="26"></circle>
+              <text className="fill-white text-sm font-bold font-display" textAnchor="middle" y="5">80</text>
+              <text className="fill-primary text-xs font-bold uppercase tracking-wide" textAnchor="middle" y="-35">Current</text>
+            </g>
+            <g transform="translate(250, 350)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">35</text>
+            </g>
+            <g transform="translate(350, 350)">
+              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
+              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">45</text>
+            </g>
+            <g className="opacity-70" transform="translate(750, 350)">
+              <circle className="fill-transparent stroke-primary stroke-dasharray-4" r="24" strokeDasharray="4 4" strokeWidth="2"></circle>
+              <text className="fill-primary text-sm font-bold font-display" textAnchor="middle" y="5">85?</text>
+            </g>
+          </svg>
+        </div>
+      </div>
 
       {/* Reset Zoom Button overlay */}
       <div className="absolute bottom-28 right-6 z-10">
-        <button className="flex items-center justify-center size-10 rounded-lg bg-white dark:bg-[#272546] shadow-lg text-slate-700 dark:text-white hover:text-primary dark:hover:text-primary transition-colors" title="Reset View">
+        <button onClick={handleReset} className="flex items-center justify-center size-10 rounded-lg bg-white dark:bg-[#272546] shadow-lg text-slate-700 dark:text-white hover:text-primary dark:hover:text-primary transition-colors" title="Reset View">
           <span className="material-symbols-outlined">center_focus_strong</span>
         </button>
       </div>

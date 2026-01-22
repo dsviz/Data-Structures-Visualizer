@@ -1,8 +1,50 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useLayout } from '../context/LayoutContext';
 
 const Graphs = () => {
   const [viewMode, setViewMode] = useState<'matrix' | 'list'>('matrix');
+
+  // Zoom & Pan
+  const { isSidebarOpen } = useLayout();
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-Resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const contentWidth = 600; // Fixed width from code
+    const availableWidth = containerRef.current.clientWidth;
+
+    if (contentWidth > availableWidth) {
+      const newScale = Math.max(0.4, availableWidth / contentWidth);
+      if (newScale < 0.95) setScale(newScale * 0.9);
+    }
+  }, [isSidebarOpen]);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey || true) {
+      //  e.preventDefault(); // Might trigger passive warning, so maybe rely on bubble
+      const delta = -e.deltaY;
+      setScale(prev => {
+        const newScale = prev + (delta * 0.001);
+        return Math.min(Math.max(0.2, newScale), 3);
+      });
+    }
+  };
+
+  const handleZoom = (delta: number) => {
+    setScale(prev => Math.min(Math.max(0.2, prev + delta), 3));
+  };
+
+  const handleReset = () => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  };
+
 
   const sidebar = (
     <div className="flex flex-col gap-6">
@@ -216,63 +258,74 @@ const Graphs = () => {
         </div>
       </div>
 
-      {/* Graph Simulation Canvas */}
-      <div className="relative w-[600px] h-[400px]">
-        {/* SVG Edges Layer */}
-        <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
-          <defs>
-            <marker id="arrowhead" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
-              <polygon fill="#64748b" points="0 0, 10 3.5, 0 7"></polygon>
-            </marker>
-            <marker id="arrowhead-dark" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
-              <polygon fill="#94a3b8" points="0 0, 10 3.5, 0 7"></polygon>
-            </marker>
-            <marker id="arrowhead-active" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
-              <polygon fill="#4236e7" points="0 0, 10 3.5, 0 7"></polygon>
-            </marker>
-          </defs>
-          {/* Edge 0 -> 1 */}
-          <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="100" x2="300" y1="100" y2="100"></line>
-          {/* Edge 1 -> 2 (Active) */}
-          <line className="drop-shadow-[0_0_8px_rgba(66,54,231,0.6)] stroke-primary" markerEnd="url(#arrowhead-active)" strokeWidth="3" x1="300" x2="400" y1="100" y2="300"></line>
-          {/* Edge 2 -> 0 */}
-          <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="400" x2="100" y1="300" y2="100"></line>
-          {/* Edge 1 -> 3 */}
-          <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="300" x2="500" y1="100" y2="150"></line>
-        </svg>
+      <div
+        ref={containerRef}
+        className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        onMouseDown={(e) => { setIsDragging(true); setLastMousePos({ x: e.clientX, y: e.clientY }); }}
+        onMouseMove={(e) => {
+          if (isDragging) { setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y })); setLastMousePos({ x: e.clientX, y: e.clientY }); }
+        }}
+        onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)}
+        onWheel={handleWheel}
+      >
+        {/* Graph Simulation Canvas Content */}
+        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: 'transform 0.1s ease-out' }} className="relative w-[600px] h-[400px]">
+          {/* SVG Edges Layer */}
+          <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
+            <defs>
+              <marker id="arrowhead" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
+                <polygon fill="#64748b" points="0 0, 10 3.5, 0 7"></polygon>
+              </marker>
+              <marker id="arrowhead-dark" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
+                <polygon fill="#94a3b8" points="0 0, 10 3.5, 0 7"></polygon>
+              </marker>
+              <marker id="arrowhead-active" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
+                <polygon fill="#4236e7" points="0 0, 10 3.5, 0 7"></polygon>
+              </marker>
+            </defs>
+            {/* Edge 0 -> 1 */}
+            <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="100" x2="300" y1="100" y2="100"></line>
+            {/* Edge 1 -> 2 (Active) */}
+            <line className="drop-shadow-[0_0_8px_rgba(66,54,231,0.6)] stroke-primary" markerEnd="url(#arrowhead-active)" strokeWidth="3" x1="300" x2="400" y1="100" y2="300"></line>
+            {/* Edge 2 -> 0 */}
+            <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="400" x2="100" y1="300" y2="100"></line>
+            {/* Edge 1 -> 3 */}
+            <line className="stroke-slate-500 dark:stroke-slate-400" markerEnd="url(#arrowhead)" strokeWidth="2" x1="300" x2="500" y1="100" y2="150"></line>
+          </svg>
 
-        {/* Nodes */}
-        {/* Node 0 */}
-        <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '100px', top: '100px' }}>
-          0
-        </div>
-        {/* Node 1 (Active/Visited) */}
-        <div className="absolute w-14 h-14 -translate-x-1/2 -translate-y-1/2 bg-primary border-4 border-white dark:border-[#131221] text-white rounded-full flex items-center justify-center font-bold font-mono shadow-[0_0_20px_rgba(66,54,231,0.6)] z-20 cursor-grab active:cursor-grabbing animate-bounce" style={{ left: '300px', top: '100px' }}>
-          1
-        </div>
-        {/* Node 2 */}
-        <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '400px', top: '300px' }}>
-          2
-        </div>
-        {/* Node 3 */}
-        <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '500px', top: '150px' }}>
-          3
-        </div>
+          {/* Nodes */}
+          {/* Node 0 */}
+          <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '100px', top: '100px' }}>
+            0
+          </div>
+          {/* Node 1 (Active/Visited) */}
+          <div className="absolute w-14 h-14 -translate-x-1/2 -translate-y-1/2 bg-primary border-4 border-white dark:border-[#131221] text-white rounded-full flex items-center justify-center font-bold font-mono shadow-[0_0_20px_rgba(66,54,231,0.6)] z-20 cursor-grab active:cursor-grabbing animate-bounce" style={{ left: '300px', top: '100px' }}>
+            1
+          </div>
+          {/* Node 2 */}
+          <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '400px', top: '300px' }}>
+            2
+          </div>
+          {/* Node 3 */}
+          <div className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-[#1e1c33] border-2 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-white rounded-full flex items-center justify-center font-bold font-mono shadow-lg hover:scale-110 transition-transform cursor-grab active:cursor-grabbing z-10" style={{ left: '500px', top: '150px' }}>
+            3
+          </div>
 
-        {/* Weight Labels */}
-        <div className="absolute text-xs font-mono text-slate-500 bg-gray-100 dark:bg-[#121121] px-1 rounded" style={{ left: '200px', top: '90px' }}>5</div>
-        <div className="absolute text-xs font-mono text-primary font-bold bg-white dark:bg-[#121121] px-1 rounded" style={{ left: '360px', top: '200px' }}>8</div>
+          {/* Weight Labels */}
+          <div className="absolute text-xs font-mono text-slate-500 bg-gray-100 dark:bg-[#121121] px-1 rounded" style={{ left: '200px', top: '90px' }}>5</div>
+          <div className="absolute text-xs font-mono text-primary font-bold bg-white dark:bg-[#121121] px-1 rounded" style={{ left: '360px', top: '200px' }}>8</div>
+        </div>
       </div>
 
       {/* Zoom Controls Overlay */}
       <div className="absolute bottom-10 right-10 flex flex-col gap-2 z-10">
-        <button className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg">
+        <button onClick={() => handleZoom(0.1)} className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg">
           <span className="material-symbols-outlined">add</span>
         </button>
-        <button className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg">
+        <button onClick={() => handleZoom(-0.1)} className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg">
           <span className="material-symbols-outlined">remove</span>
         </button>
-        <button className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg mt-2">
+        <button onClick={handleReset} className="size-10 rounded-lg bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] hover:text-primary text-slate-400 flex items-center justify-center transition-colors shadow-lg mt-2">
           <span className="material-symbols-outlined">center_focus_strong</span>
         </button>
       </div>

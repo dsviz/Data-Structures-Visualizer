@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useHeader } from '../context/HeaderContext';
+import { useLayout } from '../context/LayoutContext'; // Import useLayout
 
 const Stack = () => {
     // --- State ---
@@ -8,6 +9,37 @@ const Stack = () => {
     const [inputValue, setInputValue] = useState<string>('42');
     const [message, setMessage] = useState<string>('Idle');
     const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+
+    // Zoom & Pan
+    const { isSidebarOpen } = useLayout();
+    const [scale, setScale] = useState(1);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-Resize
+    useEffect(() => {
+        if (!containerRef.current) return;
+        // Estimate height: each block is 4rem (16) + maybe gap?
+        // Actually Stack is vertical. Height matters.
+        const totalHeight = stack.length * 80 + 200; // rough
+        const availableHeight = containerRef.current.clientHeight;
+
+        if (totalHeight > availableHeight && availableHeight > 0) {
+            const newScale = Math.max(0.4, availableHeight / totalHeight);
+            if (newScale < 0.9) setScale(newScale);
+        } else {
+            setScale(1);
+        }
+    }, [stack.length, isSidebarOpen]);
+
+    const handleWheel = (e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey || true) {
+            const delta = -e.deltaY;
+            setScale(prev => {
+                const newScale = prev + (delta * 0.001);
+                return Math.min(Math.max(0.2, newScale), 3);
+            });
+        }
+    };
 
     // --- Handlers ---
     const handlePush = () => {
@@ -160,9 +192,16 @@ const Stack = () => {
 
 
                 {/* Visualization Area */}
-                <div className="flex-1 flex items-center justify-center relative">
+                <div
+                    ref={containerRef}
+                    className="flex-1 flex items-center justify-center relative overflow-hidden"
+                    onWheel={handleWheel}
+                >
                     {/* Vertical Stack Container */}
-                    <div className="flex flex-col items-center">
+                    <div
+                        className="flex flex-col items-center transition-transform duration-100 ease-out origin-center"
+                        style={{ transform: `scale(${scale})` }}
+                    >
                         <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-[0.2em] mb-4 text-center">VERTICAL STACK</h3>
 
                         <div className="relative w-48 min-h-[400px] bg-gray-100/50 dark:bg-[#1c1a32]/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-[#323055] p-4 flex flex-col-reverse justify-start items-center gap-3 transition-all">
