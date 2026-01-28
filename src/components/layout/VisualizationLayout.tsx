@@ -4,15 +4,19 @@ import { useLayout } from '../../context/LayoutContext';
 
 interface VisualizationLayoutProps {
     title: string;
-    sidebar: React.ReactNode;
+    sidebar?: React.ReactNode;          // Retro-compatible: treated as "Left" if position not set
+    leftSidebar?: React.ReactNode;      // Explicit Left
+    rightSidebar?: React.ReactNode;     // Explicit Right
     children: React.ReactNode;
     controls?: React.ReactNode;
-    sidebarPosition?: 'left' | 'right';
+    sidebarPosition?: 'left' | 'right'; // Deprecated-ish, but kept for logic
 }
 
 const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassName?: string }> = ({
     title,
     sidebar,
+    leftSidebar,
+    rightSidebar,
     children,
     controls,
     sidebarPosition = 'left',
@@ -20,13 +24,17 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
 }) => {
     const { isSidebarOpen, setIsSidebarOpen } = useLayout();
 
+    // Resolve Sidebars: 'sidebar' prop acts as Left if not specified otherwise, or follows sidebarPosition
+    const actualLeftSidebar = leftSidebar || (sidebarPosition === 'left' ? sidebar : null);
+    const actualRightSidebar = rightSidebar || (sidebarPosition === 'right' ? sidebar : null);
+
     return (
         <div className="flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Left Sidebar */}
-                {sidebarPosition === 'left' && (
+                {actualLeftSidebar && (
                     <>
                         <aside className={`flex flex-col border-r border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1c1a32]/50 z-10 shrink-0 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
                             <div className="px-6 py-4 border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
@@ -40,7 +48,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                                 </button>
                             </div>
                             <div className="p-4 flex flex-col gap-6 w-80">
-                                {sidebar}
+                                {actualLeftSidebar}
                             </div>
                         </aside>
                         {/* Expand Button (when closed) */}
@@ -73,13 +81,9 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                 </main>
 
                 {/* Right Sidebar */}
-                {sidebarPosition === 'right' && (
-                    <aside className="w-[380px] flex flex-col border-l border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1e1c33] z-10 shrink-0 overflow-y-auto shadow-2xl">
-                        {/* We can re-use the breadcrumbs header or just have the content. 
-                             The reference designs for Sorting/Trees usually have a specific header in the sidebar. 
-                             So we'll just render the sidebar content directly. 
-                         */}
-                        {sidebar}
+                {actualRightSidebar && (
+                    <aside className="w-[400px] flex flex-col border-l border-gray-200 dark:border-[#272546] bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md z-10 shrink-0 overflow-y-auto shadow-xl transition-all">
+                        {actualRightSidebar}
                     </aside>
                 )}
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useLayout } from '../context/LayoutContext';
+import { LINKED_LIST_CODE, Language } from '../data/LinkedListCode';
 
 // --- Types ---
 type Operation = 'create' | 'insert' | 'remove' | 'search' | null;
@@ -20,6 +21,8 @@ interface Frame {
     description: string;
     listType: ListType;
     pseudoLines: string[]; // Store relevant pseudocode lines for this op
+    opName: string;
+    opValues?: { [key: string]: string | number }; // For dynamic code replacement
 }
 
 // --- Constants ---
@@ -110,56 +113,85 @@ const LinkedList = () => {
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
     // Zoom & Layout
-    const { isSidebarOpen } = useLayout();
+    // const { isSidebarOpen } = useLayout(); // Moved up
     const [scale, setScale] = useState(1);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Toggle Panels
     const [showPseudocode, setShowPseudocode] = useState(false);
+    const [showRealCode, setShowRealCode] = useState(false);
+    const [codeLanguage, setCodeLanguage] = useState<Language>('java');
+
+    // Sidebar Mutual Exclusion & Auto-Resize
+    const { isSidebarOpen, setIsSidebarOpen } = useLayout();
+
+    // 1. When Code Panels Open -> Close Left Sidebar
+    useEffect(() => {
+        if (showPseudocode || showRealCode) {
+            setIsSidebarOpen(false);
+        }
+    }, [showPseudocode, showRealCode, setIsSidebarOpen]);
+
+    // 2. When Left Sidebar Opens manually -> Close Code Panels
+    // Note: We need to be careful not to create an infinite loop. 
+    // We only want to close code panels if the user *explicitly* opened the left sidebar.
+    // However, tracking "source" of change is hard. 
+    // Simple approach: reacting to state change. 
+    // If IS_OPEN became true, force others false.
+    useEffect(() => {
+        if (isSidebarOpen) {
+            setShowPseudocode(false);
+            setShowRealCode(false);
+        }
+    }, [isSidebarOpen]);
 
     const timerRef = useRef<number | null>(null);
 
     // --- Generator Helpers ---
-    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[]): Frame => ({
+    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[], opName: string, opValues?: { [key: string]: string | number }): Frame => ({
         nodes: [...nodes],
         highlights,
         pointers,
         codeLine: line,
         description: desc,
         listType,
-        pseudoLines: pLines
+        pseudoLines: pLines,
+        opName,
+        opValues
     });
 
     const generateCreateFrames = (vals: number[]) => {
+        const opName = 'create';
         const pLines = PSEUDOCODE.create;
         const frames: Frame[] = [];
         let currentNodes: number[] = [];
 
         // 0: Init
-        frames.push(createFrame([], [], [], 0, "head = null, tail = null", pLines));
+        frames.push(createFrame([], [], [], 0, "head = null, tail = null", pLines, opName));
 
         for (let i = 0; i < vals.length; i++) {
             const val = vals[i];
+            const opValues = { val };
             // 1: Loop
-            frames.push(createFrame(currentNodes, [], [], 1, `Process val: ${val}`, pLines));
+            frames.push(createFrame(currentNodes, [], [], 1, `Process val: ${val}`, pLines, opName));
 
             // 2: Create Node
-            frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 2, "v = new Node(val)", pLines));
+            frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 2, "v = new Node(val)", pLines, opName, opValues));
 
             if (currentNodes.length === 0) {
                 // 3: Head check (true)
                 currentNodes = [val];
-                frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 3, "head = v", pLines));
+                frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 3, "head = v", pLines, opName, opValues));
             } else {
                 // 4: Tail next
                 const lastIdx = currentNodes.length - 1;
-                frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 4, "tail.next = v", pLines));
+                frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 4, "tail.next = v", pLines, opName, opValues));
 
                 currentNodes = [...currentNodes, val];
             }
 
             // 5: Update Tail
-            frames.push(createFrame(currentNodes, [currentNodes.length - 1], [{ index: currentNodes.length - 1, label: 'TAIL', color: 'green' }], 5, "tail = v", pLines));
+            frames.push(createFrame(currentNodes, [currentNodes.length - 1], [{ index: currentNodes.length - 1, label: 'TAIL', color: 'green' }], 5, "tail = v", pLines, opName, opValues));
         }
 
         return { endNodes: currentNodes, timeline: frames };
@@ -177,71 +209,79 @@ const LinkedList = () => {
 
     // --- Generators with Pseudocode Mapping ---
     const generateInsertHeadFrames = (val: number) => {
+        const opName = 'insertHead';
         const pLines = PSEUDOCODE.insertHead;
+        const opValues = { val };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
-        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines));
+        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines, opName, opValues));
         const newNodes = [val, ...currentNodes];
-        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Link v.next to Head", pLines));
-        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 2, "Update Head = v", pLines));
+        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Link v.next to Head", pLines, opName, opValues));
+        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 2, "Update Head = v", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateInsertTailFrames = (val: number) => {
+        const opName = 'insertTail';
         const pLines = PSEUDOCODE.insertTail;
+        const opValues = { val };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
-        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines));
+        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines, opName, opValues));
 
         const lastIdx = currentNodes.length - 1;
         if (currentNodes.length > 0) {
-            frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 1, "Tail.next = v", pLines));
+            frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 1, "Tail.next = v", pLines, opName, opValues));
         }
 
         const newNodes = [...currentNodes, val];
-        frames.push(createFrame(newNodes, [newNodes.length - 1], [{ index: newNodes.length - 1, label: 'TAIL', color: 'green' }], 2, "Update Tail = v", pLines));
+        frames.push(createFrame(newNodes, [newNodes.length - 1], [{ index: newNodes.length - 1, label: 'TAIL', color: 'green' }], 2, "Update Tail = v", pLines, opName, opValues));
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateInsertIndexFrames = (idx: number, val: number) => {
+        const opName = 'insertIndex';
         const pLines = PSEUDOCODE.insertIndex;
+        const opValues = { val, index: idx };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
         if (idx === 0) return generateInsertHeadFrames(val);
         if (idx >= currentNodes.length) return generateInsertTailFrames(val);
 
-        frames.push(createFrame(currentNodes, [], [], 0, "Create Node v", pLines));
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines));
+        frames.push(createFrame(currentNodes, [], [], 0, "Create Node v", pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, opValues));
 
         for (let i = 0; i < idx - 1; i++) {
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `i=${i} < ${idx - 1}`, pLines));
-            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `i=${i} < ${idx - 1}`, pLines, opName, opValues));
+            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues));
         }
 
         const newNodes = [...currentNodes];
         newNodes.splice(idx, 0, val);
-        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 4, "v.next = curr.next", pLines));
-        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 5, "curr.next = v", pLines));
+        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 4, "v.next = curr.next", pLines, opName, opValues));
+        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 5, "curr.next = v", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateRemoveHeadFrames = () => {
+        const opName = 'removeHead';
         const pLines = PSEUDOCODE.removeHead;
         if (initialNodes.length === 0) return { endNodes: [], timeline: [] };
 
-        const frames = [createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 0, "Check Head", pLines)];
-        frames.push(createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Head = Head.next", pLines));
+        const frames = [createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 0, "Check Head", pLines, opName)];
+        frames.push(createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Head = Head.next", pLines, opName));
         const newNodes = initialNodes.slice(1);
-        frames.push(createFrame(newNodes, [], [], 2, "Removed old head", pLines));
+        frames.push(createFrame(newNodes, [], [], 2, "Removed old head", pLines, opName));
 
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateRemoveTailFrames = () => {
+        const opName = 'removeTail';
         const pLines = PSEUDOCODE.removeTail;
         if (initialNodes.length === 0) return { endNodes: [], timeline: [] };
         if (initialNodes.length === 1) return generateRemoveHeadFrames();
@@ -249,67 +289,71 @@ const LinkedList = () => {
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines));
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName));
 
         let curr = 0;
         while (curr < currentNodes.length - 2) {
-            frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 2, "curr.next != tail", pLines));
+            frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 2, "curr.next != tail", pLines, opName));
             curr++;
-            frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines));
+            frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName));
         }
 
-        frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 2, "curr.next == tail (Found)", pLines));
+        frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 2, "curr.next == tail (Found)", pLines, opName));
 
         const newNodes = initialNodes.slice(0, -1);
-        frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 4, "curr.next = null", pLines));
-        frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 5, "tail = curr", pLines));
+        frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 4, "curr.next = null", pLines, opName));
+        frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 5, "tail = curr", pLines, opName));
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateRemoveIndexFrames = (idx: number) => {
+        const opName = 'removeIndex';
         const pLines = PSEUDOCODE.removeIndex;
+        const opValues = { index: idx };
         if (idx === 0) return generateRemoveHeadFrames();
         if (idx >= initialNodes.length - 1) return generateRemoveTailFrames();
 
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines));
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines, opName, opValues));
 
         for (let i = 0; i < idx - 1; i++) {
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, `i=${i} < ${idx - 1}`, pLines));
-            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 2, "curr = curr.next", pLines));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, `i=${i} < ${idx - 1}`, pLines, opName, opValues));
+            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 2, "curr = curr.next", pLines, opName, opValues));
         }
 
         const newNodes = [...initialNodes];
         newNodes.splice(idx, 1);
-        frames.push(createFrame(newNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 3, "curr.next = curr.next.next", pLines));
+        frames.push(createFrame(newNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 3, "curr.next = curr.next.next", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
     };
 
     const generateSearchFrames = (target: number) => {
+        const opName = 'search';
         const pLines = PSEUDOCODE.search;
+        const opValues = { target };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines));
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines, opName, opValues));
 
         for (let i = 0; i < currentNodes.length; i++) {
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, "while curr != null", pLines));
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `val ${currentNodes[i]} == ${target}?`, pLines));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, "while curr != null", pLines, opName, opValues));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `val ${currentNodes[i]} == ${target}?`, pLines, opName, opValues));
 
             if (currentNodes[i] === target) {
-                return { endNodes: currentNodes, timeline: [...frames, createFrame(currentNodes, [i], [{ index: i, label: 'FOUND', color: 'green' }], 1, "Found match", pLines)] };
+                return { endNodes: currentNodes, timeline: [...frames, createFrame(currentNodes, [i], [{ index: i, label: 'FOUND', color: 'green' }], 1, "Found match", pLines, opName, opValues)] };
             }
 
             if (i < currentNodes.length - 1) {
-                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines));
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues));
             }
         }
 
-        frames.push(createFrame(currentNodes, [], [], 1, "while curr == null", pLines));
-        frames.push(createFrame(currentNodes, [], [], 4, "return false", pLines));
+        frames.push(createFrame(currentNodes, [], [], 1, "while curr == null", pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [], [], 4, "return false", pLines, opName, opValues));
         return { endNodes: currentNodes, timeline: frames };
     };
 
@@ -383,17 +427,28 @@ const LinkedList = () => {
     // --- Effects & Drag ---
     useEffect(() => {
         if (!containerRef.current) return;
+        // Recalculate based on current visible space
         const totalWidth = initialNodes.length * 150;
-        const available = containerRef.current.clientWidth - 20;
+        // We use a timeout to let the layout transition finish before measuring
+        const timer = setTimeout(() => {
+            if (!containerRef.current) return;
+            const available = containerRef.current.clientWidth - 40; // 40px padding
 
-        // Auto-resize logic
-        if (totalWidth > available) {
-            const newScale = Math.max(0.5, available / totalWidth);
-            if (newScale < 1) setScale(newScale * 0.9);
-        } else {
-            setScale(1);
-        }
-    }, [initialNodes.length, isSidebarOpen]);
+            // Auto-resize logic: always maximize space utilization
+            let newScale = 0.75; // Default to 75% as requested
+            if (totalWidth > available) {
+                // Shrink to fit, but cap at 75% max
+                newScale = Math.min(0.75, available / totalWidth);
+            } else {
+                newScale = 0.75;
+            }
+            // Apply slight padding scale if needed, but 0.6 is already small.
+
+            setScale(newScale);
+        }, 300); // 300ms matches sidebar transition duration
+
+        return () => clearTimeout(timer);
+    }, [initialNodes.length, isSidebarOpen, showPseudocode, showRealCode]);
 
     useEffect(() => {
         if (isPlaying && frames.length > 0) {
@@ -422,12 +477,152 @@ const LinkedList = () => {
 
 
 
-    const currentFrame = frames[currentStep] || { nodes: initialNodes, highlights: [], pointers: [], codeLine: -1, description: "Ready", listType, pseudoLines: [] };
+    const currentFrame = frames[currentStep] || { nodes: initialNodes, highlights: [], pointers: [], codeLine: -1, description: "Ready", listType, pseudoLines: [], opName: '', opValues: {} };
+
+    const rightSidebarContent = (showPseudocode || showRealCode) ? (
+        <div className="flex flex-col h-full bg-white dark:bg-[#1e1c33]">
+            {/* Pseudocode Panel */}
+            {showPseudocode && (
+                <div className={`flex-1 flex flex-col min-h-0 ${showRealCode ? 'border-b border-gray-200 dark:border-[#272546]' : ''}`}>
+                    <div className="px-4 py-3 bg-gray-50/50 dark:bg-black/20 border-b border-gray-100 dark:border-[#272546] flex justify-between items-center shrink-0">
+                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">code</span>
+                            Pseudocode
+                        </span>
+                        <button onClick={() => setShowPseudocode(false)} className="text-gray-400 hover:text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
+                    </div>
+                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 overflow-y-auto">
+                        <div className="space-y-1">
+                            {currentFrame.pseudoLines.length > 0 ? currentFrame.pseudoLines.map((line, idx) => (
+                                <div key={idx} className={`px-2 py-1.5 rounded-sm border-l-2 transition-all ${idx === currentFrame.codeLine ? 'bg-primary/10 text-primary dark:text-white border-primary font-bold shadow-sm' : 'border-transparent opacity-80'}`}>
+                                    <span className="mr-3 select-none opacity-50">{idx}</span>
+                                    {line}
+                                </div>
+                            )) : <span className="text-gray-500 italic px-2">No operation selected...</span>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Real Code Panel */}
+            {showRealCode && (
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="px-4 py-3 bg-gray-50/50 dark:bg-black/20 border-b border-gray-100 dark:border-[#272546] flex flex-col gap-3 shrink-0">
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] flex items-center gap-2">
+                                <span className="material-symbols-outlined text-sm">terminal</span>
+                                Implementation
+                            </span>
+                            <button onClick={() => setShowRealCode(false)} className="text-gray-400 hover:text-red-500"><span className="material-symbols-outlined text-sm">close</span></button>
+                        </div>
+                        {/* Improved Language Selector */}
+                        <div className="flex p-1 bg-gray-100 dark:bg-[#151426] rounded-lg">
+                            {(['c', 'cpp', 'java', 'python'] as Language[]).map(lang => (
+                                <button
+                                    key={lang}
+                                    onClick={() => setCodeLanguage(lang)}
+                                    className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all duration-200 ${codeLanguage === lang
+                                        ? 'bg-white dark:bg-[#272546] text-primary shadow-sm scale-100'
+                                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-white/5'
+                                        }`}
+                                >
+                                    {lang === 'c' ? 'C' : lang === 'cpp' ? 'C++' : lang === 'java' ? 'Java' : 'Python'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 overflow-y-auto">
+                        <div className="space-y-0.5">
+                            {(() => {
+                                if (!currentFrame.opName || !LINKED_LIST_CODE[currentFrame.opName]) {
+                                    return <span className="text-gray-500 italic px-2">No code available.</span>;
+                                }
+                                const codeData = LINKED_LIST_CODE[currentFrame.opName][codeLanguage];
+                                const activeLines = codeData.mapping[currentFrame.codeLine];
+                                const activeLineIndices = Array.isArray(activeLines) ? activeLines : (activeLines !== undefined ? [activeLines] : []);
+
+                                return codeData.lines.map((lineRaw, idx) => {
+                                    // 🚀 Dynamic Value Replacement
+                                    let line = lineRaw;
+                                    if (currentFrame.opValues) {
+                                        Object.entries(currentFrame.opValues).forEach(([key, val]) => {
+                                            line = line.replace(new RegExp(`\\b${key}\\b`, 'g'), String(val));
+                                        });
+                                    }
+
+                                    return (
+                                        <div key={idx} className={`px-2 py-1 -mx-2 rounded flex gap-3 transition-colors duration-200 ${activeLineIndices.includes(idx) ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}>
+                                            <span className="text-gray-300 dark:text-gray-600 select-none w-4 text-right">{idx + 1}</span>
+                                            <span className="whitespace-pre">{line}</span>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    ) : null;
+
+    const playbackControls = (
+        <div className="w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md z-30 relative">
+            {/* Playback Buttons */}
+            <div className="flex items-center gap-4">
+                <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
+                <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+
+                <button
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className={`size-12 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'}`}
+                >
+                    <span className="material-symbols-outlined text-[28px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                </button>
+
+                <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
+                <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
+            </div>
+
+            {/* Timeline / Scrub Bar */}
+            <div className="flex-1 flex flex-col gap-2">
+                <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+                    <span>Step {currentStep + 1}/{frames.length || 1}</span>
+                    <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
+                </div>
+                <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
+                    onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const pct = (e.clientX - rect.left) / rect.width;
+                        setCurrentStep(Math.floor(pct * (frames.length - 1)));
+                    }}
+                >
+                    <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
+                </div>
+            </div>
+
+            {/* Speed Control */}
+            <div className="flex items-center gap-3 w-40 pl-6 border-l border-gray-200 dark:border-[#272546]">
+                <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+                <input
+                    type="range"
+                    min="0.5"
+                    max="3"
+                    step="0.5"
+                    value={playbackSpeed}
+                    onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                    className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
+            </div>
+        </div>
+    );
 
     return (
         <VisualizationLayout
             title="Linked List"
             contentClassName="flex-1 flex flex-col relative z-10 overflow-hidden"
+            rightSidebar={rightSidebarContent}
+            controls={playbackControls} // Pass controls here to fix overlap
             sidebar={
                 <div className="flex flex-col gap-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
@@ -532,8 +727,8 @@ const LinkedList = () => {
                 </div>
             }
         >
-            {/* List Type Toggle - Floating Top */}
-            <div className="absolute top-8 left-8 z-30 flex gap-2">
+            {/* List Type Toggle - Floating Top Center */}
+            <div className={`absolute top-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {(['singly', 'doubly', 'circular'] as const).map(t => (
                     <button key={t} onClick={() => setListType(t)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase backdrop-blur-md border transition-all ${listType === t ? 'bg-primary text-white border-primary' : 'bg-white/10 border-white/10 text-gray-400 hover:bg-white/20'}`}>
                         {t}
@@ -612,82 +807,33 @@ const LinkedList = () => {
                     <button
                         onClick={() => setShowPseudocode(prev => !prev)}
                         className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showPseudocode
-                                ? 'bg-primary text-white border-primary'
-                                : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
                             }`}
                         title="Pseudocode"
                     >
                         <span className="material-symbols-outlined text-[20px]">code</span>
                     </button>
-                </div>
-            </div>
-
-            {/* Pseudocode Panel (Fixed) */}
-            {showPseudocode && (
-                <div className="absolute top-20 right-6 w-80 backdrop-blur-xl bg-white/90 dark:bg-[#1c1a32]/90 border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 z-20">
-                    <div className="bg-gray-50/50 dark:bg-white/5 px-4 py-2 border-b border-gray-200 dark:border-white/5 flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Pseudocode</span>
-                    </div>
-                    <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                        {currentFrame.pseudoLines.length > 0 ? currentFrame.pseudoLines.map((line, idx) => (
-                            <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
-                                {idx}. {line}
-                            </p>
-                        )) : <span className="text-gray-500 italic">Select an operation...</span>}
-                    </div>
-                </div>
-            )}
-
-            {/* Fixed Bottom Playback Controls */}
-            <div className={`fixed bottom-0 right-0 ${isSidebarOpen ? 'left-80' : 'left-0'} bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 z-50 flex items-center justify-between gap-8 h-20 transition-all duration-300`}>
-                {/* Playback Buttons */}
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
-                    <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
-
                     <button
-                        onClick={() => setIsPlaying(!isPlaying)}
-                        className={`size-12 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'}`}
+                        onClick={() => setShowRealCode(prev => !prev)}
+                        className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showRealCode
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
+                            }`}
+                        title="Real Code"
                     >
-                        <span className="material-symbols-outlined text-[28px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                        <span className="material-symbols-outlined text-[20px]">terminal</span>
                     </button>
-
-                    <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
-                    <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
-                </div>
-
-                {/* Timeline / Scrub Bar */}
-                <div className="flex-1 flex flex-col gap-2">
-                    <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
-                        <span>Step {currentStep + 1}/{frames.length || 1}</span>
-                        <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const pct = (e.clientX - rect.left) / rect.width;
-                            setCurrentStep(Math.floor(pct * (frames.length - 1)));
-                        }}
-                    >
-                        <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
-                    </div>
-                </div>
-
-                {/* Speed Control */}
-                <div className="flex items-center gap-3 w-40 pl-6 border-l border-gray-200 dark:border-[#272546]">
-                    <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
-                    <input
-                        type="range"
-                        min="0.5"
-                        max="3"
-                        step="0.5"
-                        value={playbackSpeed}
-                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                    <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
                 </div>
             </div>
+
+            {/* Pseudocode Panel (Removed from absolute - moved to Sidebar) */}
+
+            {/* Real Code Panel (Removed from absolute - moved to Sidebar) */}
+
+
+            {/* Fixed Bottom Playback Controls removed (Moved to playbackControls variable) */}
+
         </VisualizationLayout>
     );
 };
