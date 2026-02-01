@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, _password: string) => {
         // Mock login
         return new Promise<void>((resolve) => {
             setTimeout(() => {
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    const signup = async (name: string, email: string, password: string) => {
+    const signup = async (name: string, email: string, _password: string) => {
         // Mock signup
         return new Promise<void>((resolve) => {
             setTimeout(() => {
