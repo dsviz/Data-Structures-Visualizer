@@ -34,12 +34,12 @@ const Home = () => {
                 className="peer sr-only"
                 name="mode"
                 type="radio"
-                checked={mode === 'training'}
-                onChange={() => setMode('training')}
+                checked={mode === 'visualizer'}
+                onChange={() => setMode('visualizer')}
               />
               <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">school</span>
-                Training Mode
+                <span className="material-symbols-outlined text-[20px]">visibility</span>
+                Visualizer Mode
               </div>
             </label>
             <label className="cursor-pointer relative">
@@ -47,12 +47,12 @@ const Home = () => {
                 className="peer sr-only"
                 name="mode"
                 type="radio"
-                checked={mode === 'visualizer'}
-                onChange={() => setMode('visualizer')}
+                checked={mode === 'training'}
+                onChange={() => setMode('training')}
               />
               <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">visibility</span>
-                Visualizer Mode
+                <span className="material-symbols-outlined text-[20px]">school</span>
+                Training Mode
               </div>
             </label>
           </div>

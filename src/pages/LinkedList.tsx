@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useLayout } from '../context/LayoutContext';
+
 import { LINKED_LIST_CODE, Language } from '../data/LinkedListCode';
 
 // --- Types ---
@@ -13,6 +14,27 @@ interface Pointer {
     color: string;
 }
 
+interface TempNode {
+    id: string | number;
+    val: number;
+    label: string;
+    color?: string;
+    // Position logic:
+    // 'left-of-head': -1 index position
+    // 'right-of-tail': length index position
+    // 'above-at-index': at index, but Y offset -80px
+    position: 'left-of-head' | 'right-of-tail' | 'above-at-index';
+    offsetIndex?: number;
+}
+
+interface TempArrow {
+    from: 'temp' | number; // 'temp' refers to the unique temp node (simplification), or index in main list
+    to: 'temp' | number | 'null'; // target index, temp node, or null
+    label?: string;
+    curved?: boolean;
+    color?: string;
+}
+
 interface Frame {
     nodes: number[];
     highlights: number[];
@@ -23,132 +45,119 @@ interface Frame {
     pseudoLines: string[]; // Store relevant pseudocode lines for this op
     opName: string;
     opValues?: { [key: string]: string | number }; // For dynamic code replacement
+    tempNodes?: TempNode[];
+    tempArrows?: TempArrow[];
 }
 
 // --- Constants ---
 const MAX_NODES = 20;
 const DEFAULT_NODES = [12, 45, 99];
-
 const PSEUDOCODE = {
+    create: [
+        "head = null, tail = null",
+        "for (val in values):",
+        "  v = new Node(val)",
+        "  if (head == null) head = v",
+        "  else tail.next = v",
+        "  tail = v"
+    ],
     insertHead: [
-        "Vertex v = new Vertex(val)",
+        "v = new Node(val)",
         "v.next = head",
-        "head = v",
-        "if tail == null then tail = v"
+        "head = v"
     ],
     insertTail: [
-        "Vertex v = new Vertex(val)",
-        "if tail != null then tail.next = v",
+        "v = new Node(val)",
+        "if (tail != null) tail.next = v",
         "tail = v",
-        "if head == null then head = v"
+        "if (head == null) head = v"
     ],
     insertIndex: [
-        "Vertex v = new Vertex(val)",
+        "v = new Node(val)",
         "curr = head",
-        "for (i = 0; i < index - 1; i++)",
-        "  curr = curr.next",
+        "for (i=0; i<index-1; i++) curr = curr.next",
         "v.next = curr.next",
         "curr.next = v"
     ],
     removeHead: [
-        "if head == null return",
+        "if (head == null) return",
         "head = head.next",
-        "if head == null then tail = null"
+        "if (head == null) tail = null"
     ],
     removeTail: [
-        "if head == null return",
         "curr = head",
-        "while (curr.next != tail)",
-        "  curr = curr.next",
+        "while (curr.next != tail) curr = curr.next",
         "curr.next = null",
         "tail = curr"
     ],
     removeIndex: [
         "curr = head",
-        "for (i = 0; i < index - 1; i++)",
-        "  curr = curr.next",
+        "for (i=0; i<index-1; i++) curr = curr.next",
         "curr.next = curr.next.next"
-    ],
-    create: [
-        "head = null, tail = null",
-        "for each val in input:",
-        "  v = new Node(val)",
-        "  if head == null: head = v",
-        "  else: tail.next = v",
-        "  tail = v"
     ],
     search: [
         "curr = head",
-        "while curr != null:",
-        "  if curr.val == target return true",
+        "while (curr != null)",
+        "  if (curr.val == target) return true",
         "  curr = curr.next",
         "return false"
     ]
 };
 
-const LinkedList = () => {
+export default function LinkedList() {
     // --- State ---
-    const [initialNodes, setInitialNodes] = useState<number[]>(DEFAULT_NODES);
-    const [listType, setListType] = useState<ListType>('singly');
-    const [activeOp, setActiveOp] = useState<Operation>(null);
-    const [error, setError] = useState<string | null>(null);
-
-    // Inputs
-    const [createInput, setCreateInput] = useState(DEFAULT_NODES.join(', '));
-    const [createStep, setCreateStep] = useState<'size' | 'values'>('size');
-    const [createSize, setCreateSize] = useState('3');
-
-    const [inputValue, setInputValue] = useState('42');
-    const [inputIndex, setInputIndex] = useState('0');
-
-    // Playback State
     const [frames, setFrames] = useState<Frame[]>([]);
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
+    const [initialNodes, setInitialNodes] = useState<number[]>(DEFAULT_NODES);
+    const [listType, setListType] = useState<ListType>('singly');
+    const [activeOp, setActiveOp] = useState<Operation>(null);
+    const [createInput, setCreateInput] = useState('');
+    const [createStep, setCreateStep] = useState<'size' | 'values'>('size');
+    const [createSize, setCreateSize] = useState('5');
+    const [inputValue, setInputValue] = useState('');
+    const [inputIndex, setInputIndex] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
-    // Canvas State
+    // Canvas state
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
-    // Zoom & Layout
-    // const { isSidebarOpen } = useLayout(); // Moved up
-    const [scale, setScale] = useState(1);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    // Toggle Panels
+    // Sidebar state
+    // Sidebar state
+    const { setIsSidebarOpen, setIsNavbarVisible } = useLayout();
     const [showPseudocode, setShowPseudocode] = useState(false);
     const [showRealCode, setShowRealCode] = useState(false);
-    const [codeLanguage, setCodeLanguage] = useState<Language>('java');
+    const [isFullMode, setIsFullMode] = useState(false);
+    const [codeLanguage, setCodeLanguage] = useState<Language>('python');
+    const timerRef = useRef<number | null>(null);
 
-    // Sidebar Mutual Exclusion & Auto-Resize
-    const { isSidebarOpen, setIsSidebarOpen } = useLayout();
-
-    // 1. When Code Panels Open -> Close Left Sidebar
+    // Mutual Exclusivity: If Code is Open -> Left Closed. If Code is Closed -> Left Open.
     useEffect(() => {
         if (showPseudocode || showRealCode) {
             setIsSidebarOpen(false);
+        } else {
+            setIsSidebarOpen(true);
         }
     }, [showPseudocode, showRealCode, setIsSidebarOpen]);
 
-    // 2. When Left Sidebar Opens manually -> Close Code Panels
-    // Note: We need to be careful not to create an infinite loop. 
-    // We only want to close code panels if the user *explicitly* opened the left sidebar.
-    // However, tracking "source" of change is hard. 
-    // Simple approach: reacting to state change. 
-    // If IS_OPEN became true, force others false.
-    useEffect(() => {
-        if (isSidebarOpen) {
-            setShowPseudocode(false);
-            setShowRealCode(false);
-        }
-    }, [isSidebarOpen]);
+    // Toggle Helpers
+    const togglePseudocode = () => {
+        if (!showPseudocode) setShowRealCode(false);
+        setShowPseudocode(prev => !prev);
+    };
 
-    const timerRef = useRef<number | null>(null);
+    const toggleRealCode = () => {
+        if (!showRealCode) setShowPseudocode(false);
+        setShowRealCode(prev => !prev);
+    };
 
     // --- Generator Helpers ---
-    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[], opName: string, opValues?: { [key: string]: string | number }): Frame => ({
+    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[], opName: string, opValues?: { [key: string]: string | number }, tempNodes: TempNode[] = [], tempArrows: TempArrow[] = []): Frame => ({
         nodes: [...nodes],
         highlights,
         pointers,
@@ -157,7 +166,9 @@ const LinkedList = () => {
         listType,
         pseudoLines: pLines,
         opName,
-        opValues
+        opValues,
+        tempNodes,
+        tempArrows
     });
 
     const generateCreateFrames = (vals: number[]) => {
@@ -215,9 +226,18 @@ const LinkedList = () => {
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
 
-        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [], [], 0, `Create node ${val}`, pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'left-of-head', id: 'new' }]
+        ));
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Link v.next to Head", pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'left-of-head', id: 'new' }],
+            [{ from: 'temp', to: 0, color: 'blue', label: 'next' }]
+        ));
+
         const newNodes = [val, ...currentNodes];
-        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Link v.next to Head", pLines, opName, opValues));
+        frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 0, "Update Head = v", pLines, opName, opValues)); // Line 0 highlight? Wait, line 2 is head=v
+
         frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 2, "Update Head = v", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
@@ -229,11 +249,17 @@ const LinkedList = () => {
         const opValues = { val };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
-        frames.push(createFrame(currentNodes, [], [{ index: -1, label: `New(${val})`, color: 'blue' }], 0, `Create node ${val}`, pLines, opName, opValues));
+
+        frames.push(createFrame(currentNodes, [], [], 0, `Create node ${val}`, pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'green', position: 'right-of-tail', id: 'new' }]
+        ));
 
         const lastIdx = currentNodes.length - 1;
         if (currentNodes.length > 0) {
-            frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 1, "Tail.next = v", pLines, opName, opValues));
+            frames.push(createFrame(currentNodes, [lastIdx], [{ index: lastIdx, label: 'TAIL', color: 'green' }], 1, "Tail.next = v", pLines, opName, opValues,
+                [{ val, label: 'NEW', color: 'green', position: 'right-of-tail', id: 'new' }],
+                [{ from: lastIdx, to: 'temp', color: 'green' }]
+            ));
         }
 
         const newNodes = [...currentNodes, val];
@@ -251,18 +277,38 @@ const LinkedList = () => {
         if (idx === 0) return generateInsertHeadFrames(val);
         if (idx >= currentNodes.length) return generateInsertTailFrames(val);
 
-        frames.push(createFrame(currentNodes, [], [], 0, "Create Node v", pLines, opName, opValues));
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [], [], 0, "Create Node v", pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }]
+        ));
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }]
+        ));
 
         for (let i = 0; i < idx - 1; i++) {
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `i=${i} < ${idx - 1}`, pLines, opName, opValues));
-            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `i=${i} < ${idx - 1}`, pLines, opName, opValues,
+                [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }]
+            ));
+            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues,
+                [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }]
+            ));
         }
+
+        // Link v.next -> curr.next
+        frames.push(createFrame(currentNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 4, "v.next = curr.next", pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }],
+            [{ from: 'temp', to: idx, color: 'blue' }]
+        ));
+
+        // Link curr.next -> v
+        frames.push(createFrame(currentNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 5, "curr.next = v", pLines, opName, opValues,
+            [{ val, label: 'NEW', color: 'blue', position: 'above-at-index', offsetIndex: idx, id: 'new' }],
+            [{ from: 'temp', to: idx, color: 'blue' }, { from: idx - 1, to: 'temp', color: 'primary' }]
+        ));
 
         const newNodes = [...currentNodes];
         newNodes.splice(idx, 0, val);
-        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 4, "v.next = curr.next", pLines, opName, opValues));
-        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 5, "curr.next = v", pLines, opName, opValues));
+        frames.push(createFrame(newNodes, [idx], [{ index: idx - 1, label: 'CURR', color: 'primary' }, { index: idx, label: 'NEW', color: 'blue' }], 5, "Done", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
     };
@@ -273,7 +319,8 @@ const LinkedList = () => {
         if (initialNodes.length === 0) return { endNodes: [], timeline: [] };
 
         const frames = [createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 0, "Check Head", pLines, opName)];
-        frames.push(createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Head = Head.next", pLines, opName));
+        frames.push(createFrame(initialNodes, [0], [{ index: 0, label: 'HEAD', color: 'red' }], 1, "Head = Head.next", pLines, opName, {}, [], [{ from: 'temp', to: 1, color: 'red', curved: true, label: 'skip' }])); // abstract
+
         const newNodes = initialNodes.slice(1);
         frames.push(createFrame(newNodes, [], [], 2, "Removed old head", pLines, opName));
 
@@ -301,7 +348,8 @@ const LinkedList = () => {
         frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'CURR', color: 'primary' }], 2, "curr.next == tail (Found)", pLines, opName));
 
         const newNodes = initialNodes.slice(0, -1);
-        frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 4, "curr.next = null", pLines, opName));
+        frames.push(createFrame(currentNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 4, "curr.next = null", pLines, opName, {}, [], [{ from: curr, to: 'null', color: 'red' }]));
+
         frames.push(createFrame(newNodes, [curr], [{ index: curr, label: 'TAIL', color: 'green' }], 5, "tail = curr", pLines, opName));
         return { endNodes: newNodes, timeline: frames };
     };
@@ -323,9 +371,16 @@ const LinkedList = () => {
             frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 2, "curr = curr.next", pLines, opName, opValues));
         }
 
+        // Bypass
+        frames.push(createFrame(currentNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 3, "curr.next = curr.next.next", pLines, opName, opValues,
+            [],
+            [{ from: idx - 1, to: idx + 1, color: 'red', curved: true }]
+        ));
+
         const newNodes = [...initialNodes];
         newNodes.splice(idx, 1);
-        frames.push(createFrame(newNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 3, "curr.next = curr.next.next", pLines, opName, opValues));
+
+        frames.push(createFrame(newNodes, [idx - 1], [{ index: idx - 1, label: 'CURR', color: 'primary' }], 3, "Removed Node", pLines, opName, opValues));
 
         return { endNodes: newNodes, timeline: frames };
     };
@@ -426,6 +481,26 @@ const LinkedList = () => {
 
     // --- Effects & Drag ---
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) {
+                e.preventDefault();
+                setIsFullMode(prev => !prev);
+            }
+            if (e.key === 'Escape' && isFullMode) {
+                setIsFullMode(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullMode]);
+
+    // Manage Navbar Visibility
+    useEffect(() => {
+        setIsNavbarVisible(!isFullMode);
+        return () => setIsNavbarVisible(true);
+    }, [isFullMode, setIsNavbarVisible]);
+
+    useEffect(() => {
         if (!containerRef.current) return;
         // Recalculate based on current visible space
         const totalWidth = initialNodes.length * 150;
@@ -448,7 +523,7 @@ const LinkedList = () => {
         }, 300); // 300ms matches sidebar transition duration
 
         return () => clearTimeout(timer);
-    }, [initialNodes.length, isSidebarOpen, showPseudocode, showRealCode]);
+    }, [initialNodes.length, showPseudocode, showRealCode, isFullMode]);
 
     useEffect(() => {
         if (isPlaying && frames.length > 0) {
@@ -480,10 +555,10 @@ const LinkedList = () => {
     const currentFrame = frames[currentStep] || { nodes: initialNodes, highlights: [], pointers: [], codeLine: -1, description: "Ready", listType, pseudoLines: [], opName: '', opValues: {} };
 
     const rightSidebarContent = (showPseudocode || showRealCode) ? (
-        <div className="flex flex-col h-full bg-white dark:bg-[#1e1c33]">
+        <div className="flex flex-col h-full bg-white dark:bg-[#1e1c33] border-l border-gray-200 dark:border-[#272546]">
             {/* Pseudocode Panel */}
             {showPseudocode && (
-                <div className={`flex-1 flex flex-col min-h-0 ${showRealCode ? 'border-b border-gray-200 dark:border-[#272546]' : ''}`}>
+                <div className="flex-1 flex flex-col min-h-0">
                     <div className="px-4 py-3 bg-gray-50/50 dark:bg-black/20 border-b border-gray-100 dark:border-[#272546] flex justify-between items-center shrink-0">
                         <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] flex items-center gap-2">
                             <span className="material-symbols-outlined text-sm">code</span>
@@ -566,52 +641,66 @@ const LinkedList = () => {
     ) : null;
 
     const playbackControls = (
-        <div className="w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md z-30 relative">
+        <div className={`transition-all duration-300 z-30 ${isFullMode
+            ? 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#131221]/90 backdrop-blur-md rounded-full shadow-2xl border border-gray-200 dark:border-[#272546] px-6 py-2 flex items-center gap-6'
+            : 'w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md relative'
+            }`}>
             {/* Playback Buttons */}
-            <div className="flex items-center gap-4">
-                <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
-                <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+            <div className={`flex items-center ${isFullMode ? 'gap-2' : 'gap-4'}`}>
+                <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className={`material-symbols-outlined ${isFullMode ? 'text-[20px]' : 'text-[24px]'}`}>skip_previous</span></button>
+                <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className={`material-symbols-outlined ${isFullMode ? 'text-[24px]' : 'text-[28px]'}`}>fast_rewind</span></button>
 
                 <button
                     onClick={() => setIsPlaying(!isPlaying)}
-                    className={`size-12 rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'}`}
+                    className={`rounded-full flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-primary' : 'bg-primary'} ${isFullMode ? 'size-10' : 'size-12'}`}
                 >
-                    <span className="material-symbols-outlined text-[28px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                    <span className={`material-symbols-outlined filled ${isFullMode ? 'text-[24px]' : 'text-[28px]'}`}>{isPlaying ? 'pause' : 'play_arrow'}</span>
                 </button>
 
-                <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
-                <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
+                <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className={`material-symbols-outlined ${isFullMode ? 'text-[24px]' : 'text-[28px]'}`}>fast_forward</span></button>
+                <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className={`material-symbols-outlined ${isFullMode ? 'text-[20px]' : 'text-[24px]'}`}>skip_next</span></button>
             </div>
 
-            {/* Timeline / Scrub Bar */}
-            <div className="flex-1 flex flex-col gap-2">
-                <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
-                    <span>Step {currentStep + 1}/{frames.length || 1}</span>
-                    <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
+            {/* Timeline (Hidden in minimal mode or simplified?) -> Let's keep it but smaller */}
+            {!isFullMode && (
+                <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+                        <span>Step {currentStep + 1}/{frames.length || 1}</span>
+                        <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
+                        onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const pct = (e.clientX - rect.left) / rect.width;
+                            setCurrentStep(Math.floor(pct * (frames.length - 1)));
+                        }}
+                    >
+                        <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
+                    </div>
                 </div>
-                <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer group"
-                    onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const pct = (e.clientX - rect.left) / rect.width;
-                        setCurrentStep(Math.floor(pct * (frames.length - 1)));
-                    }}
-                >
-                    <div className="h-full bg-primary relative rounded-full transition-all duration-100 ease-out" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
-                </div>
-            </div>
+            )}
 
-            {/* Speed Control */}
-            <div className="flex items-center gap-3 w-40 pl-6 border-l border-gray-200 dark:border-[#272546]">
+            {/* Simple Step Counter for Minimal Mode */}
+            {isFullMode && (
+                <div className="text-xs font-mono text-gray-400 w-16 text-center">
+                    {currentStep + 1}/{frames.length || 1}
+                </div>
+            )}
+
+            {/* Speed Control (Keep in both but compact in minimal) */}
+            <div className={`flex items-center gap-3 border-l border-gray-200 dark:border-[#272546] ${isFullMode ? 'pl-4 w-auto' : 'w-40 pl-6'}`}>
                 <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
-                <input
-                    type="range"
-                    min="0.5"
-                    max="3"
-                    step="0.5"
-                    value={playbackSpeed}
-                    onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
-                />
+                {!isFullMode && (
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.5"
+                        value={playbackSpeed}
+                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                )}
                 <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
             </div>
         </div>
@@ -621,9 +710,9 @@ const LinkedList = () => {
         <VisualizationLayout
             title="Linked List"
             contentClassName="flex-1 flex flex-col relative z-10 overflow-hidden"
-            rightSidebar={rightSidebarContent}
-            controls={playbackControls} // Pass controls here to fix overlap
-            sidebar={
+            rightSidebar={rightSidebarContent} // Always pass right sidebar (it returns null internally if closed)
+            controls={playbackControls} // Always pass controls
+            sidebar={ // Left sidebar: Visible if Open (Full Mode allowed)
                 <div className="flex flex-col gap-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
 
@@ -726,15 +815,20 @@ const LinkedList = () => {
                     </div>
                 </div>
             }
+            leftSidebar={null}
         >
             {/* List Type Toggle - Floating Top Center */}
-            <div className={`absolute top-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-                {(['singly', 'doubly', 'circular'] as const).map(t => (
-                    <button key={t} onClick={() => setListType(t)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase backdrop-blur-md border transition-all ${listType === t ? 'bg-primary text-white border-primary' : 'bg-white/10 border-white/10 text-gray-400 hover:bg-white/20'}`}>
-                        {t}
-                    </button>
-                ))}
-            </div>
+            {
+                !isFullMode && (
+                    <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 flex gap-2 transition-opacity duration-300">
+                        {(['singly', 'doubly', 'circular'] as const).map(t => (
+                            <button key={t} onClick={() => setListType(t)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase backdrop-blur-md border transition-all ${listType === t ? 'bg-primary text-white border-primary' : 'bg-white/10 border-white/10 text-gray-400 hover:bg-white/20'}`}>
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                )
+            }
 
             {/* Canvas */}
             <div ref={containerRef} className={`flex-1 relative overflow-hidden flex flex-col items-center justify-center bg-gray-50/50 dark:bg-black/20 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -746,7 +840,7 @@ const LinkedList = () => {
                 onWheel={handleWheel}
             >
                 <div className="flex items-center transition-transform duration-100 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}>
-                    {currentFrame.nodes.length === 0 ? <div className="opacity-30 text-2xl font-bold uppercase">Empty List</div> : (
+                    {currentFrame.nodes.length === 0 && (!currentFrame.tempNodes || currentFrame.tempNodes.length === 0) ? <div className="opacity-30 text-2xl font-bold uppercase">Empty List</div> : (
                         currentFrame.nodes.map((val, i) => {
                             const isHighlight = currentFrame.highlights.includes(i);
                             let nodePointers = currentFrame.pointers.filter(p => p.index === i);
@@ -791,21 +885,99 @@ const LinkedList = () => {
                             );
                         })
                     )}
+                    {/* Temp Nodes */}
+                    {currentFrame.tempNodes?.map((node, i) => {
+                        let left = 0;
+                        let top = 0;
+                        const NODE_WIDTH = 112;
+                        const GAP = 64;
+                        const TOTAL_WIDTH = NODE_WIDTH + GAP;
+
+                        // Simple offset logic assuming 0 is standard start
+                        if (node.position === 'left-of-head') left = -TOTAL_WIDTH;
+                        else if (node.position === 'right-of-tail') left = currentFrame.nodes.length * TOTAL_WIDTH;
+                        else if (node.position === 'above-at-index') {
+                            left = (node.offsetIndex || 0) * TOTAL_WIDTH;
+                            top = -100;
+                        }
+
+                        return (
+                            <div key={`temp-${i}`} className="absolute top-0 flex items-center z-20 transition-all duration-500 ease-out" style={{ left: `${left}px`, transform: `translateY(${top}px)` }}>
+                                <div className="relative">
+                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2"><div className="px-2 py-0.5 rounded text-[10px] font-bold uppercase shadow-sm whitespace-nowrap bg-blue-500 text-white">{node.label}</div></div>
+                                    <div className="w-28 h-12 rounded-lg border-2 flex items-center justify-center text-xl font-bold font-mono shadow-xl border-blue-500 bg-blue-500/10 text-blue-500">
+                                        {node.val}
+                                        <div className="absolute right-0 h-full w-8 border-l border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-900/10 flex items-center justify-center"><div className="size-2 rounded-full bg-blue-400"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+
                     {listType !== 'circular' && currentFrame.nodes.length > 0 && (
                         <div className="ml-2 flex items-center gap-1 opacity-50">
                             <div className="w-8 h-[2px] bg-gray-400"></div>
                             <div className="px-2 py-1 text-xs font-bold text-gray-400 border border-dashed border-gray-300 dark:border-white/10 rounded bg-gray-50 dark:bg-white/5">NULL</div>
                         </div>
                     )}
-                </div>
-                <svg className="absolute w-0 h-0"><defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="currentColor" /></marker></defs></svg>
-            </div>
+
+                    {/* Arrows Overlay - Moved Inside Wrapper */}
+                    <svg className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-visible z-0" style={{ minWidth: '100%', minHeight: '100%' }}>
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="currentColor" /></marker>
+                            <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" /></marker>
+                            <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" /></marker>
+                            <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#10b981" /></marker>
+                        </defs>
+                        {currentFrame.tempArrows?.map((arrow, i) => {
+                            const NODE_WIDTH = 112;
+                            const GAP = 64;
+                            const TOTAL_WIDTH = NODE_WIDTH + GAP;
+
+                            const getX = (target: 'temp' | number | 'null') => {
+                                // Node center = Index * TOTAL + NODE_WIDTH/2
+                                if (typeof target === 'number') return target * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                if (target === 'null') return currentFrame.nodes.length * TOTAL_WIDTH + 20;
+                                if (target === 'temp') {
+                                    const temp = currentFrame.tempNodes?.[0];
+                                    if (!temp) return 0;
+                                    if (temp.position === 'left-of-head') return -TOTAL_WIDTH + NODE_WIDTH / 2;
+                                    if (temp.position === 'right-of-tail') return currentFrame.nodes.length * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                    if (temp.position === 'above-at-index') return (temp.offsetIndex || 0) * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                }
+                                return 0;
+                            };
+
+                            const getY = (target: 'temp' | number | 'null') => {
+                                if (target === 'temp') {
+                                    const temp = currentFrame.tempNodes?.[0];
+                                    if (temp?.position === 'above-at-index') return -100 + 24;
+                                    return 24;
+                                }
+                                return 24; // Node center Y (height 48)
+                            };
+
+                            const sx = getX(arrow.from);
+                            const sy = getY(arrow.from);
+                            const ex = getX(arrow.to);
+                            const ey = getY(arrow.to);
+
+                            if (arrow.curved) {
+                                const mx = (sx + ex) / 2;
+                                const my = sy - 60;
+                                return <path key={i} d={`M ${sx} ${sy} Q ${mx} ${my} ${ex} ${ey}`} stroke={arrow.color || 'red'} strokeWidth="2" fill="none" markerEnd={`url(#arrowhead-${arrow.color === 'green' ? 'green' : 'red'})`} />;
+                            }
+                            return <line key={i} x1={sx} y1={sy} x2={ex} y2={ey} stroke={arrow.color || 'blue'} strokeWidth="2" markerEnd={`url(#arrowhead-${arrow.color === 'green' ? 'green' : 'blue'})`} />;
+                        })}
+                    </svg>
+                </div> {/* Closing Wrapper */}
+            </div> {/* Closing Canvas */}
 
             {/* Toggle Buttons (Top Right) */}
             <div className="absolute top-6 right-6 z-30 flex flex-col gap-2 pointer-events-none">
                 <div className="pointer-events-auto flex items-center gap-2">
                     <button
-                        onClick={() => setShowPseudocode(prev => !prev)}
+                        onClick={togglePseudocode}
                         className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showPseudocode
                             ? 'bg-primary text-white border-primary'
                             : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
@@ -815,7 +987,7 @@ const LinkedList = () => {
                         <span className="material-symbols-outlined text-[20px]">code</span>
                     </button>
                     <button
-                        onClick={() => setShowRealCode(prev => !prev)}
+                        onClick={toggleRealCode}
                         className={`h-10 w-10 flex items-center justify-center rounded-full backdrop-blur-md border shadow-lg hover:scale-105 transition-all ${showRealCode
                             ? 'bg-primary text-white border-primary'
                             : 'bg-white/90 dark:bg-[#1c1a32]/90 border-gray-200 dark:border-white/10 text-gray-500 dark:text-[#9794c7]'
@@ -826,16 +998,8 @@ const LinkedList = () => {
                     </button>
                 </div>
             </div>
-
-            {/* Pseudocode Panel (Removed from absolute - moved to Sidebar) */}
-
-            {/* Real Code Panel (Removed from absolute - moved to Sidebar) */}
-
-
-            {/* Fixed Bottom Playback Controls removed (Moved to playbackControls variable) */}
-
-        </VisualizationLayout>
+        </VisualizationLayout >
     );
 };
 
-export default LinkedList;
+
