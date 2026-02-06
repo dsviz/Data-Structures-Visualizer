@@ -24,12 +24,19 @@ const TEAM_MEMBERS: TeamMember[] = [
         github: "https://github.com/Kisnasharma"
     },
     {
-        name: "Piyush Saini",
+        name: "Mohammad Jayed",
         role: "Developer",
-        image: "https://github.com/Piyush851.png",
-        github: "https://github.com/Piyush851",
-        linkedin: "https://www.linkedin.com/in/piyush-saini-0527ps"
+        image: "https://github.com/jayedmohd.png",
+        github: "https://github.com/jayedmohd",
+        linkedin: "https://www.linkedin.com/in/jayedmohd/"
+    },
+    {
+        name: "Rajat Vyas",
+        role: "Developer",
+        image: "https://github.com/RV7631.png",
+        github: "https://github.com/RV7631",
     }
+
 ];
 
 const Team = () => {

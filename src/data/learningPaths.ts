@@ -40,7 +40,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-indigo-400',
         pattern: 'Abstract Sorting Bars Pattern',
-        alt: 'Abstract Sorting Bars Pattern'
+        alt: 'Abstract Sorting Bars Pattern',
+        isPlaceholder: true
     },
     {
         title: 'Linked Lists',
@@ -112,7 +113,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-sky-400',
         pattern: 'Abstract Queue Line',
-        alt: 'Abstract Queue Line'
+        alt: 'Abstract Queue Line',
+        isPlaceholder: true
     },
     {
         title: 'Binary Tree',
@@ -130,7 +132,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-emerald-400',
         pattern: 'Abstract Tree Branching Pattern',
-        alt: 'Abstract Tree Branching Pattern'
+        alt: 'Abstract Tree Branching Pattern',
+        isPlaceholder: true
     },
     {
         title: 'Graphs',
@@ -148,7 +151,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-orange-400',
         pattern: 'Abstract Network Nodes Pattern',
-        alt: 'Abstract Network Nodes Pattern'
+        alt: 'Abstract Network Nodes Pattern',
+        isPlaceholder: true
     },
     {
         title: 'Recursion',
@@ -166,7 +170,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-fuchsia-400',
         pattern: 'Abstract Infinite Loop Pattern',
-        alt: 'Abstract Infinite Loop Pattern'
+        alt: 'Abstract Infinite Loop Pattern',
+        isPlaceholder: true
     },
     {
         title: 'Backtracking',
