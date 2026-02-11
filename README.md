@@ -11,7 +11,14 @@ An interactive educational web application designed to help students and develop
 ## 🎯 Key Features
 
 - ✅ **Step-by-step visual animations** of algorithms
-- ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment)
+- ✅ **Advanced Sorting Visualizations**:
+  - Tree-based recursion breakdown for Merge Sort & Quick Sort.
+  - Classic bar animations for Bubble, Selection, and Insertion Sort.
+- ✅ **Educational Context**:
+  - Real-time **Code Analysis** with dynamic value injection.
+  - **Complexity Analysis** (Time/Space) for each algorithm.
+  - **Color Legends** to explain visual states.
+- ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment, sound effects)
 - ✅ **Clean separation** of algorithm logic from visualization
 - ✅ **Modular and extensible** architecture
 - ✅ Support for **sorting, searching, trees, graphs, stacks, and queues**
@@ -176,13 +183,13 @@ User Controls
 - [x] Project initialization
 - [x] Array Operations visualizer
 - [x] Linked List visualizer
-- [ ] Sorting visualizer
+- [x] Sorting visualizer (Advanced Tree Views, Sound, Complexity)
 - [ ] Tree visualizer
 - [ ] Graph visualizer
 - [ ] Stack & Queue visualizer
-- [ ] Code editor integration
-- [ ] Complexity analysis display
-- [ ] Custom input support
+- [x] Code editor integration (Real-time Value Injection)
+- [x] Complexity analysis display
+- [x] Custom input support
 - [ ] Algorithm comparison mode
 - [ ] User accounts (optional backend)
 
