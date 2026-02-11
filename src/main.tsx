@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext'
 import { HeaderProvider } from './context/HeaderContext.tsx'
 import { LayoutProvider } from './context/LayoutContext.tsx'
 
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider>

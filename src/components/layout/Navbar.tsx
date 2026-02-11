@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext'
-import { DASHBOARD_CARDS } from '../../data/learningPaths'
 import { useAuth } from '../../context/AuthContext'
 import { useHeader } from '../../context/HeaderContext'
+import { DASHBOARD_CARDS } from '../../data/learningPaths' // Changed import
 
 const Navbar = () => {
   const { theme, toggleTheme } = useTheme()
@@ -16,11 +16,31 @@ const Navbar = () => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Filter logic
-  const results = DASHBOARD_CARDS.filter(card =>
-    !card.isPlaceholder &&
-    (card.title.toLowerCase().includes(query.toLowerCase()) ||
-      card.description.toLowerCase().includes(query.toLowerCase()))
-  ).slice(0, 5);
+  const cardsIndex = useMemo(() => (
+    DASHBOARD_CARDS
+      .filter(card => !card.isPlaceholder)
+      .map(card => ({
+        title: card.title,
+        description: card.description,
+        path: card.path,
+        icon: card.icon,
+        gradientFrom: card.gradientFrom,
+        gradientTo: card.gradientTo,
+        darkGradientFrom: card.darkGradientFrom ?? '',
+        darkGradientTo: card.darkGradientTo ?? ''
+      }))
+  ), [])
+
+  const results = useMemo(() => {
+    const trimmed = query.trim().toLowerCase()
+    if (!trimmed) {
+      return []
+    }
+    return cardsIndex.filter(card =>
+      card.title.toLowerCase().includes(trimmed) ||
+      card.description.toLowerCase().includes(trimmed)
+    ).slice(0, 5)
+  }, [cardsIndex, query])
 
   // Focus shortcut
   useEffect(() => {

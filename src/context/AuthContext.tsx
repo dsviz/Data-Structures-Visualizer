@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiClient } from '../lib/api';
+import { AuthResponse } from '../types/api';
 
 interface User {
     id: string;
@@ -19,58 +21,72 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
+    const TOKEN_KEY = 'dsv_token';
+    const USER_KEY = 'dsv_user';
+
+    const enhanceUser = (payload: { id: string; name: string; email: string; avatar?: string | null }): User => ({
+        id: payload.id,
+        name: payload.name,
+        email: payload.email,
+        avatar: payload.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(payload.name)}`
+    });
+
+    const persistSession = (response: AuthResponse) => {
+        const sessionUser = enhanceUser(response.user);
+        setUser(sessionUser);
+        apiClient.setAuthToken(response.token);
+        localStorage.setItem(TOKEN_KEY, response.token);
+        localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
+    };
 
     useEffect(() => {
-        // Check for persisted user on mount
-        const storedUser = localStorage.getItem('dsv_user');
+        const storedToken = localStorage.getItem(TOKEN_KEY);
+        const storedUser = localStorage.getItem(USER_KEY);
+
+        if (storedToken) {
+            apiClient.setAuthToken(storedToken);
+        }
+
         if (storedUser) {
             try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error('Failed to parse user from local storage');
-                localStorage.removeItem('dsv_user');
+                const parsed: User = JSON.parse(storedUser);
+                setUser(parsed);
+            } catch (error) {
+                localStorage.removeItem(USER_KEY);
             }
+        }
+
+        if (storedToken) {
+            apiClient.fetchCurrentUser()
+                .then((current) => {
+                    const sessionUser = enhanceUser(current);
+                    setUser(sessionUser);
+                    localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
+                })
+                .catch(() => {
+                    apiClient.clearAuthToken();
+                    localStorage.removeItem(TOKEN_KEY);
+                    localStorage.removeItem(USER_KEY);
+                    setUser(null);
+                });
         }
     }, []);
 
-    const login = async (email: string, _password: string) => {
-        // Mock login
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                const mockUser: User = {
-                    id: '1',
-                    name: 'Shubham Kumar Sharma', // Mocking the main user for now
-                    email: email,
-                    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDh085DeaEB1T1gxBPF4sZVzTohP-8qmp_qL1u76Qv07UNXcRRbdWqQUr39XKW9CZMf-g3kxbLT0JYWzDHFEWrkda8ZWKskE9uNkzThzlrzNgZbwLCmbqneW-vAM7SG5ps6E-n9UDj2VWf0bvC8kJ_TDoB_y78rBC1zmqXULbH1Kv-ZoE4qBo6o9VGs57cR6c7aU1WijM2mtZfmt6CCT4-UVCCyUclcaqWfuH9ikkHuFpilNSxn7o4Za6eT64sl_GYYBeAcDKPb3cs'
-                };
-                setUser(mockUser);
-                localStorage.setItem('dsv_user', JSON.stringify(mockUser));
-                resolve();
-            }, 800);
-        });
+    const login = async (email: string, password: string) => {
+        const response = await apiClient.login({ email, password });
+        persistSession(response);
     };
 
-    const signup = async (name: string, email: string, _password: string) => {
-        // Mock signup
-        return new Promise<void>((resolve) => {
-            setTimeout(() => {
-                const mockUser: User = {
-                    id: Date.now().toString(),
-                    name: name,
-                    email: email,
-                    // Generate a random avatar for new users
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
-                };
-                setUser(mockUser);
-                localStorage.setItem('dsv_user', JSON.stringify(mockUser));
-                resolve();
-            }, 800);
-        });
+    const signup = async (name: string, email: string, password: string) => {
+        const response = await apiClient.signup({ name, email, password });
+        persistSession(response);
     };
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('dsv_user');
+        apiClient.clearAuthToken();
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
     };
 
     return (

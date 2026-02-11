@@ -35,6 +35,12 @@ const TEAM_MEMBERS: TeamMember[] = [
         role: "Developer",
         image: "https://github.com/RV7631.png",
         github: "https://github.com/RV7631",
+    },
+    {
+        name: "Rahul Rawat",
+        role: "Developer",
+        image: "https://github.com/rahulrawat2486-wq.png",
+        github: "https://github.com/rahulrawat2486-wq",
     }
 
 ];

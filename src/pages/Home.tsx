@@ -1,14 +1,66 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CATEGORIES, DASHBOARD_CARDS, Category } from '../data/learningPaths'
+import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
+
+type DashboardCardView = {
+  title: string
+  path: string
+  description: string
+  tags: string[]
+  difficulty: string
+  count: number
+  countLabel: string
+  icon: string
+  gradientFrom: string
+  gradientTo: string
+  darkGradientFrom?: string | null
+  darkGradientTo?: string | null
+  iconColor: string
+  darkIconColor?: string | null
+  pattern: string
+  alt: string
+  isPlaceholder: boolean
+}
 
 const Home = () => {
-  const [activeCategory, setActiveCategory] = useState<Category>('All');
+  // const { algorithms, isLoading, error } = useCatalog() // Removed
+  const [activeCategory, setActiveCategory] = useState<string>('All');
   const [mode, setMode] = useState<'training' | 'visualizer'>('visualizer');
   const contentSectionRef = useRef<HTMLElement>(null);
 
-  const filteredCards = DASHBOARD_CARDS.filter(card =>
-    activeCategory === 'All' || card.category.includes(activeCategory)
+  const dashboardCards: DashboardCardView[] = useMemo(() => {
+    return DASHBOARD_CARDS.map(card => ({
+      title: card.title,
+      path: card.path,
+      description: card.description,
+      tags: card.category,
+      difficulty: card.difficulty,
+      count: card.count,
+      countLabel: card.countLabel,
+      icon: card.icon,
+      gradientFrom: card.gradientFrom,
+      gradientTo: card.gradientTo,
+      darkGradientFrom: card.darkGradientFrom,
+      darkGradientTo: card.darkGradientTo,
+      iconColor: card.iconColor,
+      darkIconColor: card.darkIconColor,
+      pattern: card.pattern,
+      alt: card.alt,
+      isPlaceholder: !!card.isPlaceholder
+    }))
+  }, [])
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Set<string>()
+    categories.add('All')
+    dashboardCards.forEach(card => {
+      card.tags.forEach(tag => categories.add(tag))
+    })
+    return Array.from(categories)
+  }, [dashboardCards])
+
+  const filteredCards = dashboardCards.filter(card =>
+    activeCategory === 'All' || card.tags.includes(activeCategory)
   );
 
   const handleStartLearning = () => {
@@ -121,7 +173,7 @@ const Home = () => {
       <section ref={contentSectionRef} className="flex-1 px-6 pb-20">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap gap-3 mb-10 justify-center">
-            {CATEGORIES.map(category => (
+            {categoryOptions.map(category => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
@@ -136,6 +188,7 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
             {mode === 'training' ? (
               // Training Mode Cards
               [

@@ -20,7 +20,8 @@ const Signup = () => {
             await signup(name, email, password);
             navigate('/');
         } catch (err) {
-            setError('Failed to create account');
+            const message = err instanceof Error ? err.message : 'Failed to create account';
+            setError(message);
         } finally {
             setLoading(false);
         }

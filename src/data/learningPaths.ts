@@ -40,8 +40,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-indigo-400',
         pattern: 'Abstract Sorting Bars Pattern',
-        alt: 'Abstract Sorting Bars Pattern',
-        isPlaceholder: true
+        alt: 'Abstract Sorting Bars Pattern'
     },
     {
         title: 'Linked Lists',

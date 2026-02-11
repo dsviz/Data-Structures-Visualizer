@@ -24,6 +24,12 @@ An interactive educational web application designed to help students and develop
 - **Vite** - Ultra-fast development and build tool
 - **Tailwind CSS** - Utility-first styling
 
+### Backend
+- **Node.js + Express** - HTTP API layer
+- **TypeScript** - Shared types across the stack
+- **Prisma ORM** - Type-safe access to PostgreSQL
+- **PostgreSQL** - Durable relational datastore
+
 ### Visualization
 - **SVG** - For trees, graphs, linked lists
 - **HTML Canvas** - For sorting and array animations
@@ -35,25 +41,11 @@ An interactive educational web application designed to help students and develop
 
 ```
 dsa-visualizer/
-├── src/
-│   ├── app/              # App configuration and routing
-│   ├── components/       # Reusable UI components
-│   │   ├── common/       # Buttons, sliders, dropdowns
-│   │   ├── controls/     # Play, pause, speed controls
-│   │   └── layout/       # Navbar, sidebar
-│   ├── visualizers/      # Algorithm visualizers
-│   │   ├── sorting/
-│   │   ├── linkedlist/
-│   │   ├── tree/
-│   │   └── graph/
-│   ├── algorithms/       # Pure algorithm implementations
-│   ├── engine/           # Animation engine
-│   ├── store/            # Zustand state stores
-│   ├── hooks/            # Custom React hooks
-│   ├── types/            # TypeScript type definitions
-│   ├── pages/            # Page components
-│   └── styles/           # Global styles
-└── public/               # Static assets
+├── src/                  # Frontend application (React + Vite)
+└── server/               # Backend service (Express + Prisma)
+        ├── src/              # Application source
+        ├── prisma/           # Database schema & migrations
+        └── .env.example      # Backend environment template
 ```
 
 ## 🚀 Getting Started
@@ -61,21 +53,56 @@ dsa-visualizer/
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
+- PostgreSQL 14+ (Docker or local install)
 
 ### Installation
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+1. **Install frontend dependencies:**
+        ```bash
+        npm install
+        ```
 
-2. **Start development server:**
-   ```bash
-   npm run dev
-   ```
+2. **Copy frontend environment template:**
+        ```bash
+        cp .env.example .env # use: copy .env.example .env (Windows)
+        ```
+        The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
 
-3. **Open your browser:**
-   Navigate to `http://localhost:3000`
+3. **Install backend dependencies:**
+        ```bash
+        cd server
+        npm install
+        ```
+
+4. **Configure backend environment:**
+        ```bash
+        cp .env.example .env # use: copy .env.example .env (Windows)
+        ```
+        Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
+
+5. **Run database migrations:**
+        ```bash
+        npx prisma migrate dev
+        ```
+
+6. **Seed algorithm metadata:**
+        ```bash
+        npm run prisma:seed
+        ```
+
+7. **Start backend API:**
+        ```bash
+        npm run dev
+        ```
+
+8. **Start frontend dev server (new terminal):**
+        ```bash
+        cd ..
+        npm run dev
+        ```
+
+9. **Open your browser:**
+        Navigate to `http://localhost:3000`
 
 ### Build for Production
 
@@ -84,6 +111,15 @@ npm run build
 ```
 
 The production-ready files will be in the `dist/` directory.
+
+### Backend Testing
+
+```bash
+cd server
+npm run test
+```
+
+The Jest suite covers health checks, catalog queries, and authentication flows using mocked Prisma interactions.
 
 ## 🎨 Architecture
 
