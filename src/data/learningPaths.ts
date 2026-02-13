@@ -19,6 +19,8 @@ export interface DashboardCard {
     pattern: string;
     alt: string;
     isPlaceholder?: boolean;
+    image?: string;
+    imageBg?: string;
 }
 
 export const CATEGORIES: Category[] = ['All', 'Sorting', 'Trees', 'Graphs', 'Data Structures', 'Algorithms'];
@@ -40,7 +42,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-indigo-400',
         pattern: 'Abstract Sorting Bars Pattern',
-        alt: 'Abstract Sorting Bars Pattern'
+        alt: 'Abstract Sorting Bars Pattern',
+        image: '/sorting.gif',
+        imageBg: 'bg-[#65c377]'
     },
     {
         title: 'Linked Lists',
@@ -58,7 +62,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-cyan-400',
         pattern: 'Abstract Chain Link Pattern',
-        alt: 'Abstract Chain Link Pattern'
+        alt: 'Abstract Chain Link Pattern',
+        image: '/list.gif',
+        imageBg: 'bg-[#5c74c3]'
     },
     {
         title: 'Arrays',
@@ -76,7 +82,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-pink-400',
         pattern: 'Abstract Key Value Grid Pattern',
-        alt: 'Abstract Key Value Grid Pattern'
+        alt: 'Abstract Key Value Grid Pattern',
+        image: '/array.gif',
+        imageBg: 'bg-[#f0f0f0]'
     },
     {
         title: 'Stack',
@@ -94,7 +102,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         iconColor: 'text-white',
         darkIconColor: 'dark:text-amber-400',
         pattern: 'Abstract Stack Layers',
-        alt: 'Abstract Stack Layers'
+        alt: 'Abstract Stack Layers',
+        // image: '/stack.gif' // Not found in list, maybe use generic or none
     },
     {
         title: 'Queue',
@@ -132,7 +141,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-emerald-400',
         pattern: 'Abstract Tree Branching Pattern',
         alt: 'Abstract Tree Branching Pattern',
-        isPlaceholder: true
+        image: '/bst.gif',
+        isPlaceholder: true,
+        imageBg: 'bg-[#e18ba0]'
     },
     {
         title: 'Graphs',
@@ -151,7 +162,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-orange-400',
         pattern: 'Abstract Network Nodes Pattern',
         alt: 'Abstract Network Nodes Pattern',
-        isPlaceholder: true
+        image: '/graphds.gif',
+        isPlaceholder: true,
+        imageBg: 'bg-[#e48879]'
     },
     {
         title: 'Recursion',
@@ -170,7 +183,9 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-fuchsia-400',
         pattern: 'Abstract Infinite Loop Pattern',
         alt: 'Abstract Infinite Loop Pattern',
-        isPlaceholder: true
+        image: '/recursion.gif',
+        isPlaceholder: true,
+        imageBg: 'bg-[#c8df82]'
     },
     {
         title: 'Backtracking',
@@ -209,5 +224,47 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Optimized Path Pattern',
         alt: 'Abstract Optimized Path Pattern',
         isPlaceholder: true
+    },
+    {
+        title: 'Heap',
+        path: '/heap',
+        description: 'Min Heap, Max Heap, Priority Queue',
+        category: ['Data Structures'],
+        difficulty: 'Medium',
+        count: 0,
+        countLabel: 'Coming Soon',
+        icon: 'storage',
+        gradientFrom: 'from-yellow-500',
+        gradientTo: 'to-amber-500',
+        darkGradientFrom: 'dark:from-yellow-900/50',
+        darkGradientTo: 'dark:to-amber-900/50',
+        iconColor: 'text-white',
+        darkIconColor: 'dark:text-amber-400',
+        pattern: 'Abstract Heap Structure',
+        alt: 'Abstract Heap Structure',
+        image: '/heap.gif',
+        isPlaceholder: true,
+        imageBg: 'bg-[#6fc9cc]'
+    },
+    {
+        title: 'Hash Table',
+        path: '/hashtable',
+        description: 'Collision Resolution, Hashing',
+        category: ['Data Structures'],
+        difficulty: 'Medium',
+        count: 0,
+        countLabel: 'Coming Soon',
+        icon: 'tag',
+        gradientFrom: 'from-cyan-500',
+        gradientTo: 'to-teal-500',
+        darkGradientFrom: 'dark:from-cyan-900/50',
+        darkGradientTo: 'dark:to-teal-900/50',
+        iconColor: 'text-white',
+        darkIconColor: 'dark:text-teal-400',
+        pattern: 'Abstract Hash Map',
+        alt: 'Abstract Hash Map',
+        image: '/hashtable.gif',
+        isPlaceholder: true,
+        imageBg: 'bg-[#eba964]'
     }
 ];

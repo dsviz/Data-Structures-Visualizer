@@ -20,6 +20,8 @@ type DashboardCardView = {
   pattern: string
   alt: string
   isPlaceholder: boolean
+  image?: string
+  imageBg?: string
 }
 
 const Home = () => {
@@ -46,7 +48,9 @@ const Home = () => {
       darkIconColor: card.darkIconColor,
       pattern: card.pattern,
       alt: card.alt,
-      isPlaceholder: !!card.isPlaceholder
+      isPlaceholder: !!card.isPlaceholder,
+      image: card.image,
+      imageBg: card.imageBg
     }))
   }, [])
 
@@ -247,9 +251,19 @@ const Home = () => {
                 card.isPlaceholder ? (
                   // Placeholder Card
                   <div key={index} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
-                    <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} flex items-center justify-center relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                      <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                    <div className={`h-52 ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo}`} flex items-center justify-center relative overflow-hidden`}>
+                      {card.image ? (
+                        <img
+                          src={card.image}
+                          alt={card.alt}
+                          className="absolute inset-0 w-full h-full object-contain p-2 opacity-90 group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                          <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                        </>
+                      )}
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <div className="flex justify-between items-start mb-2">
@@ -266,9 +280,22 @@ const Home = () => {
                 ) : (
                   // Active Card
                   <Link key={index} to={card.path} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-                    <div className={`h-40 bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo} flex items-center justify-center relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                      <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                    <div className={`h-52 ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo}`} flex items-center justify-center relative overflow-hidden`}>
+                      {card.image ? (
+                        <div className="absolute inset-0 w-full h-full">
+                          <img
+                            src={card.image}
+                            alt={card.alt}
+                            className="w-full h-full object-contain p-2 opacity-90 group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300 pointer-events-none"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
+                          <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                        </>
+                      )}
                     </div>
                     <div className="p-5 flex flex-col flex-1">
                       <div className="flex justify-between items-start mb-2">
