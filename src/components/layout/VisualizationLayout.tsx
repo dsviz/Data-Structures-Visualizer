@@ -20,7 +20,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
+        <div className="flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 
             <div className="flex flex-1 overflow-hidden relative">
