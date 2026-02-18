@@ -254,7 +254,6 @@ export const useStackVisualizer = () => {
         frames.push(createFrame(currentStack, [], [{ index: currentStack.length - 1, label: 'top', color: 'primary' }], 2, "Now popping to reverse...", opName));
 
         let result = "";
-        const originalLen = currentStack.length;
 
         while (currentStack.length > 0) {
             const char = currentStack[currentStack.length - 1];
