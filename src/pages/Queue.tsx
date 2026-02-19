@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
-import { useQueueVisualizer, PSEUDOCODE, COMPLEXITY, MAX_CAPACITY } from '../hooks/useQueueVisualizer';
+import { useQueueVisualizer, MAX_CAPACITY } from '../hooks/useQueueVisualizer';
+import { QueueControls } from '../components/queue/QueueControls';
+import { QueueTabs } from '../components/queue/QueueTabs';
 
 const Queue = () => {
     const {
@@ -33,16 +35,19 @@ const Queue = () => {
         handleCreateRandom
     } = useQueueVisualizer();
 
-    const [activeTab, setActiveTab] = useState<'controls' | 'code' | 'pseudo' | 'info'>('controls');
+    const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
+    const [splitRatio, setSplitRatio] = useState(0.5); // Top height ratio
+    const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+    const sidebarRef = useRef<HTMLDivElement>(null);
 
-    // Dragging & Zoom - Canvas
+    // Canvas State
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const [createStep, setCreateStep] = useState<'size' | 'values'>('size');
 
-    // Draggable Logic - Canvas Only
+    // Canvas Handlers
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
         setLastMousePos({ x: e.clientX, y: e.clientY });
@@ -56,244 +61,93 @@ const Queue = () => {
     };
     const handleMouseUp = () => setIsDragging(false);
 
-    // Zoom Logic
     const handleWheel = (e: React.WheelEvent) => {
         if (e.ctrlKey) return;
-        e.preventDefault();
+        // e.preventDefault();
         const scaleAmount = -e.deltaY * 0.001;
         setZoom(prev => Math.min(Math.max(0.5, prev + scaleAmount), 3));
     };
 
-    const currentComplexity = activeOp ? COMPLEXITY[activeOp] : COMPLEXITY['enqueue'];
-    const currentPseudocode = activeOp ? PSEUDOCODE[activeOp] : [];
+    const handleSidebarDrag = (e: React.MouseEvent) => {
+        setIsResizingSidebar(true);
+        e.preventDefault();
+    };
 
-    // --- Components for Tabs ---
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizingSidebar || !sidebarRef.current) return;
+            const sidebarRect = sidebarRef.current.getBoundingClientRect();
+            const relativeY = e.clientY - sidebarRect.top;
+            const newRatio = Math.max(0.2, Math.min(0.8, relativeY / sidebarRect.height));
+            setSplitRatio(newRatio);
+        };
 
-    const ControlsTab = () => (
-        <div className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
+        const handleMouseUp = () => {
+            setIsResizingSidebar(false);
+        };
 
-            {/* Operation: Create */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'create' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => { setActiveOp(prev => prev === 'create' ? null : 'create'); setCreateStep('size'); }} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'create' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>add_circle</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'create' ? 'text-primary font-bold' : ''}`}>Create</p></div>
-                </button>
-                {activeOp === 'create' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        {createStep === 'size' ? (
-                            <>
-                                <label>
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Queue Size (Max {MAX_CAPACITY})</span>
-                                    <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none mt-1" />
-                                </label>
-                                <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Next</button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-sm">arrow_back</span></button>
-                                    <span className="text-xs font-bold text-gray-500">Method</span>
-                                </div>
-                                <button onClick={handleCreateRandom} className="w-full border border-gray-600 hover:bg-white/5 text-white text-xs font-bold py-2 rounded">Generate Random</button>
-                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><div className="h-px bg-gray-600 flex-1"></div>OR<div className="h-px bg-gray-600 flex-1"></div></div>
-                                <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none" placeholder="1, 2, 3..." />
-                                <button onClick={handleCreateCustom} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Set Values</button>
-                            </>
-                        )}
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
-
-            {/* Operation: Enqueue */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'enqueue' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'enqueue' ? null : 'enqueue')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'enqueue' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>login</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'enqueue' ? 'text-primary font-bold' : ''}`}>Enqueue (v)</p></div>
-                </button>
-                {activeOp === 'enqueue' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <label><span className="text-[10px] text-gray-400 uppercase font-bold">Value</span><input type="text" value={enqueueValue} onChange={e => setEnqueueValue(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                        <button onClick={handleEnqueue} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Enqueue</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
-
-            {/* Operation: Dequeue */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'dequeue' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'dequeue' ? null : 'dequeue')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'dequeue' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>logout</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'dequeue' ? 'text-primary font-bold' : ''}`}>Dequeue</p></div>
-                </button>
-                {activeOp === 'dequeue' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <p className="text-xs text-gray-400 mb-2">Remove front element?</p>
-                        <button onClick={handleDequeue} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Dequeue</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
-
-            {/* Operation: Peek */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'peek' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'peek' ? null : 'peek')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'peek' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>visibility</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'peek' ? 'text-primary font-bold' : ''}`}>Peek</p></div>
-                </button>
-                {activeOp === 'peek' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <p className="text-xs text-gray-400 mb-2">View front element?</p>
-                        <button onClick={handlePeek} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Peek</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-
-    const CodeTab = () => (
-        <div className="flex flex-col gap-2 h-full">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Implementation</h3>
-            <div className="bg-[#121121] border border-[#383564] rounded-lg p-3 overflow-auto flex-1 font-mono text-xs text-gray-300">
-                <pre>{`class Queue {
-private:
-    int* queue;
-    int front, rear;
-    int capacity;
-
-public:
-    Queue(int size) {
-        queue = new int[size];
-        capacity = size;
-        front = rear = -1;
-    }
-
-    void enqueue(int value) {
-        if (rear == capacity - 1) {
-            cout << "Queue Overflow";
-            return;
+        if (isResizingSidebar) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
         }
-        if (front == -1) front = 0;
-        queue[++rear] = value;
-    }
 
-    int dequeue() {
-        if (front == -1) {
-            cout << "Queue Underflow";
-            return -1;
-        }
-        int val = queue[front];
-        if (front == rear) front = rear = -1;
-        else front++;
-        return val;
-    }
-
-    int peek() {
-        if (front == -1) {
-            cout << "Queue Empty";
-            return -1;
-        }
-        return queue[front];
-    }
-};`}</pre>
-            </div>
-        </div>
-    );
-
-    const PseudoTab = () => (
-        <div className="flex flex-col gap-2 h-full">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Pseudocode</h3>
-            <div className="bg-[#121121] border border-[#383564] rounded-lg p-4 font-mono text-xs text-gray-400">
-                <div className="space-y-1">
-                    {currentPseudocode.map((line: string, idx: number) => (
-                        <p key={idx} className={`px-2 py-1 -mx-2 rounded border-l-2 transition-colors ${idx === currentFrame.codeLine ? 'text-primary dark:text-white bg-primary/10 dark:bg-primary/20 border-primary' : 'border-transparent'}`}>
-                            {idx + 1}. {line}
-                        </p>
-                    ))}
-                    {currentPseudocode.length === 0 && <span className="text-gray-500 italic">Select an operation to see logic...</span>}
-                </div>
-            </div>
-        </div>
-    );
-
-    const InfoTab = () => (
-        <div className="flex flex-col gap-4">
-            {/* Complexity Section */}
-            <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Complexity</h3>
-                <div className="bg-white/5 dark:bg-[#1c1a32]/50 border border-gray-200 dark:border-[#383564] rounded-xl p-4 text-xs font-mono text-gray-400">
-                    <div className="flex justify-between border-b border-white/10 pb-2 mb-2"><span className="text-white font-bold uppercase">{activeOp || 'QUEUE'}</span><span className="text-primary">{currentComplexity.avg}</span></div>
-                    <div className="space-y-1">
-                        <div className="flex justify-between"><span>Best</span><span className="text-emerald-400">{currentComplexity.best}</span></div>
-                        <div className="flex justify-between"><span>Avg</span><span className="text-amber-400">{currentComplexity.avg}</span></div>
-                        <div className="flex justify-between"><span>Worst</span><span className="text-rose-400">{currentComplexity.worst}</span></div>
-                        <div className="flex justify-between border-t border-white/10 pt-1 mt-1"><span>Space</span><span className="text-blue-400">{currentComplexity.space}</span></div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Internal State Section */}
-            <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Internal State</h3>
-                <div className="bg-white/5 dark:bg-[#1c1a32]/50 border border-gray-200 dark:border-[#383564] rounded-xl p-4 text-xs font-mono text-gray-400">
-                    <div className="space-y-2">
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Capacity</span>
-                            <span className="text-primary font-bold">{currentFrame.internalState.capacity}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Size</span>
-                            <span className="text-slate-900 dark:text-white font-bold">{currentFrame.internalState.size}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Front Index</span>
-                            <span className="text-slate-900 dark:text-white font-bold">{currentFrame.internalState.front}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-gray-200 dark:border-white/5 pb-1">
-                            <span>Rear Index</span>
-                            <span className="text-slate-900 dark:text-white font-bold">{currentFrame.internalState.rear}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span>Op</span>
-                            <span className="text-orange-400 font-bold uppercase">{currentFrame.internalState.currentOp}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isResizingSidebar]);
 
     return (
         <VisualizationLayout
             title="Queue"
             sidebarPosition="right"
             contentClassName="flex-1 flex flex-col relative z-10 overflow-hidden"
+            sidebarNoPadding={true}
+            sidebarNoScroll={true}
             sidebar={
-                <div className="h-full flex flex-col">
-                    {/* Tab Header */}
-                    <div className="flex p-1 bg-gray-100 dark:bg-[#121121] rounded-lg mb-4">
-                        {(['controls', 'code', 'pseudo', 'info'] as const).map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`flex-1 py-1.5 text-[10px] uppercase font-bold rounded-md transition-all ${activeTab === tab
-                                    ? 'bg-white dark:bg-[#1c1a32] text-primary shadow-sm'
-                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                                    }`}
-                            >
-                                {tab}
-                            </button>
-                        ))}
+                <div className="h-full flex flex-col relative" ref={sidebarRef}>
+                    {/* Top Half: Controls/Operations */}
+                    <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
+                        <QueueControls
+                            activeOp={activeOp} setActiveOp={setActiveOp}
+                            createStep={createStep} setCreateStep={setCreateStep}
+                            createSize={createSize} setCreateSize={setCreateSize}
+                            createInput={createInput} setCreateInput={setCreateInput}
+                            handleCreateRandom={handleCreateRandom} handleCreateCustom={handleCreateCustom}
+                            enqueueValue={enqueueValue} setEnqueueValue={setEnqueueValue}
+                            handleEnqueue={handleEnqueue} handleDequeue={handleDequeue} handlePeek={handlePeek}
+                            error={error}
+                        />
                     </div>
 
-                    {/* Tab Content */}
-                    <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar pr-1">
-                        {activeTab === 'controls' && <ControlsTab />}
-                        {activeTab === 'code' && <CodeTab />}
-                        {activeTab === 'pseudo' && <PseudoTab />}
-                        {activeTab === 'info' && <InfoTab />}
+                    {/* Drag Handle */}
+                    <div
+                        className="h-1 bg-gray-200 dark:bg-[#383564] cursor-row-resize hover:bg-primary transition-colors shrink-0 z-50"
+                        onMouseDown={handleSidebarDrag}
+                    />
+
+                    {/* Bottom Half: Tabs (Pseudo/Code/Info) */}
+                    <div className="flex-1 min-h-0 flex flex-col bg-gray-50/50 dark:bg-[#1c1a32]/20 overflow-hidden">
+                        {/* Tab Header */}
+                        <div className="flex p-1 bg-gray-100 dark:bg-[#121121] border-b border-gray-200 dark:border-[#272546] shrink-0">
+                            {(['pseudo', 'code', 'info'] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`flex-1 py-1.5 text-[10px] uppercase font-bold rounded-md transition-all ${activeTab === tab
+                                        ? 'bg-white dark:bg-[#1c1a32] text-primary shadow-sm'
+                                        : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+                                        }`}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Tab Content */}
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            <QueueTabs activeTab={activeTab} activeOp={activeOp} currentFrame={currentFrame} />
+                        </div>
                     </div>
                 </div>
             }
