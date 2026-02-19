@@ -11,6 +11,8 @@ interface VisualizationLayoutProps {
     controls?: React.ReactNode;
     sidebarPosition?: 'left' | 'right'; // Deprecated-ish, but kept for logic
     rightSidebarWidth?: number | string;
+    sidebarNoPadding?: boolean;
+    sidebarNoScroll?: boolean;
 }
 
 const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassName?: string }> = ({
@@ -22,7 +24,9 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
     controls,
     sidebarPosition = 'left',
     contentClassName,
-    rightSidebarWidth
+    rightSidebarWidth,
+    sidebarNoPadding = false,
+    sidebarNoScroll = false
 }) => {
     const { isSidebarOpen, setIsSidebarOpen } = useLayout();
 
@@ -74,19 +78,15 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
     }, [computeInitialWidth]);
 
     return (
-<<<<<<< HEAD
         <div className={`flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display ${isResizing ? 'cursor-col-resize select-none' : ''}`}>
-=======
-        <div className="flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display">
->>>>>>> stack
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 
             <div className="flex flex-1 overflow-hidden relative">
                 {/* Left Sidebar */}
                 {actualLeftSidebar && (
                     <>
-                        <aside className={`flex flex-col border-r border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1c1a32]/50 z-10 shrink-0 overflow-y-auto transition-all duration-300 ${isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'}`}>
-                            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
+                        <aside className={`flex flex-col border-r border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1c1a32]/50 z-10 shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'} ${sidebarNoScroll ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#272546] flex justify-between items-center shrink-0">
                                 <div className="flex flex-wrap gap-2 items-center text-sm">
                                     <Link to="/" className="text-gray-500 dark:text-[#9794c7] hover:text-primary">Home</Link>
                                     <span className="text-gray-400 dark:text-[#5a5875]">/</span>
@@ -96,7 +96,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                                     <span className="material-symbols-outlined text-[20px]">first_page</span>
                                 </button>
                             </div>
-                            <div className="p-4 flex flex-col gap-6 w-80">
+                            <div className={sidebarNoPadding ? "flex flex-col h-full w-80" : "p-4 flex flex-col gap-6 w-80"}>
                                 {actualLeftSidebar}
                             </div>
                         </aside>
