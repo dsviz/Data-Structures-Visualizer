@@ -163,7 +163,6 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Network Nodes Pattern',
         alt: 'Abstract Network Nodes Pattern',
         image: '/graphds.gif',
-        isPlaceholder: true,
         imageBg: 'bg-[#e48879]'
     },
     {
