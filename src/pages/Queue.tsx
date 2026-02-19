@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
-import { useQueueVisualizer, MAX_CAPACITY } from '../hooks/useQueueVisualizer';
+import { useQueueVisualizer } from '../hooks/useQueueVisualizer';
 import { QueueControls } from '../components/queue/QueueControls';
 import { QueueTabs } from '../components/queue/QueueTabs';
 
