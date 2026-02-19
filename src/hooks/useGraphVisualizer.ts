@@ -839,6 +839,181 @@ export const useGraphVisualizer = () => {
         resetAnimation();
     };
 
+    const loadExampleGraph = (category: string) => {
+        const templates: Record<string, { nodes: GraphNode[], edges: GraphEdge[], directed: boolean, weighted: boolean }> = {
+            'Basics': {
+                nodes: [
+                    { id: 0, x: 200, y: 120, value: 0 },
+                    { id: 1, x: 400, y: 120, value: 0 },
+                    { id: 2, x: 200, y: 280, value: 0 },
+                    { id: 3, x: 400, y: 280, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 1 },
+                    { from: 1, to: 3, weight: 1 },
+                    { from: 3, to: 2, weight: 1 },
+                    { from: 2, to: 0, weight: 1 },
+                    { from: 0, to: 3, weight: 1 },
+                ],
+                directed: false,
+                weighted: false
+            },
+            'Traversal': {
+                nodes: [
+                    { id: 0, x: 300, y: 80, value: 0 },
+                    { id: 1, x: 200, y: 160, value: 0 },
+                    { id: 2, x: 400, y: 160, value: 0 },
+                    { id: 3, x: 140, y: 240, value: 0 },
+                    { id: 4, x: 260, y: 240, value: 0 },
+                    { id: 5, x: 340, y: 240, value: 0 },
+                    { id: 6, x: 460, y: 240, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 1 },
+                    { from: 0, to: 2, weight: 1 },
+                    { from: 1, to: 3, weight: 1 },
+                    { from: 1, to: 4, weight: 1 },
+                    { from: 2, to: 5, weight: 1 },
+                    { from: 2, to: 6, weight: 1 },
+                ],
+                directed: false,
+                weighted: false
+            },
+            'Shortest Path': {
+                nodes: [
+                    { id: 0, x: 100, y: 200, value: 0 }, // A
+                    { id: 1, x: 250, y: 100, value: 0 }, // B
+                    { id: 2, x: 250, y: 300, value: 0 }, // C
+                    { id: 3, x: 400, y: 100, value: 0 }, // D
+                    { id: 4, x: 400, y: 300, value: 0 }, // E
+                    { id: 5, x: 550, y: 200, value: 0 }, // F
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 4 },
+                    { from: 0, to: 2, weight: 2 },
+                    { from: 1, to: 2, weight: 5 },
+                    { from: 1, to: 3, weight: 10 },
+                    { from: 2, to: 4, weight: 3 },
+                    { from: 3, to: 4, weight: 4 },
+                    { from: 3, to: 5, weight: 11 },
+                    { from: 4, to: 5, weight: 8 },
+                ],
+                directed: true,
+                weighted: true
+            },
+            'MST': {
+                nodes: [
+                    { id: 0, x: 300, y: 100, value: 0 },
+                    { id: 1, x: 150, y: 200, value: 0 },
+                    { id: 2, x: 450, y: 200, value: 0 },
+                    { id: 3, x: 200, y: 320, value: 0 },
+                    { id: 4, x: 400, y: 320, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 2 },
+                    { from: 0, to: 2, weight: 3 },
+                    { from: 1, to: 2, weight: 5 },
+                    { from: 1, to: 3, weight: 4 },
+                    { from: 2, to: 3, weight: 1 },
+                    { from: 2, to: 4, weight: 7 },
+                    { from: 3, to: 4, weight: 8 },
+                ],
+                directed: false,
+                weighted: true
+            },
+            'DAG': {
+                nodes: [
+                    { id: 0, x: 100, y: 100, value: 0 },
+                    { id: 1, x: 300, y: 100, value: 0 },
+                    { id: 2, x: 500, y: 100, value: 0 },
+                    { id: 3, x: 200, y: 280, value: 0 },
+                    { id: 4, x: 400, y: 280, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 1 },
+                    { from: 1, to: 2, weight: 1 },
+                    { from: 0, to: 3, weight: 1 },
+                    { from: 3, to: 4, weight: 1 },
+                    { from: 1, to: 4, weight: 1 },
+                    { from: 4, to: 2, weight: 1 },
+                ],
+                directed: true,
+                weighted: false
+            },
+            'Connectivity': {
+                nodes: [
+                    { id: 0, x: 150, y: 150, value: 0 },
+                    { id: 1, x: 300, y: 150, value: 0 },
+                    { id: 2, x: 150, y: 300, value: 0 },
+                    { id: 3, x: 450, y: 150, value: 0 },
+                    { id: 4, x: 450, y: 300, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 1 },
+                    { from: 1, to: 2, weight: 1 },
+                    { from: 2, to: 0, weight: 1 },
+                    { from: 3, to: 4, weight: 1 },
+                ],
+                directed: false,
+                weighted: false
+            },
+            'Flow': {
+                nodes: [
+                    { id: 0, x: 100, y: 200, value: 0 }, // S
+                    { id: 1, x: 250, y: 100, value: 0 },
+                    { id: 2, x: 250, y: 300, value: 0 },
+                    { id: 3, x: 400, y: 100, value: 0 },
+                    { id: 4, x: 400, y: 300, value: 0 },
+                    { id: 5, x: 550, y: 200, value: 0 }, // T
+                ],
+                edges: [
+                    { from: 0, to: 1, weight: 10 },
+                    { from: 0, to: 2, weight: 10 },
+                    { from: 1, to: 2, weight: 2 },
+                    { from: 1, to: 3, weight: 4 },
+                    { from: 1, to: 4, weight: 8 },
+                    { from: 2, to: 4, weight: 9 },
+                    { from: 3, to: 5, weight: 10 },
+                    { from: 4, to: 3, weight: 6 },
+                    { from: 4, to: 5, weight: 10 },
+                ],
+                directed: true,
+                weighted: true
+            },
+            'Special': {
+                nodes: [
+                    { id: 0, x: 150, y: 100, value: 0 },
+                    { id: 1, x: 150, y: 200, value: 0 },
+                    { id: 2, x: 150, y: 300, value: 0 },
+                    { id: 3, x: 450, y: 100, value: 0 },
+                    { id: 4, x: 450, y: 200, value: 0 },
+                    { id: 5, x: 450, y: 300, value: 0 },
+                ],
+                edges: [
+                    { from: 0, to: 3, weight: 1 },
+                    { from: 0, to: 4, weight: 1 },
+                    { from: 1, to: 3, weight: 1 },
+                    { from: 1, to: 5, weight: 1 },
+                    { from: 2, to: 4, weight: 1 },
+                    { from: 2, to: 5, weight: 1 },
+                ],
+                directed: false,
+                weighted: false
+            }
+        };
+
+        const template = templates[category];
+        if (template) {
+            setNodes(template.nodes);
+            setEdges(template.edges);
+            setIsDirected(template.directed);
+            setIsWeighted(template.weighted);
+            setNextId(Math.max(...template.nodes.map(n => n.id)) + 1);
+            setGraphSnapshot(null);
+            resetAnimation();
+        }
+    };
+
     return {
         nodes, setNodes,
         edges, setEdges,
@@ -869,6 +1044,7 @@ export const useGraphVisualizer = () => {
         snapAllToGrid,
         updateWeightsByDistance,
         adjustPhysicalDistance,
+        loadExampleGraph,
         getNodeLabel, getInverseNodeLabel
     };
 };

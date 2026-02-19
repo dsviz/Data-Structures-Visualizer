@@ -18,6 +18,7 @@ interface GraphControlsProps {
     setIsGridSnapped: (val: boolean) => void;
     snapAllToGrid: () => void;
     updateWeightsByDistance: () => void;
+    loadExampleGraph: (category: string) => void;
 }
 
 export const GraphControls: React.FC<GraphControlsProps> = ({
@@ -27,7 +28,8 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     runBFS, runDFS, runDijkstra, runPrim, runKruskal, reset,
     activeAlgorithm,
     isGridSnapped, setIsGridSnapped, snapAllToGrid,
-    updateWeightsByDistance
+    updateWeightsByDistance,
+    loadExampleGraph
 }) => {
 
     const [selectedCategory, setSelectedCategory] = React.useState<string>('Traversal');
@@ -44,70 +46,71 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     ];
 
     const renderAlgorithmButtons = () => {
+        const loadBtn = (
+            <button
+                onClick={() => loadExampleGraph(selectedCategory)}
+                disabled={!!activeAlgorithm}
+                className="col-span-2 w-full py-2 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-xs font-bold transition-all flex items-center justify-center gap-2 mb-2"
+            >
+                <span className="material-symbols-outlined text-lg">auto_fix</span>
+                Load {selectedCategory} Example
+            </button>
+        );
+
         switch (selectedCategory) {
             case 'Traversal':
                 return (
-                    <>
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
                         <button onClick={runBFS} disabled={!!activeAlgorithm} className={algoBtnClass}>Run BFS</button>
                         <button onClick={runDFS} disabled={!!activeAlgorithm} className={algoBtnClass}>Run DFS</button>
-                    </>
+                    </div>
                 );
             case 'Shortest Path':
                 return (
-                    <>
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
                         <button onClick={runDijkstra} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Dijkstra's</button>
                         <button disabled className={disabledAlgoBtnClass}>Bellman-Ford</button>
                         <button disabled className={disabledAlgoBtnClass}>Floyd-Warshall</button>
                         <button disabled className={disabledAlgoBtnClass}>A* Search</button>
-                    </>
+                    </div>
                 );
             case 'MST':
                 return (
-                    <>
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
                         <button onClick={runPrim} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Prim's MST</button>
                         <button onClick={runKruskal} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Kruskal's MST</button>
-                        <button disabled className={disabledAlgoBtnClass}>Borůvka's Algorithm</button>
-                    </>
+                        <button disabled className={disabledAlgoBtnClass}>Borůvka's</button>
+                    </div>
                 );
             case 'Basics':
                 return (
-                    <div className="col-span-2 text-xs text-gray-500 text-center py-2">
-                        Graph Basics and Properties (Coming Soon)
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
+                        <div className="col-span-2 text-xs text-gray-500 text-center py-2 italic font-medium">
+                            Explore graph properties and structures.
+                        </div>
                     </div>
                 );
             case 'DAG':
                 return (
-                    <>
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
                         <button disabled className={disabledAlgoBtnClass}>Topological Sort</button>
                         <button disabled className={disabledAlgoBtnClass}>Kahn's Algorithm</button>
-                        <button disabled className={disabledAlgoBtnClass}>Cycle Detection</button>
-                    </>
-                );
-            case 'Connectivity':
-                return (
-                    <>
-                        <button disabled className={disabledAlgoBtnClass}>Union-Find</button>
-                        <button disabled className={disabledAlgoBtnClass}>SCC (Kosaraju)</button>
-                        <button disabled className={disabledAlgoBtnClass}>Articulation Points</button>
-                    </>
-                );
-            case 'Flow':
-                return (
-                    <>
-                        <button disabled className={disabledAlgoBtnClass}>Ford-Fulkerson</button>
-                        <button disabled className={disabledAlgoBtnClass}>Edmonds-Karp</button>
-                    </>
-                );
-            case 'Special':
-                return (
-                    <>
-                        <button disabled className={disabledAlgoBtnClass}>Bipartite Check</button>
-                        <button disabled className={disabledAlgoBtnClass}>Hamiltonian Path</button>
-                        <button disabled className={disabledAlgoBtnClass}>Eulerian Path</button>
-                    </>
+                    </div>
                 );
             default:
-                return null;
+                return (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
+                        <div className="col-span-2 text-[10px] text-gray-400 dark:text-gray-500 text-center py-2 italic">
+                            Algorithms for {selectedCategory} coming soon.
+                        </div>
+                    </div>
+                );
         }
     };
 

@@ -26,6 +26,7 @@ const Graphs = () => {
     snapAllToGrid,
     updateWeightsByDistance,
     adjustPhysicalDistance,
+    loadExampleGraph,
     // Playback
     frames,
     currentStep, setCurrentStep,
@@ -223,6 +224,7 @@ const Graphs = () => {
           setIsGridSnapped={setIsGridSnapped}
           snapAllToGrid={snapAllToGrid}
           updateWeightsByDistance={updateWeightsByDistance}
+          loadExampleGraph={loadExampleGraph}
         />
       </div>
 
