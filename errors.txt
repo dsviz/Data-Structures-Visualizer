@@ -1,0 +1,2 @@
+src/pages/Stack.tsx(1,20): error TS6133: 'useEffect' is declared but its value is never read.
+src/pages/Stack.tsx(1,31): error TS6133: 'useRef' is declared but its value is never read.

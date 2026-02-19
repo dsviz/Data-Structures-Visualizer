@@ -122,7 +122,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-sky-400',
         pattern: 'Abstract Queue Line',
         alt: 'Abstract Queue Line',
-        isPlaceholder: true
+        // isPlaceholder: true // Enabled now
     },
     {
         title: 'Binary Tree',

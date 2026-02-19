@@ -279,15 +279,6 @@ const Stack = () => {
                         ))}
                     </div>
 
-                    {/* Visual Capacity Ceiling: 12 (h-12) * 8 (capacity) = 96 (spacing) + gap-1 (0.25rem * 7)... approx calculation
-                        Actually, simplified approach: position it based on known heights.
-                        h-12 = 3rem = 48px. gap-1 = 0.25rem = 4px.
-                        Height per item = 52px. Max capacity 8. Total height = 8 * 52 = 416px.
-                        We can place it absolutely at bottom: 416px.
-                    */}
-
-
-                    {/* Empty State */}
                     {/* Empty State */}
                     {currentFrame?.stacks?.every(s => s.length === 0) && (
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">

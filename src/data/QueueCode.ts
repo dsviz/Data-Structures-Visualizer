@@ -13,32 +13,35 @@ export const QUEUE_CODE: OperationCodes = {
         c: {
             lines: [
                 "int queue[MAX];",
-                "int front = 0, rear = -1;",
+                "int front = -1, rear = -1;",
                 "// Copy initial values",
-                "for(int i=0; i<N; i++) queue[++rear] = initValues[i];"
+                "for(int i=0; i<N; i++) {",
+                "    if(front == -1) front = 0;",
+                "    queue[++rear] = initValues[i];",
+                "}"
             ],
-            mapping: { 0: [0, 1], 1: 2, 2: 3 }
+            mapping: { 0: [0, 1], 1: [2, 3, 4, 5, 6] }
         },
         cpp: {
             lines: [
                 "std::queue<int> q;",
                 "for(int val : initValues) q.push(val);"
             ],
-            mapping: { 0: 0, 1: 1, 2: 1 }
+            mapping: { 0: 0, 1: 1 }
         },
         java: {
             lines: [
-                "Queue<Integer> q = new LinkedList<>();",
-                "for(int val : initValues) q.offer(val);"
+                "Queue<Integer> queue = new LinkedList<>();",
+                "for(int val : initValues) queue.offer(val);"
             ],
-            mapping: { 0: 0, 1: 1, 2: 1 }
+            mapping: { 0: 0, 1: 1 }
         },
         python: {
             lines: [
                 "from collections import deque",
-                "q = deque(initValues)"
+                "queue = deque(initValues)"
             ],
-            mapping: { 0: 0, 1: 1, 2: 1 }
+            mapping: { 0: 0, 1: 1 }
         }
     },
 
@@ -47,27 +50,28 @@ export const QUEUE_CODE: OperationCodes = {
         c: {
             lines: [
                 "if (rear == MAX-1) return; // Overflow",
+                "if (front == -1) front = 0;",
                 "queue[++rear] = val;"
             ],
-            mapping: { 0: 0, 1: 1 }
+            mapping: { 0: 0, 1: 1, 2: 2 }
         },
         cpp: {
             lines: [
                 "q.push(val);"
             ],
-            mapping: { 0: 0, 1: 0 }
+            mapping: { 0: 0 }
         },
         java: {
             lines: [
-                "q.offer(val);"
+                "queue.offer(val);"
             ],
-            mapping: { 0: 0, 1: 0 }
+            mapping: { 0: 0 }
         },
         python: {
             lines: [
-                "q.append(val)"
+                "queue.append(val)"
             ],
-            mapping: { 0: 0, 1: 0 }
+            mapping: { 0: 0 }
         }
     },
 
@@ -75,10 +79,13 @@ export const QUEUE_CODE: OperationCodes = {
     dequeue: {
         c: {
             lines: [
-                "if (front > rear) return -1; // Underflow",
-                "return queue[front++];"
+                "if (front == -1) return -1; // Underflow",
+                "int val = queue[front];",
+                "if (front == rear) front = rear = -1;",
+                "else front++;",
+                "return val;"
             ],
-            mapping: { 0: 0, 1: 1 }
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
         },
         cpp: {
             lines: [
@@ -89,15 +96,15 @@ export const QUEUE_CODE: OperationCodes = {
         },
         java: {
             lines: [
-                "if (q.isEmpty()) return null;",
-                "return q.poll();"
+                "if (queue.isEmpty()) throw new NoSuchElementException();",
+                "return queue.poll();"
             ],
             mapping: { 0: 0, 1: 1 }
         },
         python: {
             lines: [
-                "if not q: return",
-                "return q.popleft()"
+                "if not queue: return",
+                "return queue.popleft()"
             ],
             mapping: { 0: 0, 1: 1 }
         }
@@ -107,7 +114,7 @@ export const QUEUE_CODE: OperationCodes = {
     peek: {
         c: {
             lines: [
-                "if (front > rear) return -1;",
+                "if (front == -1) return -1;",
                 "return queue[front];"
             ],
             mapping: { 0: 0, 1: 1 }
@@ -121,15 +128,15 @@ export const QUEUE_CODE: OperationCodes = {
         },
         java: {
             lines: [
-                "if (q.isEmpty()) return null;",
-                "return q.peek();"
+                "if (queue.isEmpty()) return -1;",
+                "return queue.peek();"
             ],
             mapping: { 0: 0, 1: 1 }
         },
         python: {
             lines: [
-                "if not q: return",
-                "return q[0]"
+                "if not queue: return -1",
+                "return queue[0]"
             ],
             mapping: { 0: 0, 1: 1 }
         }
