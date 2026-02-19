@@ -1,17 +1,19 @@
-
 import React, { useState } from 'react';
-import { Frame, COMPLEXITY, Operation } from '../../hooks/useLinkedListVisualizer';
-import { Language, LINKED_LIST_CODE } from '../../data/LinkedListCode';
+import { Frame } from '../../hooks/useTreeVisualizer';
+import { TREE_CODE, Language } from '../../data/TreeCode';
 
-interface LinkedListTabsProps {
+interface TreeTabsProps {
     currentFrame: Frame;
-    activeOp: Operation;
     codeLanguage: Language;
     setCodeLanguage: (lang: Language) => void;
+    activeAlgorithm: string | null;
 }
 
-export const LinkedListTabs: React.FC<LinkedListTabsProps> = ({
-    currentFrame, codeLanguage, setCodeLanguage
+export const TreeTabs: React.FC<TreeTabsProps> = ({
+    currentFrame,
+    codeLanguage,
+    setCodeLanguage,
+    activeAlgorithm
 }) => {
     const [activeTab, setActiveTab] = useState<'pseudo' | 'code' | 'info'>('pseudo');
 
@@ -48,7 +50,7 @@ export const LinkedListTabs: React.FC<LinkedListTabsProps> = ({
                                 <span className="mr-3 select-none opacity-50">{idx}</span>
                                 {line}
                             </div>
-                        )) : <div className="text-center italic text-gray-500 mt-4">Select an operation to view pseudocode.</div>}
+                        )) : <div className="text-center italic text-gray-500 mt-4">Select an algorithm to view pseudocode.</div>}
                     </div>
                 )}
 
@@ -67,26 +69,18 @@ export const LinkedListTabs: React.FC<LinkedListTabsProps> = ({
                         </div>
                         <div className="p-4 font-mono text-xs text-gray-600 dark:text-gray-400 overflow-y-auto space-y-0.5">
                             {(() => {
-                                if (!currentFrame.opName || !LINKED_LIST_CODE[currentFrame.opName]) {
+                                if (!activeAlgorithm || !TREE_CODE[activeAlgorithm]) {
                                     return <div className="text-center italic text-gray-500 mt-4">No code available.</div>;
                                 }
-                                const codeData = LINKED_LIST_CODE[currentFrame.opName][codeLanguage];
+                                const codeData = TREE_CODE[activeAlgorithm][codeLanguage];
                                 const activeLines = codeData.mapping[currentFrame.codeLine];
                                 const activeLineIndices = Array.isArray(activeLines) ? activeLines : (activeLines !== undefined ? [activeLines] : []);
 
                                 return codeData.lines.map((lineRaw, idx) => {
-                                    // Dynamic Value Replacement
-                                    let line = lineRaw;
-                                    if (currentFrame.opValues) {
-                                        Object.entries(currentFrame.opValues).forEach(([key, val]) => {
-                                            line = line.replace(new RegExp(`\\b${key}\\b`, 'g'), String(val));
-                                        });
-                                    }
-
                                     return (
                                         <div key={idx} className={`px-2 py-1 -mx-2 rounded flex gap-3 transition-colors duration-200 ${activeLineIndices.includes(idx) ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}>
                                             <span className="text-gray-300 dark:text-gray-600 select-none w-4 text-right">{idx + 1}</span>
-                                            <span className="whitespace-pre">{line}</span>
+                                            <span className="whitespace-pre">{lineRaw}</span>
                                         </div>
                                     );
                                 });
@@ -97,46 +91,17 @@ export const LinkedListTabs: React.FC<LinkedListTabsProps> = ({
 
                 {activeTab === 'info' && (
                     <div className="p-4 space-y-6">
-                        {/* Internal State */}
-                        <div>
-                            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Internal State</h4>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                    <div className="text-[10px] text-gray-500">Size</div>
-                                    <div className="text-lg font-mono font-bold text-primary">{currentFrame.nodes.length}</div>
-                                </div>
-                                <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                    <div className="text-[10px] text-gray-500">Head</div>
-                                    <div className="text-lg font-mono font-bold text-primary">{currentFrame.nodes.length > 0 ? currentFrame.nodes[0] : 'null'}</div>
+                        {currentFrame.output !== undefined && (
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Traversal Output</h4>
+                                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded border border-indigo-100 dark:border-indigo-800 font-mono text-sm text-indigo-700 dark:text-indigo-300 break-words">
+                                    {currentFrame.output || "..."}
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Complexity */}
-                        <div>
-                            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Time Complexity</h4>
-                            {currentFrame.opName && COMPLEXITY[currentFrame.opName as keyof typeof COMPLEXITY] ? (
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                        <span className="text-xs text-gray-500">Best Case</span>
-                                        <span className="font-mono text-xs font-bold text-green-500">{COMPLEXITY[currentFrame.opName as keyof typeof COMPLEXITY].best}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                        <span className="text-xs text-gray-500">Average Case</span>
-                                        <span className="font-mono text-xs font-bold text-yellow-500">{COMPLEXITY[currentFrame.opName as keyof typeof COMPLEXITY].avg}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                        <span className="text-xs text-gray-500">Worst Case</span>
-                                        <span className="font-mono text-xs font-bold text-red-500">{COMPLEXITY[currentFrame.opName as keyof typeof COMPLEXITY].worst}</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="text-xs text-gray-500 italic">Select an operation to view complexity.</div>
-                            )}
-                        </div>
+                        )}
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

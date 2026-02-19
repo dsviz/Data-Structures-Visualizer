@@ -142,7 +142,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Tree Branching Pattern',
         alt: 'Abstract Tree Branching Pattern',
         image: '/bst.gif',
-        isPlaceholder: true,
+
         imageBg: 'bg-[#e18ba0]'
     },
     {

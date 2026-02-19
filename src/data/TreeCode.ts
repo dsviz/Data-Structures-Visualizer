@@ -191,5 +191,62 @@ export const TREE_CODE: OperationCodes = {
             ],
             mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10 }
         }
+    },
+    // --- INORDER ---
+    inorder: {
+        c: {
+            lines: ["void inorder(struct Node* root) {", "    if (root == NULL) return;", "    inorder(root->left);", "    printf(\"%d \", root->data);", "    inorder(root->right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        cpp: {
+            lines: ["void inorder(Node* root) {", "    if (!root) return;", "    inorder(root->left);", "    cout << root->val << \" \";", "    inorder(root->right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        java: {
+            lines: ["void inorder(Node root) {", "    if (root == null) return;", "    inorder(root.left);", "    System.out.print(root.val + \" \");", "    inorder(root.right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        python: {
+            lines: ["def inorder(root):", "    if root is None: return", "    inorder(root.left)", "    print(root.val, end=' ')", "    inorder(root.right)"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        }
+    },
+    // --- PREORDER ---
+    preorder: {
+        c: {
+            lines: ["void preorder(struct Node* root) {", "    if (root == NULL) return;", "    printf(\"%d \", root->data);", "    preorder(root->left);", "    preorder(root->right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        cpp: {
+            lines: ["void preorder(Node* root) {", "    if (!root) return;", "    cout << root->val << \" \";", "    preorder(root->left);", "    preorder(root->right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        java: {
+            lines: ["void preorder(Node root) {", "    if (root == null) return;", "    System.out.print(root.val + \" \");", "    preorder(root.left);", "    preorder(root.right);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        python: {
+            lines: ["def preorder(root):", "    if root is None: return", "    print(root.val, end=' ')", "    preorder(root.left)", "    preorder(root.right)"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        }
+    },
+    // --- POSTORDER ---
+    postorder: {
+        c: {
+            lines: ["void postorder(struct Node* root) {", "    if (root == NULL) return;", "    postorder(root->left);", "    postorder(root->right);", "    printf(\"%d \", root->data);", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        cpp: {
+            lines: ["void postorder(Node* root) {", "    if (!root) return;", "    postorder(root->left);", "    postorder(root->right);", "    cout << root->val << \" \";", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        java: {
+            lines: ["void postorder(Node root) {", "    if (root == null) return;", "    postorder(root.left);", "    postorder(root.right);", "    System.out.print(root.val + \" \");", "}"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        },
+        python: {
+            lines: ["def postorder(root):", "    if root is None: return", "    postorder(root.left)", "    postorder(root.right)", "    print(root.val, end=' ')"],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+        }
     }
 };
