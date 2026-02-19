@@ -239,14 +239,16 @@ const Stack = () => {
                                     return (
                                         <div key={i} className="relative w-32 h-12 flex-shrink-0">
                                             {/* Value Box */}
-                                            <div className={`
-                                                    w-full h-full rounded-md flex items-center justify-center text-lg font-mono font-medium shadow-sm border-2 transition-all duration-300
+                                            <div
+                                                title={String(val)}
+                                                className={`
+                                                    w-full h-full rounded-md flex items-center justify-center text-lg font-mono font-medium shadow-sm border-2 transition-all duration-300 overflow-hidden px-1
                                                     ${highlight
-                                                    ? 'bg-primary text-white border-primary scale-105 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]'
-                                                    : 'bg-white dark:bg-[#1c1a32] border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'
-                                                }
+                                                        ? 'bg-primary text-white border-primary scale-105 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]'
+                                                        : 'bg-white dark:bg-[#1c1a32] border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'
+                                                    }
                                                 `}>
-                                                {val}
+                                                <span className="truncate w-full text-center">{val}</span>
                                             </div>
 
                                             {/* Index Label (Right side) */}
