@@ -31,6 +31,7 @@ const Sorting = () => {
   const [customInput, setCustomInput] = useState('');
   const [showControls, setShowControls] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isTraceOpen, setIsTraceOpen] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
 
@@ -310,39 +311,49 @@ const Sorting = () => {
 
       <div className="border-t border-gray-100 dark:border-[#272546]"></div>
 
-      {/* Execution Trace */}
-      <div className="space-y-4">
-        <h3 className="text-slate-900 dark:text-white font-bold text-sm flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-[20px]">data_object</span>
-          Execution Trace
-        </h3>
+      {/* Execution Trace Accordion */}
+      <div className="pt-2 border-t border-gray-100 dark:border-[#272546]">
+        <button
+          onClick={() => setIsTraceOpen(!isTraceOpen)}
+          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1e1c33] transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">data_object</span>
+            <span className="text-slate-900 dark:text-white font-bold text-sm">Execution Trace</span>
+          </div>
+          <span className={`material-symbols-outlined text-gray-400 transition-transform duration-200 ${isTraceOpen ? 'rotate-180' : ''}`}>expand_more</span>
+        </button>
 
-        {/* Variables */}
-        <div className="bg-white dark:bg-[#1a1828] p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-sm">
-          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Local Variables</h4>
-          <div className="grid grid-cols-2 gap-4">
-            {Object.entries(currentFrame.variables).map(([key, val]) => (
-              <div key={key} className="bg-gray-50 dark:bg-[#232136] p-2 rounded-lg border border-gray-100 dark:border-white/5">
-                <span className="text-[10px] text-slate-500 block mb-0.5 font-mono">{key}</span>
-                <span className="font-mono text-slate-900 dark:text-white text-sm font-semibold">{val}</span>
+        {isTraceOpen && (
+          <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            {/* Variables */}
+            <div className="bg-white dark:bg-[#1a1828] p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-sm">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Local Variables</h4>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(currentFrame.variables).map(([key, val]) => (
+                  <div key={key} className="bg-gray-50 dark:bg-[#232136] p-2 rounded-lg border border-gray-100 dark:border-white/5">
+                    <span className="text-[10px] text-slate-500 block mb-0.5 font-mono">{key}</span>
+                    <span className="font-mono text-slate-900 dark:text-white text-sm font-semibold">{val}</span>
+                  </div>
+                ))}
+                {Object.keys(currentFrame.variables).length === 0 && <span className="text-xs text-gray-400 italic col-span-2 text-center py-2">No active variables</span>}
               </div>
-            ))}
-            {Object.keys(currentFrame.variables).length === 0 && <span className="text-xs text-gray-400 italic col-span-2 text-center py-2">No active variables</span>}
-          </div>
-        </div>
-
-        {/* Log */}
-        <div className="bg-white dark:bg-[#1a1828] p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-sm">
-          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Current Step Log</h4>
-          <div className="flex gap-3 items-start">
-            <div className="shrink-0 size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold font-mono mt-0.5">
-              {currentStep}
             </div>
-            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-              {currentFrame.description}
-            </p>
+
+            {/* Log */}
+            <div className="bg-white dark:bg-[#1a1828] p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-sm">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Current Step Log</h4>
+              <div className="flex gap-3 items-start">
+                <div className="shrink-0 size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold font-mono mt-0.5">
+                  {currentStep}
+                </div>
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                  {currentFrame.description}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MAX_CAPACITY, Operation } from '../../hooks/useStackVisualizer';
 
 interface StackControlsProps {
@@ -57,226 +57,197 @@ export const StackControls: React.FC<StackControlsProps> = ({
     error, currentFrame
 }) => {
 
-    return (
-        <div className="flex flex-col gap-2">
+    const OPERATIONS = mode === 'standard' ? [
+        { id: 'create', label: 'Initialize Stack' },
+        { id: 'push', label: 'Push Element' },
+        { id: 'pop', label: 'Pop Element' },
+        { id: 'peek', label: 'Peek Top' },
+    ] : [
+        { id: 'app_reverse', label: 'Reverse String' },
+        { id: 'app_balanced_parentheses', label: 'Balanced Parentheses' },
+        { id: 'app_postfix_eval', label: 'Postfix Evaluator' },
+        { id: 'app_browser_history', label: 'Browser History' },
+    ];
 
-            {/* Mode Switcher */}
-            <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex mb-1">
-                <button
-                    onClick={() => { setMode('standard'); setActiveOp(null); }}
-                    className={`flex-1 py-1 text-[10px] uppercase font-bold rounded ${mode === 'standard' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow' : 'text-gray-400'}`}
-                >
-                    Standard
-                </button>
-                <button
-                    onClick={() => { setMode('applications'); setActiveOp(null); }}
-                    className={`flex-1 py-1 text-[10px] uppercase font-bold rounded ${mode === 'applications' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow' : 'text-gray-400'}`}
-                >
-                    Apps
-                </button>
+    useEffect(() => {
+        if (!activeOp) {
+            setActiveOp(OPERATIONS[0].id as Operation);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode]);
+
+    const handleRun = () => {
+        switch (activeOp) {
+            case 'push': handlePush(); break;
+            case 'pop': handlePop(); break;
+            case 'peek': handlePeek(); break;
+            case 'app_reverse': handleReverseString(); break;
+            case 'app_balanced_parentheses': handleBalancedParentheses(); break;
+            case 'app_postfix_eval': handlePostfixEval(); break;
+            case 'app_browser_history': handleBrowserVisit(); break;
+        }
+    };
+
+    return (
+        <div className="flex flex-col gap-6 h-full overflow-y-auto pr-1">
+
+            {/* Selection Area */}
+            <div className="space-y-4">
+                {/* Mode Selector */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Work Mode</label>
+                    <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex shadow-inner">
+                        <button
+                            onClick={() => setMode('standard')}
+                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'standard' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Standard
+                        </button>
+                        <button
+                            onClick={() => setMode('applications')}
+                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'applications' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Apps
+                        </button>
+                    </div>
+                </div>
+
+                {/* Stack Choice (Standard Only) */}
+                {mode === 'standard' && (
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Active Stack</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[0, 1].map(idx => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setActiveStackIndex(idx)}
+                                    className={`py-2 text-[11px] font-bold rounded-lg border transition-all ${activeStackIndex === idx ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'border-gray-200 dark:border-[#272546] text-gray-400 hover:bg-gray-50'}`}
+                                >
+                                    Stack {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Operation Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
+                    <div className="relative">
+                        <select
+                            value={activeOp || ''}
+                            onChange={(e) => setActiveOp(e.target.value as Operation)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
+                        >
+                            {OPERATIONS.map(op => (
+                                <option key={op.id} value={op.id}>{op.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                {/* Dynamic Inputs Area */}
+                <div className="animate-in fade-in slide-in-from-top-2">
+                    {activeOp === 'create' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            {createStep === 'size' ? (
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Capacity (Max {MAX_CAPACITY})</span>
+                                        <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
+                                    </div>
+                                    <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Initialize & Next</button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
+                                        <span className="text-xs font-bold text-gray-500">Add Values</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
+                                        <button onClick={handleCreateCustom} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
+                                    </div>
+                                    <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeOp === 'push' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Value to Push</span>
+                            <input type="text" value={pushValue} onChange={e => setPushValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
+                            <button onClick={handlePush} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Push to Stack</button>
+                        </div>
+                    )}
+
+                    {(activeOp === 'pop' || activeOp === 'peek') && (
+                        <button onClick={handleRun} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 shadow-primary/20">
+                            Run {activeOp === 'pop' ? 'Pop' : 'Peek'}
+                        </button>
+                    )}
+
+                    {/* App Specific Inputs */}
+                    {activeOp === 'app_reverse' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Input Text</span>
+                            <input type="text" value={appInput} onChange={e => setAppInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" maxLength={MAX_CAPACITY} />
+                            <button onClick={handleReverseString} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Run Reversal</button>
+                        </div>
+                    )}
+
+                    {activeOp === 'app_balanced_parentheses' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Expression</span>
+                            <input type="text" value={balancedInput} onChange={e => setBalancedInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
+                            <button onClick={handleBalancedParentheses} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Check Balance</button>
+                        </div>
+                    )}
+
+                    {activeOp === 'app_postfix_eval' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Postfix Expression</span>
+                            <input type="text" value={postfixInput} onChange={e => setPostfixInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono" placeholder="e.g. 5 3 + 2 *" />
+                            <button onClick={handlePostfixEval} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Evaluate</button>
+                        </div>
+                    )}
+
+                    {activeOp === 'app_browser_history' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">URL Path</span>
+                            <input type="text" value={browserInput} onChange={e => setBrowserInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" placeholder="e.g. google.com" />
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={handleBrowserBack} className="bg-gray-100 dark:bg-[#272546] hover:bg-gray-200 dark:hover:bg-[#383564] text-slate-700 dark:text-white text-[11px] font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-colors"><span className="material-symbols-outlined text-sm">arrow_back</span> Back</button>
+                                <button onClick={handleBrowserForward} className="bg-gray-100 dark:bg-[#272546] hover:bg-gray-200 dark:hover:bg-[#383564] text-slate-700 dark:text-white text-[11px] font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-colors">Forward <span className="material-symbols-outlined text-sm">arrow_forward</span></button>
+                            </div>
+                            <button onClick={handleBrowserVisit} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm font-bold">Visit Page</button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl animate-in shake duration-500">
+                        <p className="text-red-600 dark:text-red-400 text-xs font-medium leading-relaxed">{error}</p>
+                    </div>
+                )}
             </div>
 
-            {/* Stack Selector (Only Standard Mode) */}
-            {mode === 'standard' && (
-                <div className="flex gap-2 mb-2 px-1">
-                    <button
-                        onClick={() => setActiveStackIndex(0)}
-                        className={`flex-1 py-1 text-[10px] uppercase font-bold rounded border transition-colors ${activeStackIndex === 0 ? 'bg-primary/10 border-primary text-primary' : 'border-dashed border-gray-600 text-gray-400 hover:text-gray-300'}`}
-                    >
-                        Stack 1
-                    </button>
-                    <button
-                        onClick={() => setActiveStackIndex(1)}
-                        className={`flex-1 py-1 text-[10px] uppercase font-bold rounded border transition-colors ${activeStackIndex === 1 ? 'bg-primary/10 border-primary text-primary' : 'border-dashed border-gray-600 text-gray-400 hover:text-gray-300'}`}
-                    >
-                        Stack 2
-                    </button>
+            {/* Results Output (Apps Only) */}
+            {mode === 'applications' && currentFrame.internalState.output && (
+                <div className="space-y-2 mt-auto">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Application Result</label>
+                    <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 shadow-sm animate-in zoom-in-95 duration-200">
+                        <div className="text-[10px] text-green-600 dark:text-green-400 font-bold mb-1">OUTPUT</div>
+                        <p className="text-sm font-mono font-bold text-green-700 dark:text-green-300 break-words leading-relaxed">
+                            {currentFrame.internalState.output}
+                        </p>
+                    </div>
                 </div>
-            )}
-
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
-
-            {mode === 'standard' ? (
-                <>
-                    {/* Operation: Create */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'create' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => { setActiveOp(prev => prev === 'create' ? null : 'create'); setCreateStep('size'); }} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'create' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>add_circle</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'create' ? 'text-primary font-bold' : ''}`}>Create</p></div>
-                        </button>
-                        {activeOp === 'create' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                {createStep === 'size' ? (
-                                    <>
-                                        <label>
-                                            <span className="text-[10px] text-gray-400 uppercase font-bold">Stack Size (Max {MAX_CAPACITY})</span>
-                                            <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none mt-1" />
-                                        </label>
-                                        <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Next</button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-sm">arrow_back</span></button>
-                                            <span className="text-xs font-bold text-gray-500">Method</span>
-                                        </div>
-                                        <button onClick={handleCreateRandom} className="w-full border border-gray-600 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-white text-xs font-bold py-2 rounded">Generate Random</button>
-                                        <div className="flex items-center gap-2 text-[10px] text-gray-400"><div className="h-px bg-gray-600 flex-1"></div>OR<div className="h-px bg-gray-600 flex-1"></div></div>
-                                        <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none" placeholder="1, 2, 3..." />
-                                        <button onClick={handleCreateCustom} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Set Values</button>
-                                    </>
-                                )}
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Operation: Push */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'push' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'push' ? null : 'push')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'push' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>publish</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'push' ? 'text-primary font-bold' : ''}`}>Push (v)</p></div>
-                        </button>
-                        {activeOp === 'push' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">Value</span><input type="text" value={pushValue} onChange={e => setPushValue(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                                <button onClick={handlePush} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Push</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Operation: Pop */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'pop' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'pop' ? null : 'pop')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'pop' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>arrow_upward</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'pop' ? 'text-primary font-bold' : ''}`}>Pop</p></div>
-                        </button>
-                        {activeOp === 'pop' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <p className="text-xs text-gray-400 mb-2">Remove top element?</p>
-                                <button onClick={handlePop} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Pop</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Operation: Peek */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'peek' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'peek' ? null : 'peek')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'peek' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>visibility</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'peek' ? 'text-primary font-bold' : ''}`}>Peek</p></div>
-                        </button>
-                        {activeOp === 'peek' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <p className="text-xs text-gray-400 mb-2">View top element?</p>
-                                <button onClick={handlePeek} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Peek</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-                </>
-            ) : (
-                <>
-                    {/* Application: String Reversal */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'app_reverse' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'app_reverse' ? null : 'app_reverse')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'app_reverse' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>swap_horiz</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'app_reverse' ? 'text-primary font-bold' : ''}`}>Reverse String</p></div>
-                        </button>
-                        {activeOp === 'app_reverse' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">Input String</span><input type="text" value={appInput} onChange={e => setAppInput(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" maxLength={MAX_CAPACITY} /></label>
-                                <button onClick={handleReverseString} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Run Reversal</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-
-                                {/* Output Box */}
-                                <div className="mt-2">
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Output</span>
-                                    <div className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-2 text-sm text-green-400 font-mono min-h-[38px] flex items-center mt-1">
-                                        {currentFrame.internalState.output || <span className="text-gray-600 italic text-xs">Waiting...</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Application: Balanced Parentheses */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'app_balanced_parentheses' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'app_balanced_parentheses' ? null : 'app_balanced_parentheses')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'app_balanced_parentheses' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>data_object</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'app_balanced_parentheses' ? 'text-primary font-bold' : ''}`}>Balanced Parentheses</p></div>
-                        </button>
-                        {activeOp === 'app_balanced_parentheses' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">Input String</span><input type="text" value={balancedInput} onChange={e => setBalancedInput(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" maxLength={MAX_CAPACITY} /></label>
-                                <button onClick={handleBalancedParentheses} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Check Balance</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-
-                                {/* Output Box */}
-                                <div className="mt-2">
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Result</span>
-                                    <div className={`w-full bg-[#121121] border border-[#383564] rounded px-2 py-2 text-sm font-mono min-h-[38px] flex items-center mt-1 ${currentFrame.internalState.output === 'Valid' ? 'text-green-400' : currentFrame.internalState.output === 'Invalid' ? 'text-red-400' : 'text-gray-400'}`}>
-                                        {currentFrame.internalState.output || <span className="text-gray-600 italic text-xs">Waiting...</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Application: Postfix Expression Evaluator */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'app_postfix_eval' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'app_postfix_eval' ? null : 'app_postfix_eval')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'app_postfix_eval' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>calculate</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'app_postfix_eval' ? 'text-primary font-bold' : ''}`}>Postfix Evaluator</p></div>
-                        </button>
-                        {activeOp === 'app_postfix_eval' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">Expression</span><input type="text" value={postfixInput} onChange={e => setPostfixInput(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" placeholder="e.g. 5 3 + 2 *" /></label>
-                                <button onClick={handlePostfixEval} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Evaluate</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-
-                                {/* Output Box */}
-                                <div className="mt-2">
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Result</span>
-                                    <div className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-2 text-sm text-green-400 font-mono min-h-[38px] flex items-center mt-1">
-                                        {currentFrame.internalState.output || <span className="text-gray-600 italic text-xs">Waiting...</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Application: Browser History Simulator */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'app_browser_history' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => setActiveOp(prev => prev === 'app_browser_history' ? null : 'app_browser_history')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'app_browser_history' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>history</span>
-                            <div><p className={`text-sm font-medium leading-none ${activeOp === 'app_browser_history' ? 'text-primary font-bold' : ''}`}>Browser History</p></div>
-                        </button>
-                        {activeOp === 'app_browser_history' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">New URL</span><input type="text" value={browserInput} onChange={e => setBrowserInput(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" placeholder="e.g. google.com" /></label>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={handleBrowserBack} className="bg-[#272546] hover:bg-[#383564] text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1"><span className="material-symbols-outlined text-sm">arrow_back</span> Back</button>
-                                    <button onClick={handleBrowserForward} className="bg-[#272546] hover:bg-[#383564] text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1">Forward <span className="material-symbols-outlined text-sm">arrow_forward</span></button>
-                                </div>
-                                <button onClick={handleBrowserVisit} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded flex items-center justify-center gap-1">Visit Page</button>
-
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-
-                                {/* Output Box */}
-                                <div className="mt-2">
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Status</span>
-                                    <div className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-2 text-sm text-blue-400 font-mono min-h-[38px] flex items-center mt-1">
-                                        {currentFrame.internalState.output || <span className="text-gray-600 italic text-xs">Ready</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </>
             )}
         </div>
     );
 };
+

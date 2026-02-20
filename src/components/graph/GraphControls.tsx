@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface GraphControlsProps {
     isDirected: boolean;
@@ -51,187 +51,128 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     loadExampleGraph
 }) => {
 
-    const [selectedCategory, setSelectedCategory] = React.useState<string>('Traversal');
+    const [selectedCategory, setSelectedCategory] = useState<string>('Traversal');
+    const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
+    const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
     const CATEGORIES = [
-        { id: 'Basics', label: 'Basics', icon: 'grid_view' },
-        { id: 'Traversal', label: 'Traversal', icon: 'alt_route' },
-        { id: 'Shortest Path', label: 'Shortest', icon: 'timeline' },
-        { id: 'MST', label: 'MST', icon: 'hub' },
-        { id: 'DAG', label: 'DAG', icon: 'turn_right' },
-        { id: 'Connectivity', label: 'Connect', icon: 'link' },
-        { id: 'Flow', label: 'Flow', icon: 'waves' },
-        { id: 'Special', label: 'Special', icon: 'star' },
+        { id: 'Basics', label: 'Basics / Fundamentals' },
+        { id: 'Traversal', label: 'Graph Traversal' },
+        { id: 'Shortest Path', label: 'Shortest Path' },
+        { id: 'MST', label: 'Minimum Spanning Tree' },
+        { id: 'DAG', label: 'Directed Acyclic Graph' },
+        { id: 'Connectivity', label: 'Connectivity' },
+        { id: 'Flow', label: 'Network Flow' },
+        { id: 'Special', label: 'Special' },
     ];
 
-    const renderAlgorithmButtons = () => {
-        const loadBtn = (
-            <button
-                onClick={() => {
-                    reset();
-                    loadExampleGraph(selectedCategory);
-                }}
-                className="col-span-2 w-full py-2 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-xs font-bold transition-all flex items-center justify-center gap-2 mb-2"
-            >
-                <span className="material-symbols-outlined text-lg">auto_fix</span>
-                {['MST', 'Traversal', 'Basics', 'Shortest Path', 'DAG', 'Connectivity', 'Flow'].includes(selectedCategory)
-                    ? `Load Next Example / Draw Own`
-                    : `Load Example / Draw Own`}
-            </button>
-        );
+    const ALGORITHMS: Record<string, { id: string, label: string, run: () => void }[]> = {
+        'Basics': [
+            { id: 'nodeDegree', label: 'Find Node Degree', run: runNodeDegree },
+            { id: 'highlightNeighbors', label: 'Highlight Neighbors', run: runHighlightNeighbors },
+            { id: 'checkConnectivity', label: 'Check Connectivity', run: runCheckConnectivity },
+            { id: 'detectCycle', label: 'Detect Cycle', run: runDetectCycle },
+        ],
+        'Traversal': [
+            { id: 'bfs', label: 'Breadth First Search (BFS)', run: runBFS },
+            { id: 'dfs', label: 'Depth First Search (DFS)', run: runDFS },
+        ],
+        'Shortest Path': [
+            { id: 'dijkstra', label: "Dijkstra's Algorithm", run: runDijkstra },
+            { id: 'bellmanFord', label: 'Bellman-Ford Algorithm', run: runBellmanFord },
+            { id: 'floydWarshall', label: 'Floyd-Warshall Algorithm', run: runFloydWarshall },
+            { id: 'aStar', label: 'A* Search', run: runAStar },
+        ],
+        'MST': [
+            { id: 'prim', label: "Prim's Algorithm", run: runPrim },
+            { id: 'kruskal', label: "Kruskal's Algorithm", run: runKruskal },
+            { id: 'boruvka', label: "Boruvka's Algorithm", run: runBoruvka },
+        ],
+        'DAG': [
+            { id: 'topologicalSort', label: 'Topological Sort', run: runTopologicalSort },
+            { id: 'kahn', label: "Kahn's Algorithm", run: runKahn },
+        ],
+        'Connectivity': [
+            { id: 'tarjanBridges', label: "Tarjan's Bridges", run: runTarjanBridges },
+            { id: 'articulationPoints', label: 'Articulation Points', run: runArticulationPoints },
+        ],
+        'Flow': [
+            { id: 'fordFulkerson', label: 'Ford-Fulkerson', run: runFordFulkerson },
+            { id: 'edmondsKarp', label: 'Edmonds-Karp', run: runEdmondsKarp },
+        ],
+        'Special': []
+    };
 
-        switch (selectedCategory) {
-            case 'Traversal':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runBFS} disabled={!!activeAlgorithm} className={algoBtnClass}>Run BFS</button>
-                        <button onClick={runDFS} disabled={!!activeAlgorithm} className={algoBtnClass}>Run DFS</button>
-                    </div>
-                );
-            case 'Shortest Path':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runDijkstra} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Dijkstra's</button>
-                        <button onClick={runBellmanFord} disabled={!!activeAlgorithm} className={algoBtnClass}>Bellman-Ford</button>
-                        <button onClick={runFloydWarshall} disabled={!!activeAlgorithm} className={algoBtnClass}>Floyd-Warshall</button>
-                        <button onClick={runAStar} disabled={!!activeAlgorithm} className={algoBtnClass}>A* Search</button>
-                    </div>
-                );
-            case 'MST':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runPrim} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Prim's MST</button>
-                        <button onClick={runKruskal} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Kruskal's MST</button>
-                        <button onClick={runBoruvka} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Boruvka's</button>
-                    </div>
-                );
-            case 'Basics':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runNodeDegree} disabled={!!activeAlgorithm} className={algoBtnClass}>Find Node Degree</button>
-                        <button onClick={runHighlightNeighbors} disabled={!!activeAlgorithm} className={algoBtnClass}>Highlight Neighbors</button>
-                        <button onClick={runCheckConnectivity} disabled={!!activeAlgorithm} className={algoBtnClass}>Check Connectivity</button>
-                        <button onClick={runDetectCycle} disabled={!!activeAlgorithm} className={algoBtnClass}>Detect Cycle</button>
-                    </div>
-                );
-            case 'DAG':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runTopologicalSort} disabled={!!activeAlgorithm} className={algoBtnClass}>Topological Sort</button>
-                        <button onClick={runKahn} disabled={!!activeAlgorithm} className={algoBtnClass}>Kahn's Algorithm</button>
-                    </div>
-                );
-            case 'Connectivity':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runTarjanBridges} disabled={!!activeAlgorithm} className={algoBtnClass}>Tarjan's Bridges</button>
-                        <button onClick={runArticulationPoints} disabled={!!activeAlgorithm} className={algoBtnClass}>Articulation Points</button>
-                    </div>
-                );
-            case 'Flow':
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <button onClick={runFordFulkerson} disabled={!!activeAlgorithm} className={algoBtnClass}>Ford-Fulkerson</button>
-                        <button onClick={runEdmondsKarp} disabled={!!activeAlgorithm} className={algoBtnClass}>Edmonds-Karp</button>
-                    </div>
-                );
-            default:
-                return (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        {loadBtn}
-                        <div className="col-span-2 text-[10px] text-gray-400 dark:text-gray-500 text-center py-2 italic">
-                            Algorithms for {selectedCategory} coming soon.
-                        </div>
-                    </div>
-                );
+    // Auto-select first algorithm when category changes
+    useEffect(() => {
+        const algos = ALGORITHMS[selectedCategory] || [];
+        if (algos.length > 0) {
+            setSelectedAlgorithm(algos[0].id);
+        } else {
+            setSelectedAlgorithm('');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCategory]);
+
+    const handleRunAlgorithm = () => {
+        const algos = ALGORITHMS[selectedCategory] || [];
+        const algo = algos.find(a => a.id === selectedAlgorithm);
+        if (algo) {
+            algo.run();
         }
     };
 
-    const algoBtnClass = `h-10 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium rounded-lg text-xs transition-colors`;
-
     return (
-        <div className="flex flex-col gap-6 h-full overflow-y-auto pr-2">
+        <div className="flex flex-col gap-5 h-full overflow-y-auto pr-2">
 
-            {/* Categories Grid */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Categories</h3>
-                <div className="grid grid-cols-2 gap-2">
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-all ${selectedCategory === cat.id
-                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800'
-                                : 'bg-white dark:bg-[#121121] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#272546] hover:bg-gray-50 dark:hover:bg-[#1a182e]'
-                                }`}
+            {/* Selection Area */}
+            <div className="space-y-4">
+                {/* Category Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Category</label>
+                    <div className="relative">
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
                         >
-                            <span className="material-symbols-outlined text-lg">{cat.icon}</span>
-                            <span>{cat.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Algorithms */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Algorithms</h3>
-                <div className="grid grid-cols-1 gap-2">
-                    {renderAlgorithmButtons()}
-                </div>
-            </div>
-
-            {/* Graph Settings */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Graph Settings</h3>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546]">
-                    <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Directed Graph</span>
-                    <button
-                        onClick={() => setIsDirected(!isDirected)}
-                        className={`w-10 h-5 rounded-full relative transition-colors ${isDirected ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                        <span className={`absolute top-1 size-3 bg-white rounded-full shadow-sm transition-all ${isDirected ? 'right-1' : 'left-1'}`}></span>
-                    </button>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546]">
-                    <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Weighted Graph</span>
-                    <button
-                        onClick={() => setIsWeighted(!isWeighted)}
-                        className={`w-10 h-5 rounded-full relative transition-colors ${isWeighted ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                        <span className={`absolute top-1 size-3 bg-white rounded-full shadow-sm transition-all ${isWeighted ? 'right-1' : 'left-1'}`}></span>
-                    </button>
+                            {CATEGORIES.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
                 </div>
 
-                {/* Grid Snap Controls */}
-                <div className="flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546]">
-                    <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Snap to Grid</span>
-                    <button
-                        onClick={() => {
-                            const newValue = !isGridSnapped;
-                            setIsGridSnapped(newValue);
-                            if (newValue) {
-                                snapAllToGrid();
-                                updateWeightsByDistance();
-                            }
-                        }}
-                        className={`w-10 h-5 rounded-full relative transition-colors ${isGridSnapped ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
-                    >
-                        <span className={`absolute top-1 size-3 bg-white rounded-full shadow-sm transition-all ${isGridSnapped ? 'right-1' : 'left-1'}`}></span>
-                    </button>
-                </div>
+                {/* Algorithm Dropdown */}
+                {ALGORITHMS[selectedCategory] && ALGORITHMS[selectedCategory].length > 0 ? (
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Algorithm</label>
+                        <div className="relative">
+                            <select
+                                value={selectedAlgorithm}
+                                onChange={(e) => setSelectedAlgorithm(e.target.value)}
+                                className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
+                            >
+                                {ALGORITHMS[selectedCategory].map(algo => (
+                                    <option key={algo.id} value={algo.id}>{algo.label}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500 italic py-2">
+                        Algorithms for this category coming soon.
+                    </div>
+                )}
 
-                {['Traversal', 'Shortest Path', 'MST'].includes(selectedCategory) && (
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Start Node:</span>
+                {/* Start Node (if necessary) */}
+                {['Traversal', 'Shortest Path', 'MST', 'Basics'].includes(selectedCategory) && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#121121] border border-gray-200 dark:border-[#272546]">
+                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300 whitespace-nowrap">Start Node:</span>
                         <input
-                            className="w-full bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono"
+                            className="flex-1 bg-white dark:bg-[#1a182e] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-md p-1.5 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono shadow-inner"
                             placeholder="0"
                             type="text"
                             value={startNode}
@@ -239,19 +180,102 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                         />
                     </div>
                 )}
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                        onClick={() => {
+                            reset();
+                            loadExampleGraph(selectedCategory);
+                        }}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[13px] font-bold transition-all shadow-sm"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">auto_fix</span>
+                        Example
+                    </button>
+
+                    <button
+                        onClick={handleRunAlgorithm}
+                        disabled={!!activeAlgorithm || !selectedAlgorithm}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-500/20"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                        Run
+                    </button>
+                </div>
             </div>
 
-            {/* Reset - Clean and Minimal */}
-            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 flex flex-col gap-2">
+            {/* Graph Settings Dropdown / Accordion */}
+            <div className="mt-2 border border-gray-200 dark:border-[#272546] rounded-xl overflow-hidden bg-white dark:bg-[#121121] shadow-sm">
+                <button
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    className="w-full flex items-center justify-between p-3.5 bg-gray-50 dark:bg-[#1a182e] hover:bg-gray-100 dark:hover:bg-[#201d36] transition-colors"
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-gray-500 dark:text-gray-400 text-[20px]">settings_suggest</span>
+                        <span className="text-sm font-bold text-slate-700 dark:text-gray-200 tracking-wide">Graph Settings</span>
+                    </div>
+                    <span className={`material-symbols-outlined text-gray-500 dark:text-gray-400 transition-transform duration-300 ${isSettingsOpen ? 'rotate-180' : ''}`}>
+                        expand_more
+                    </span>
+                </button>
 
+                <div className={`transition-all duration-300 ease-in-out ${isSettingsOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="p-4 space-y-4 border-t border-gray-200 dark:border-[#272546]">
+                        {/* Directed */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-600 dark:text-gray-400">Directed Graph</span>
+                            <button
+                                onClick={() => setIsDirected(!isDirected)}
+                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isDirected ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                            >
+                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isDirected ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                            </button>
+                        </div>
+
+                        {/* Weighted */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-600 dark:text-gray-400">Weighted Graph</span>
+                            <button
+                                onClick={() => setIsWeighted(!isWeighted)}
+                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isWeighted ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                            >
+                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isWeighted ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                            </button>
+                        </div>
+
+                        {/* Snap to Grid */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-600 dark:text-gray-400">Snap to Grid</span>
+                            <button
+                                onClick={() => {
+                                    const newValue = !isGridSnapped;
+                                    setIsGridSnapped(newValue);
+                                    if (newValue) {
+                                        snapAllToGrid();
+                                        updateWeightsByDistance();
+                                    }
+                                }}
+                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isGridSnapped ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                            >
+                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isGridSnapped ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Reset Footer */}
+            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-[#272546]">
                 <button
                     onClick={reset}
-                    className="w-full py-2.5 px-4 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 text-xs font-medium transition-all flex items-center justify-center gap-2 group"
+                    className="w-full py-2.5 px-4 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
                 >
-                    <span className="material-symbols-outlined text-sm group-hover:rotate-180 transition-transform duration-500">refresh</span>
-                    Reset
+                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-180 transition-transform duration-500">cleaning_services</span>
+                    Clear Visualizer
                 </button>
             </div>
         </div>
     );
 };
+

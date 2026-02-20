@@ -22,7 +22,7 @@ const Trees = () => {
     clear
   } = treeVisualizer;
 
-  const [splitRatio, setSplitRatio] = useState(0.6);
+  const [splitRatio, setSplitRatio] = useState(0.7);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 

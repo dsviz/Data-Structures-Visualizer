@@ -55,7 +55,7 @@ const Arrays = () => {
 
     // --- Layout State ---
     const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
-    const [splitRatio, setSplitRatio] = useState(0.5); // Top height ratio
+    const [splitRatio, setSplitRatio] = useState(0.7); // Top height ratio
     const [isResizingSidebar, setIsResizingSidebar] = useState(false);
     const sidebarRef = useRef<HTMLDivElement>(null);
 

@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import { Frame } from '../../hooks/useGraphVisualizer';
 import { GRAPH_CODE, Language } from '../../data/GraphCode';
+import { GRAPH_INFO } from '../../data/GraphInfo';
 
 interface GraphTabsProps {
     currentFrame: Frame;
     codeLanguage: Language;
     setCodeLanguage: (lang: Language) => void;
     activeAlgorithm: string | null;
-    getNodeLabel: (id: number) => string;
 }
 
 export const GraphTabs: React.FC<GraphTabsProps> = ({
     currentFrame,
     codeLanguage,
     setCodeLanguage,
-    activeAlgorithm,
-    getNodeLabel
+    activeAlgorithm
 }) => {
     const [activeTab, setActiveTab] = useState<'pseudo' | 'code' | 'info'>('pseudo');
 
@@ -93,67 +92,29 @@ export const GraphTabs: React.FC<GraphTabsProps> = ({
 
                 {activeTab === 'info' && (
                     <div className="p-4 space-y-6">
-                        <div>
-                            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Description</h4>
-                            <div className="bg-white dark:bg-[#151426] p-3 rounded border border-gray-100 dark:border-[#272546] text-sm text-slate-700 dark:text-slate-300">
-                                {currentFrame.description || "Ready to run."}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                <div className="text-[10px] text-gray-500">Visited</div>
-                                <div className="text-lg font-mono font-bold text-emerald-500">{currentFrame.visited ? currentFrame.visited.length : 0}</div>
-                            </div>
-                            <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546]">
-                                <div className="text-[10px] text-gray-500">Queue/Stack</div>
-                                <div className="text-lg font-mono font-bold text-primary">
-                                    {activeAlgorithm === 'bfs' ? currentFrame.queue?.length : currentFrame.stack?.length || 0}
-                                </div>
-                            </div>
-                        </div>
-
-                        {currentFrame.distances && (
-                            <div>
-                                <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Distances Array</h4>
-                                <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546] overflow-x-auto">
-                                    <div className="flex gap-2 min-w-max">
-                                        {Object.entries(currentFrame.distances).map(([nodeId, dist]) => (
-                                            <div key={nodeId} className="flex flex-col items-center bg-gray-50 dark:bg-[#1e1c33] rounded px-2 py-1 border border-gray-100 dark:border-gray-800 min-w-[40px]">
-                                                <span className="text-[10px] text-gray-500 font-bold">{getNodeLabel(parseInt(nodeId))}</span>
-                                                <span className={`font-mono font-bold text-sm ${dist !== Infinity && dist !== '∞' ? 'text-amber-500' : 'text-gray-400'}`}>{dist === Infinity ? '∞' : dist}</span>
-                                            </div>
-                                        ))}
+                        {activeAlgorithm && GRAPH_INFO[activeAlgorithm] ? (
+                            <>
+                                <div>
+                                    <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Algorithm Description</h4>
+                                    <div className="bg-white dark:bg-[#151426] p-3 rounded border border-gray-100 dark:border-[#272546] text-sm text-slate-700 dark:text-slate-300">
+                                        {GRAPH_INFO[activeAlgorithm].description}
                                     </div>
                                 </div>
-                            </div>
-                        )}
 
-                        {currentFrame.distances2D && (
-                            <div>
-                                <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Distance Matrix</h4>
-                                <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546] overflow-x-auto">
-                                    <table className="w-full text-xs text-center border-collapse">
-                                        <thead>
-                                            <tr>
-                                                <th className="border-b border-r dark:border-gray-700/50 p-1 text-gray-500 border-gray-200">\</th>
-                                                {Object.keys(currentFrame.distances2D).map(k => (
-                                                    <th key={`th-${k}`} className="border-b dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary">{getNodeLabel(parseInt(k))}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Object.entries(currentFrame.distances2D).map(([u, row]) => (
-                                                <tr key={`tr-${u}`}>
-                                                    <td className="border-r dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary font-bold">{getNodeLabel(parseInt(u))}</td>
-                                                    {Object.entries(row).map(([v, val]) => (
-                                                        <td key={`td-${u}-${v}`} className={`p-1 font-mono ${val !== Infinity && val !== '∞' ? 'text-slate-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}`}>{val === Infinity ? '∞' : val}</td>
-                                                    ))}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-white dark:bg-[#151426] p-3 rounded border border-gray-100 dark:border-[#272546]">
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Time Complexity</div>
+                                        <div className="text-sm font-mono font-bold text-primary">{GRAPH_INFO[activeAlgorithm].timeComplexity}</div>
+                                    </div>
+                                    <div className="bg-white dark:bg-[#151426] p-3 rounded border border-gray-100 dark:border-[#272546]">
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1">Space Complexity</div>
+                                        <div className="text-sm font-mono font-bold text-indigo-500">{GRAPH_INFO[activeAlgorithm].spaceComplexity}</div>
+                                    </div>
                                 </div>
+                            </>
+                        ) : (
+                            <div className="text-center italic text-gray-500 mt-4">
+                                Select an algorithm to view its details.
                             </div>
                         )}
                     </div>

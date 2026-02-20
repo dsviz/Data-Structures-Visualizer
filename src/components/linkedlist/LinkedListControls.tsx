@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Operation, ListType } from '../../hooks/useLinkedListVisualizer';
 
 interface LinkedListControlsProps {
@@ -37,143 +36,170 @@ export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
     inputValue, setInputValue, inputIndex, setInputIndex, error,
     handleCreate, handleCreateRandom, handleInsert, handleRemove, handleSearch
 }) => {
-    const toggleOp = (op: Operation) => {
-        if (activeOp === op) setActiveOp(null);
-        else setActiveOp(op);
-    };
+
+    const OPERATIONS = mode === 'standard' ? [
+        { id: 'create', label: 'Initialize List' },
+        { id: 'insert', label: 'Insert Node' },
+        { id: 'remove', label: 'Remove Node' },
+        { id: 'search', label: 'Search Value' },
+    ] : [
+        { id: 'app_coming_soon', label: 'More Apps Coming Soon...' },
+    ];
+
+    useEffect(() => {
+        if (!activeOp && mode === 'standard') {
+            setActiveOp('create');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode]);
 
     return (
-        <div className="flex flex-col gap-2">
-            {/* Mode Switcher */}
-            <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex mb-1">
-                <button onClick={() => { setMode('standard'); setActiveOp(null); }} className={`flex-1 py-1 text-[10px] uppercase font-bold rounded ${mode === 'standard' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow' : 'text-gray-400'}`}>
-                    Standard
-                </button>
-                <button onClick={() => { setMode('apps'); setActiveOp(null); }} className={`flex-1 py-1 text-[10px] uppercase font-bold rounded ${mode === 'apps' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow' : 'text-gray-400'}`}>
-                    Apps
-                </button>
-            </div>
+        <div className="flex flex-col gap-6">
 
-            {/* List Type Switcher (Like Stack 1 / Stack 2) */}
-            <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex mb-2">
-                {(['singly', 'doubly', 'circular'] as const).map(t => (
-                    <button
-                        key={t}
-                        onClick={() => setListType(t)}
-                        className={`flex-1 py-1 text-[10px] uppercase font-bold rounded transition-all ${listType === t ? 'bg-white dark:bg-[#2e2b52] text-primary shadow' : 'text-gray-400 hover:text-gray-500'}`}
-                    >
-                        {t}
-                    </button>
-                ))}
-            </div>
-
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
-
-            {mode === 'standard' ? (
-                <>
-                    {/* Create */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'create' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => toggleOp('create')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'create' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>add_circle</span>
-                            <div>
-                                <p className={`text-sm font-medium leading-none ${activeOp === 'create' ? 'text-primary font-bold' : ''}`}>Create</p>
-                                <p className={`text-xs mt-1 ${activeOp === 'create' ? 'text-primary' : 'text-gray-400'}`}>New List</p>
-                            </div>
+            {/* Selection Area */}
+            <div className="space-y-4">
+                {/* Mode Selector */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Work Mode</label>
+                    <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex shadow-inner">
+                        <button
+                            onClick={() => setMode('standard')}
+                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'standard' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Standard
                         </button>
-                        {activeOp === 'create' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                {createStep === 'size' ? (
-                                    <>
-                                        <label><span className="text-[10px] text-gray-400 uppercase font-bold">Size</span><input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white mt-1" /></label>
-                                        <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Next</button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-sm">arrow_back</span></button>
-                                            <span className="text-xs font-bold text-gray-500">Method</span>
-                                        </div>
-                                        <button onClick={handleCreateRandom} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded">Random</button>
-                                        <div className="text-center text-[10px] text-gray-500">- OR -</div>
-                                        <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm font-mono text-white" placeholder="10, 20..." />
-                                        <button onClick={handleCreate} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Set</button>
-                                    </>
-                                )}
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Insert */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'insert' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => toggleOp('insert')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'insert' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>arrow_right_alt</span>
-                            <div>
-                                <p className={`text-sm font-medium leading-none ${activeOp === 'insert' ? 'text-primary font-bold' : ''}`}>Insert</p>
-                                <p className={`text-xs mt-1 ${activeOp === 'insert' ? 'text-primary' : 'text-gray-400'}`}>Add Node</p>
-                            </div>
+                        <button
+                            onClick={() => setMode('apps')}
+                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'apps' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                        >
+                            Apps
                         </button>
-                        {activeOp === 'insert' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <div className="grid grid-cols-2 gap-2">
-                                    <label><span className="text-[10px] text-gray-400 uppercase font-bold">Val</span><input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                                    <label><span className="text-[10px] text-gray-400 uppercase font-bold">Idx</span><input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                                </div>
-                                <div className="grid grid-cols-3 gap-1">
-                                    <button onClick={() => handleInsert('head')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Head</button>
-                                    <button onClick={() => handleInsert('tail')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Tail</button>
-                                    <button onClick={() => handleInsert('index')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Index</button>
-                                </div>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
                     </div>
-
-                    {/* Remove */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'remove' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => toggleOp('remove')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'remove' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>delete</span>
-                            <div>
-                                <p className={`text-sm font-medium leading-none ${activeOp === 'remove' ? 'text-primary font-bold' : ''}`}>Remove</p>
-                                <p className={`text-xs mt-1 ${activeOp === 'remove' ? 'text-primary' : 'text-gray-400'}`}>Delete Node</p>
-                            </div>
-                        </button>
-                        {activeOp === 'remove' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <label><span className="text-[10px] text-gray-400 uppercase font-bold">Index</span><input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                                <div className="grid grid-cols-3 gap-1 mt-2">
-                                    <button onClick={() => handleRemove('head')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Head</button>
-                                    <button onClick={() => handleRemove('tail')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Tail</button>
-                                    <button onClick={() => handleRemove('index')} className="bg-primary hover:bg-blue-600 text-white text-[10px] font-bold py-2 rounded">Index</button>
-                                </div>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Search */}
-                    <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'search' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                        <button onClick={() => toggleOp('search')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                            <span className={`material-symbols-outlined ${activeOp === 'search' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>search</span>
-                            <div>
-                                <p className={`text-sm font-medium leading-none ${activeOp === 'search' ? 'text-primary font-bold' : ''}`}>Search</p>
-                                <p className={`text-xs mt-1 ${activeOp === 'search' ? 'text-primary' : 'text-gray-400'}`}>Find Value</p>
-                            </div>
-                        </button>
-                        {activeOp === 'search' && (
-                            <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                                <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" placeholder="Value..." />
-                                <button onClick={handleSearch} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Find</button>
-                                {error && <div className="text-red-400 text-xs">{error}</div>}
-                            </div>
-                        )}
-                    </div>
-                </>
-            ) : (
-                <div className="p-4 text-center text-gray-500 text-xs italic">
-                    <p>Applications (e.g., Reverse, Cycle Detection) coming soon...</p>
                 </div>
-            )}
+
+                {/* List Type Selector */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">List Type</label>
+                    <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex shadow-inner">
+                        {(['singly', 'doubly', 'circular'] as const).map(t => (
+                            <button
+                                key={t}
+                                onClick={() => setListType(t)}
+                                className={`flex-1 py-1.5 text-[10px] uppercase font-bold rounded transition-all ${listType === t ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                            >
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Operation Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
+                    <div className="relative">
+                        <select
+                            value={activeOp || ''}
+                            onChange={(e) => setActiveOp(e.target.value as Operation)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
+                        >
+                            {OPERATIONS.map(op => (
+                                <option key={op.id} value={op.id}>{op.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                {/* Dynamic Inputs Area */}
+                <div className="animate-in fade-in slide-in-from-top-2">
+                    {mode === 'standard' && (
+                        <>
+                            {activeOp === 'create' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    {createStep === 'size' ? (
+                                        <div className="space-y-3">
+                                            <div className="space-y-1">
+                                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">List Size</span>
+                                                <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
+                                            </div>
+                                            <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Next</button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
+                                                <span className="text-xs font-bold text-gray-500">Method</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
+                                                <button onClick={handleCreate} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
+                                            </div>
+                                            <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeOp === 'insert' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Value</span>
+                                            <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-bold" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Index</span>
+                                            <input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button onClick={() => handleInsert('head')} className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-2.5 rounded-lg border border-primary/20 transition-all">Head</button>
+                                        <button onClick={() => handleInsert('tail')} className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-2.5 rounded-lg border border-primary/20 transition-all">Tail</button>
+                                        <button onClick={() => handleInsert('index')} className="bg-primary text-white text-[10px] font-bold py-2.5 rounded-lg shadow-sm">Fixed</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeOp === 'remove' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Target Index</span>
+                                        <input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button onClick={() => handleRemove('head')} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold py-2.5 rounded-lg border border-red-500/20 transition-all">Head</button>
+                                        <button onClick={() => handleRemove('tail')} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold py-2.5 rounded-lg border border-red-500/20 transition-all">Tail</button>
+                                        <button onClick={() => handleRemove('index')} className="bg-red-500 text-white text-[10px] font-bold py-2.5 rounded-lg shadow-sm">Index</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeOp === 'search' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Search Value</span>
+                                    <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" placeholder="Value..." />
+                                    <button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Search List</button>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {mode === 'apps' && (
+                        <div className="p-8 text-center bg-gray-50/50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/5">
+                            <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-3">construction</span>
+                            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium italic">Advanced applications like Cycle Detection & Reversal coming soon!</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Error Display */}
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl animate-in shake duration-500">
+                        <p className="text-red-600 dark:text-red-400 text-xs font-medium leading-relaxed">{error}</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
+

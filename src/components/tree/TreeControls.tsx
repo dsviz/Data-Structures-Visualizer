@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Frame } from '../../hooks/useTreeVisualizer';
 
 interface TreeAction {
+    id: string;
     label: string;
     action: () => void;
     inputRequired?: boolean;
-    color?: string; // Optional color override
+    needsTwoInputs?: boolean;
 }
 
 interface TreeCategory {
     id: string;
     label: string;
-    icon: string;
-    description: string;
     actions: TreeAction[];
 }
 
@@ -77,230 +76,196 @@ interface TreeControlsProps {
 
 export const TreeControls: React.FC<TreeControlsProps> = (props) => {
     const [inputValue, setInputValue] = useState<string>('50');
-    const [secondInputValue, setSecondInputValue] = useState<string>('30'); // For logic needing 2 inputs like LCA
+    const [secondInputValue, setSecondInputValue] = useState<string>('30');
     const [selectedCategory, setSelectedCategory] = useState<string>('Basics');
-
-
-    const handleAction = (action: any, needsInput: boolean = false, needsTwoInputs: boolean = false) => {
-        if (needsInput) {
-            // Check if input is a comma-separated list or complex string
-            if (inputValue.includes(',')) {
-                if (needsTwoInputs && secondInputValue.includes(',')) {
-                    action(inputValue, secondInputValue);
-                } else {
-                    action(inputValue);
-                }
-                return;
-            }
-
-            const val = parseInt(inputValue);
-            if (!isNaN(val)) {
-                if (needsTwoInputs) {
-                    const val2 = parseInt(secondInputValue);
-                    if (!isNaN(val2)) action(val, val2);
-                } else {
-                    action(val);
-                }
-            } else {
-                // Pass raw string if not a number (e.g. for traversals that take strings or complex inputs)
-                if (needsTwoInputs) {
-                    action(inputValue, secondInputValue);
-                } else {
-                    action(inputValue);
-                }
-            }
-        } else {
-            action();
-        }
-    };
+    const [selectedActionId, setSelectedActionId] = useState<string>('');
 
     const CATEGORIES: TreeCategory[] = [
         {
             id: 'Basics',
-            label: 'Basics',
-            icon: 'grid_view',
-            description: 'Core operations',
+            label: 'Basics / Fundamental',
             actions: [
-                { label: 'Insert Node', action: () => handleAction(props.insert, true), inputRequired: true },
-                { label: 'Delete Node', action: () => handleAction(props.deleteNode, true), inputRequired: true, color: 'red' },
-                { label: 'Search Node', action: () => handleAction(props.search, true), inputRequired: true },
-                { label: 'Random Tree', action: props.generateRandomTree },
+                { id: 'insert', label: 'Insert Node', action: () => props.insert(parseInt(inputValue)), inputRequired: true },
+                { id: 'delete', label: 'Delete Node', action: () => props.deleteNode(parseInt(inputValue)), inputRequired: true },
+                { id: 'search', label: 'Search Node', action: () => props.search(parseInt(inputValue)), inputRequired: true },
+                { id: 'random', label: 'Generate Random Tree', action: props.generateRandomTree },
             ]
         },
         {
             id: 'Traversal',
-            label: 'Traversal',
-            icon: 'alt_route',
-            description: 'Visit all nodes',
+            label: 'Tree Traversal',
             actions: [
-                { label: 'Inorder', action: () => props.traverse('inorder') },
-                { label: 'Preorder', action: () => props.traverse('preorder') },
-                { label: 'Postorder', action: () => props.traverse('postorder') },
-                { label: 'Level Order', action: () => props.traverse('bfs') },
-                { label: 'Zig-Zag', action: props.traverseZigZag },
+                { id: 'inorder', label: 'In-order Traversal', action: () => props.traverse('inorder') },
+                { id: 'preorder', label: 'Pre-order Traversal', action: () => props.traverse('preorder') },
+                { id: 'postorder', label: 'Post-order Traversal', action: () => props.traverse('postorder') },
+                { id: 'bfs', label: 'Level Order (BFS)', action: () => props.traverse('bfs') },
+                { id: 'zigzag', label: 'Zig-Zag Traversal', action: props.traverseZigZag },
             ]
         },
         {
             id: 'BST',
-            label: 'BST',
-            icon: 'account_tree',
-            description: 'Binary Search Tree logic',
+            label: 'Binary Search Tree',
             actions: [
-                { label: 'Find Min', action: props.findMin },
-                { label: 'Find Max', action: props.findMax },
-                { label: 'Successor', action: () => handleAction(props.findSuccessor, true), inputRequired: true },
-                { label: 'Predecessor', action: () => handleAction(props.findPredecessor, true), inputRequired: true },
-                { label: 'Validate BST', action: props.validateBST },
+                { id: 'min', label: 'Find Minimum', action: props.findMin },
+                { id: 'max', label: 'Find Maximum', action: props.findMax },
+                { id: 'successor', label: 'Find Successor', action: () => props.findSuccessor(parseInt(inputValue)), inputRequired: true },
+                { id: 'predecessor', label: 'Find Predecessor', action: () => props.findPredecessor(parseInt(inputValue)), inputRequired: true },
+                { id: 'validate', label: 'Validate BST', action: props.validateBST },
             ]
         },
         {
             id: 'Properties',
-            label: 'Properties',
-            icon: 'analytics',
-            description: 'Analyze tree characteristics',
+            label: 'Analyze Properties',
             actions: [
-                { label: 'Height', action: props.checkHeight },
-                { label: 'Count Nodes', action: props.countNodes },
-                { label: 'Count Leaves', action: props.countLeafNodes },
-                { label: 'Diameter', action: props.checkDiameter },
-                { label: 'Is Balanced?', action: props.checkBalanced },
-                { label: 'Is Full?', action: props.isFull },
-                { label: 'Is Complete?', action: props.isComplete },
+                { id: 'height', label: 'Calculate Height', action: props.checkHeight },
+                { id: 'count_nodes', label: 'Total Nodes Count', action: props.countNodes },
+                { id: 'count_leaves', label: 'Leaf Nodes Count', action: props.countLeafNodes },
+                { id: 'diameter', label: 'Tree Diameter', action: props.checkDiameter },
+                { id: 'balanced', label: 'Check If Balanced', action: props.checkBalanced },
+                { id: 'full', label: 'Check If Full', action: props.isFull },
+                { id: 'complete', label: 'Check If Complete', action: props.isComplete },
             ]
         },
         {
             id: 'Construction',
-            label: 'Construct',
-            icon: 'build',
-            description: 'Build from data',
+            label: 'Construct Tree',
             actions: [
-                { label: 'From Array', action: () => handleAction(props.buildFromArray, true), inputRequired: true },
-                { label: 'Pre + Inorder', action: () => handleAction(props.buildFromPreIn, true, true), inputRequired: true },
-                { label: 'Post + Inorder', action: () => handleAction(props.buildFromPostIn, true, true), inputRequired: true },
-                { label: 'Balanced BST', action: () => handleAction(props.buildBalancedBST, true), inputRequired: true },
-                { label: 'Deserialize', action: () => handleAction(props.deserialize, true), inputRequired: true },
+                { id: 'from_array', label: 'Build From Array', action: () => props.buildFromArray(inputValue), inputRequired: true },
+                { id: 'pre_in', label: 'From Pre + Inorder', action: () => props.buildFromPreIn(inputValue, secondInputValue), inputRequired: true, needsTwoInputs: true },
+                { id: 'post_in', label: 'From Post + Inorder', action: () => props.buildFromPostIn(inputValue, secondInputValue), inputRequired: true, needsTwoInputs: true },
+                { id: 'balanced_bst', label: 'Balanced BST', action: () => props.buildBalancedBST(inputValue), inputRequired: true },
+                { id: 'deserialize', label: 'Deserialize Level Order', action: () => props.deserialize(inputValue), inputRequired: true },
             ]
         },
         {
             id: 'Balancing',
-            label: 'Balancing',
-            icon: 'balance',
-            description: 'AVL & Rotations',
+            label: 'AVL & Balancing',
             actions: [
-                { label: 'Insert AVL', action: () => handleAction(props.insertAVL, true), inputRequired: true },
-                { label: 'Delete AVL', action: () => handleAction(props.deleteAVL, true), inputRequired: true, color: 'red' },
-                { label: 'Rotate Left', action: () => handleAction(props.rotateLeft, true), inputRequired: true },
-                { label: 'Rotate Right', action: () => handleAction(props.rotateRight, true), inputRequired: true },
-                { label: 'Balance Factors', action: props.showBalanceFactors },
+                { id: 'insert_avl', label: 'Insert AVL Node', action: () => props.insertAVL(parseInt(inputValue)), inputRequired: true },
+                { id: 'delete_avl', label: 'Delete AVL Node', action: () => props.deleteAVL(parseInt(inputValue)), inputRequired: true },
+                { id: 'rotate_left', label: 'Rotate Left At Node', action: () => props.rotateLeft(parseInt(inputValue)), inputRequired: true },
+                { id: 'rotate_right', label: 'Rotate Right At Node', action: () => props.rotateRight(parseInt(inputValue)), inputRequired: true },
+                { id: 'balance_factors', label: 'Show Balance Factors', action: props.showBalanceFactors },
             ]
         },
         {
             id: 'Special',
-            label: 'Special',
-            icon: 'star',
-            description: 'Advanced views & algorithms',
+            label: 'Advanced Views',
             actions: [
-                { label: 'LCA', action: () => handleAction(props.findLCA, true, true), inputRequired: true }, // Needs 2 inputs? Handled specially
-                { label: 'Left View', action: props.getLeftView },
-                { label: 'Right View', action: props.getRightView },
-                { label: 'Top View', action: props.getTopView },
-                { label: 'Bottom View', action: props.getBottomView },
-                { label: 'Boundary', action: props.boundaryTraversal },
-                { label: 'Mirror Tree', action: props.mirrorTree },
+                { id: 'lca', label: 'Lowest Common Ancestor', action: () => props.findLCA(parseInt(inputValue), parseInt(secondInputValue)), inputRequired: true, needsTwoInputs: true },
+                { id: 'left_view', label: 'Get Left View', action: props.getLeftView },
+                { id: 'right_view', label: 'Get Right View', action: props.getRightView },
+                { id: 'top_view', label: 'Get Top View', action: props.getTopView },
+                { id: 'bottom_view', label: 'Get Bottom View', action: props.getBottomView },
+                { id: 'boundary', label: 'Boundary Traversal', action: props.boundaryTraversal },
+                { id: 'mirror', label: 'Mirror Tree', action: props.mirrorTree },
             ]
         },
     ];
 
     const currentCategory = CATEGORIES.find(c => c.id === selectedCategory) || CATEGORIES[0];
-    const showInput = currentCategory.actions.some(a => a.inputRequired);
-    const showTwoInputs = (currentCategory.id === 'Special' && currentCategory.actions.some(a => a.label === 'LCA')) ||
-        (currentCategory.id === 'Construction' && currentCategory.actions.some(a => a.label === 'Pre + Inorder'));
+    const currentAction = currentCategory.actions.find(a => a.id === selectedActionId) || currentCategory.actions[0];
+    const inputRequired = currentAction?.inputRequired;
+    const needsTwoInputs = currentAction?.needsTwoInputs;
 
+    useEffect(() => {
+        const cat = CATEGORIES.find(c => c.id === selectedCategory);
+        if (cat && cat.actions.length > 0) {
+            setSelectedActionId(cat.actions[0].id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCategory]);
 
-
+    const handleRun = () => {
+        if (currentAction) {
+            currentAction.action();
+        }
+    };
 
     return (
-        <div className="flex flex-col gap-6 h-full text-zinc-800 dark:text-zinc-200 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="flex flex-col gap-5 h-full overflow-y-auto pr-2 custom-scrollbar">
 
-            {/* Categories Grid */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Categories</h3>
-                <div className="grid grid-cols-2 gap-2">
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`flex items-center gap-2 p-2 rounded-lg text-xs font-medium transition-all ${selectedCategory === cat.id
-                                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800'
-                                : 'bg-white dark:bg-[#121121] text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-[#272546] hover:bg-gray-50 dark:hover:bg-[#1a182e]'
-                                }`}
+            {/* Selection Area */}
+            <div className="space-y-4">
+                {/* Category Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Category</label>
+                    <div className="relative">
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
                         >
-                            <span className="material-symbols-outlined text-lg">{cat.icon}</span>
-                            <span>{cat.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Inputs Area - Only shown if needed */}
-            {showInput && (
-                <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Input</h3>
-                    <div className="flex gap-2 bg-gray-100 dark:bg-[#121121] p-2 rounded-lg border border-gray-200 dark:border-[#272546]">
-                        <input
-                            type="text"
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            className="flex-1 min-w-0 bg-transparent text-sm font-mono outline-none dark:text-gray-200 placeholder:text-gray-400 text-center"
-                            placeholder="Value 1"
-                        />
-                        {/* Show second input if needed */}
-                        {showTwoInputs && (
-                            <>
-                                <div className="w-px bg-gray-300 dark:bg-[#272546]"></div>
-                                <input
-                                    type="text"
-                                    value={secondInputValue}
-                                    onChange={(e) => setSecondInputValue(e.target.value)}
-                                    className="flex-1 min-w-0 bg-transparent text-sm font-mono outline-none dark:text-gray-200 placeholder:text-gray-400 text-center"
-                                    placeholder="Value 2"
-                                />
-                            </>
-                        )}
+                            {CATEGORIES.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
                     </div>
                 </div>
-            )}
 
-            {/* Actions Grid */}
-            <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Actions</h3>
-                <div className="grid grid-cols-2 gap-2">
-                    {currentCategory.actions.map((action, idx) => (
-                        <button
-                            key={idx}
-                            onClick={action.action}
-                            disabled={props.isPlaying}
-                            className={`
-                                h-10 flex items-center justify-center font-medium rounded-lg text-xs transition-colors relative overflow-hidden group px-4
-                                ${action.color === 'red'
-                                    ? 'bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20'
-                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
-                                }
-                                disabled:opacity-50 disabled:cursor-not-allowed
-                            `}
+                {/* Algorithm/Action Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Action</label>
+                    <div className="relative">
+                        <select
+                            value={selectedActionId}
+                            onChange={(e) => setSelectedActionId(e.target.value)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
                         >
-                            <span className="truncate">{action.label}</span>
-                        </button>
-                    ))}
+                            {currentCategory.actions.map(action => (
+                                <option key={action.id} value={action.id}>{action.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
                 </div>
+
+                {/* Input Area */}
+                {inputRequired && (
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Input</label>
+                        <div className="flex gap-2 bg-gray-50 dark:bg-[#121121] p-2.5 rounded-lg border border-gray-200 dark:border-[#272546] shadow-inner">
+                            <input
+                                type="text"
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                className="flex-1 min-w-0 bg-transparent text-sm font-mono outline-none dark:text-gray-200 placeholder:text-gray-400 text-center"
+                                placeholder="Value 1"
+                            />
+                            {needsTwoInputs && (
+                                <>
+                                    <div className="w-px bg-gray-300 dark:bg-[#272546]"></div>
+                                    <input
+                                        type="text"
+                                        value={secondInputValue}
+                                        onChange={(e) => setSecondInputValue(e.target.value)}
+                                        className="flex-1 min-w-0 bg-transparent text-sm font-mono outline-none dark:text-gray-200 placeholder:text-gray-400 text-center"
+                                        placeholder="Value 2"
+                                    />
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Action Button */}
+                <button
+                    onClick={handleRun}
+                    disabled={props.isPlaying}
+                    className="w-full h-11 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-[13px] transition-all shadow-md shadow-indigo-500/20 disabled:opacity-50"
+                >
+                    <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                    Run Operation
+                </button>
             </div>
 
             {/* Output Section */}
             {props.frames[props.currentStep]?.output && (
-                <div className="space-y-2 mb-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7]">Output</h3>
-                    <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/30">
-                        <p className="text-sm font-mono text-indigo-700 dark:text-indigo-300 break-words">
+                <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Output</label>
+                    <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 shadow-sm">
+                        <p className="text-sm font-mono text-indigo-700 dark:text-indigo-300 break-words leading-relaxed font-bold">
                             {props.frames[props.currentStep].output}
                         </p>
                     </div>
@@ -308,16 +273,17 @@ export const TreeControls: React.FC<TreeControlsProps> = (props) => {
             )}
 
             {/* Footer */}
-            <div className="mt-auto grid grid-cols-2 gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
+            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-[#272546] space-y-2">
                 <button
-                    onClick={props.reset}
-                    className="col-span-2 w-full py-2.5 px-4 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 text-xs font-medium transition-all flex items-center justify-center gap-2 group"
+                    onClick={props.clear}
+                    className="w-full py-2.5 px-4 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
                 >
-                    <span className="material-symbols-outlined text-sm group-hover:rotate-180 transition-transform duration-500">refresh</span>
-                    Reset
+                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-180 transition-transform duration-500">cleaning_services</span>
+                    Clear Canvas
                 </button>
             </div>
         </div>
     );
 };
+
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MAX_CAPACITY, Operation } from '../../hooks/useQueueVisualizer';
 
 interface QueueControlsProps {
@@ -32,87 +32,101 @@ export const QueueControls: React.FC<QueueControlsProps> = ({
     error
 }) => {
 
+    const OPERATIONS = [
+        { id: 'create', label: 'Initialize Queue' },
+        { id: 'enqueue', label: 'Enqueue Element' },
+        { id: 'dequeue', label: 'Dequeue Element' },
+        { id: 'peek', label: 'Peek Front' },
+    ];
+
+    useEffect(() => {
+        if (!activeOp) {
+            setActiveOp('create');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleRun = () => {
+        switch (activeOp) {
+            case 'enqueue': handleEnqueue(); break;
+            case 'dequeue': handleDequeue(); break;
+            case 'peek': handlePeek(); break;
+        }
+    };
+
     return (
-        <div className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-[#9794c7] mb-2 pl-2">Operations</h3>
+        <div className="flex flex-col gap-6">
 
-            {/* Operation: Create */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'create' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => { setActiveOp(prev => prev === 'create' ? null : 'create'); setCreateStep('size'); }} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'create' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>add_circle</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'create' ? 'text-primary font-bold' : ''}`}>Create</p></div>
-                </button>
-                {activeOp === 'create' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        {createStep === 'size' ? (
-                            <>
-                                <label>
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold">Queue Size (Max {MAX_CAPACITY})</span>
-                                    <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none mt-1" />
-                                </label>
-                                <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Next</button>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-sm">arrow_back</span></button>
-                                    <span className="text-xs font-bold text-gray-500">Method</span>
+            {/* Selection Area */}
+            <div className="space-y-4">
+                {/* Operation Dropdown */}
+                <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
+                    <div className="relative">
+                        <select
+                            value={activeOp || ''}
+                            onChange={(e) => setActiveOp(e.target.value as Operation)}
+                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
+                        >
+                            {OPERATIONS.map(op => (
+                                <option key={op.id} value={op.id}>{op.label}</option>
+                            ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+
+                {/* Dynamic Inputs Area */}
+                <div className="animate-in fade-in slide-in-from-top-2">
+                    {activeOp === 'create' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            {createStep === 'size' ? (
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Capacity (Max {MAX_CAPACITY})</span>
+                                        <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
+                                    </div>
+                                    <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Next</button>
                                 </div>
-                                <button onClick={handleCreateRandom} className="w-full border border-gray-600 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-white text-xs font-bold py-2 rounded">Generate Random</button>
-                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><div className="h-px bg-gray-600 flex-1"></div>OR<div className="h-px bg-gray-600 flex-1"></div></div>
-                                <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-md px-3 py-2 text-sm font-mono focus:border-primary outline-none" placeholder="1, 2, 3..." />
-                                <button onClick={handleCreateCustom} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Set Values</button>
-                            </>
-                        )}
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
+                                        <span className="text-xs font-bold text-gray-500">Method</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
+                                        <button onClick={handleCreateCustom} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
+                                    </div>
+                                    <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
+                                </div>
+                            )}
+                        </div>
+                    )}
 
-            {/* Operation: Enqueue */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'enqueue' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'enqueue' ? null : 'enqueue')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'enqueue' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>login</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'enqueue' ? 'text-primary font-bold' : ''}`}>Enqueue (v)</p></div>
-                </button>
-                {activeOp === 'enqueue' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <label><span className="text-[10px] text-gray-400 uppercase font-bold">Value</span><input type="text" value={enqueueValue} onChange={e => setEnqueueValue(e.target.value)} className="w-full bg-[#121121] border border-[#383564] rounded px-2 py-1.5 text-sm text-white" /></label>
-                        <button onClick={handleEnqueue} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Enqueue</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
+                    {activeOp === 'enqueue' && (
+                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Value to Enqueue</span>
+                            <input type="text" value={enqueueValue} onChange={e => setEnqueueValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
+                            <button onClick={handleEnqueue} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Enqueue to Back</button>
+                        </div>
+                    )}
 
-            {/* Operation: Dequeue */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'dequeue' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'dequeue' ? null : 'dequeue')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'dequeue' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>logout</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'dequeue' ? 'text-primary font-bold' : ''}`}>Dequeue</p></div>
-                </button>
-                {activeOp === 'dequeue' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <p className="text-xs text-gray-400 mb-2">Remove front element?</p>
-                        <button onClick={handleDequeue} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Dequeue</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
-                    </div>
-                )}
-            </div>
+                    {(activeOp === 'dequeue' || activeOp === 'peek') && (
+                        <button onClick={handleRun} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 shadow-primary/20">
+                            Run {activeOp === 'dequeue' ? 'Dequeue' : 'Peek'}
+                        </button>
+                    )}
+                </div>
 
-            {/* Operation: Peek */}
-            <div className={`rounded-xl transition-all overflow-hidden ${activeOp === 'peek' ? 'bg-primary/5 dark:bg-primary/10 border border-primary/20' : ''}`}>
-                <button onClick={() => setActiveOp(prev => prev === 'peek' ? null : 'peek')} className="flex w-full items-center gap-3 px-3 py-3 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors group text-left">
-                    <span className={`material-symbols-outlined ${activeOp === 'peek' ? 'text-primary filled' : 'text-gray-400 group-hover:text-primary'}`}>visibility</span>
-                    <div><p className={`text-sm font-medium leading-none ${activeOp === 'peek' ? 'text-primary font-bold' : ''}`}>Peek</p></div>
-                </button>
-                {activeOp === 'peek' && (
-                    <div className="px-3 pb-4 pt-1 flex flex-col gap-3 animate-in slide-in-from-top-2 duration-200">
-                        <p className="text-xs text-gray-400 mb-2">View front element?</p>
-                        <button onClick={handlePeek} className="w-full bg-primary hover:bg-blue-600 text-white text-xs font-bold py-2 rounded">Peek</button>
-                        {error && <div className="text-red-400 text-xs">{error}</div>}
+                {/* Error Display */}
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl animate-in shake duration-500">
+                        <p className="text-red-600 dark:text-red-400 text-xs font-medium leading-relaxed">{error}</p>
                     </div>
                 )}
             </div>
         </div>
     );
 };
+

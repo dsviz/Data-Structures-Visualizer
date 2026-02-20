@@ -21,7 +21,7 @@ export const GraphTools: React.FC<GraphToolsProps> = ({
     ];
 
     return (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white dark:bg-[#1e1c33] p-1.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200 dark:border-[#272546] flex items-center gap-1 z-50">
+        <div className="absolute top-4 left-4 bg-white dark:bg-[#1e1c33] p-1.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200 dark:border-[#272546] flex items-center gap-1 z-50">
             {tools.map(tool => (
                 <button
                     key={tool.id}

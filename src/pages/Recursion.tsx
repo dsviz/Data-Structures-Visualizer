@@ -210,55 +210,69 @@ const Recursion = () => {
                 {/* Left Sidebar: Config & Call Stack */}
                 <aside className="w-80 border-r border-gray-200 dark:border-[#272546] flex flex-col bg-white dark:bg-[#131221] z-10 shrink-0">
                     <div className="p-4 border-b border-gray-200 dark:border-[#272546]">
-                        <div className="flex flex-wrap gap-2 items-center text-xs mb-3">
-                            <span className="text-gray-500 dark:text-[#9794c7]">Recursion</span>
+                        <div className="flex flex-wrap gap-2 items-center text-xs mb-1">
+                            <span className="text-gray-500 dark:text-[#9794c7]">Work Mode</span>
                             <span className="text-gray-400 dark:text-[#5a5875]">/</span>
-                            <span className="text-slate-900 dark:text-white font-medium">Fibonacci Sequence</span>
+                            <span className="text-slate-900 dark:text-white font-medium uppercase tracking-tighter">Recursion</span>
                         </div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Configuration</h1>
                     </div>
 
-                    {/* Inputs */}
-                    <div className="p-4 space-y-4 border-b border-gray-200 dark:border-[#272546] bg-gray-50 dark:bg-[#1c1a32]/30">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Algorithm</label>
-                            <div className="flex gap-2">
-                                <button className="flex-1 bg-primary text-white text-xs font-medium py-1.5 px-3 rounded border border-primary shadow-sm">Fibonacci</button>
-                                <button className="flex-1 bg-white dark:bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 text-xs font-medium py-1.5 px-3 rounded border border-gray-200 dark:border-[#272546] transition-colors">Factorial</button>
+                    {/* Selection Area */}
+                    <div className="p-5 space-y-6 border-b border-gray-200 dark:border-[#272546] bg-gray-50/50 dark:bg-[#1c1a32]/30">
+                        {/* Algorithm Selector */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Select Algorithm</label>
+                            <div className="relative">
+                                <select
+                                    value="fibonacci"
+                                    disabled
+                                    className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm opacity-80"
+                                >
+                                    <option value="fibonacci">Fibonacci Sequence</option>
+                                    <option value="factorial">Factorial (Coming Soon)</option>
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <label className="flex flex-col gap-1.5">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Input (Max 6)</span>
-                                <input
-                                    className="w-full bg-white dark:bg-[#0d0c15] border border-gray-200 dark:border-[#272546] rounded p-2 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-0 transition-colors font-mono"
-                                    type="number"
-                                    value={inputN}
-                                    max={6}
-                                    min={0}
-                                    onChange={(e) => setInputN(Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
-                                />
-                            </label>
-                            <label className="flex flex-col gap-1.5">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Speed (ms)</span>
-                                <input
-                                    className="w-full bg-white dark:bg-[#0d0c15] border border-gray-200 dark:border-[#272546] rounded p-2 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-0 transition-colors font-mono"
-                                    type="number"
-                                    value={speed}
-                                    min={50}
-                                    step={50}
-                                    onChange={(e) => setSpeed(parseInt(e.target.value) || 500)}
-                                />
-                            </label>
+
+                        {/* Numeric Inputs */}
+                        <div className="space-y-4 bg-white/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Input N (Max 6)</label>
+                                    <input
+                                        type="number"
+                                        value={inputN}
+                                        max={6}
+                                        min={0}
+                                        onChange={(e) => setInputN(Math.min(6, Math.max(0, parseInt(e.target.value) || 0)))}
+                                        className="w-full bg-white dark:bg-[#0d0c15] border border-gray-200 dark:border-[#272546] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Speed (ms)</label>
+                                    <input
+                                        type="number"
+                                        value={speed}
+                                        min={50}
+                                        step={50}
+                                        onChange={(e) => setSpeed(parseInt(e.target.value) || 500)}
+                                        className="w-full bg-white dark:bg-[#0d0c15] border border-gray-200 dark:border-[#272546] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleRun}
+                                className="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                                Start Simulation
+                            </button>
                         </div>
-                        <button
-                            onClick={handleRun}
-                            className="w-full bg-primary hover:bg-primary/90 text-white py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary/20"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                            Start Simulation
-                        </button>
                     </div>
+
 
                     {/* Call Stack Panel */}
                     <div className="flex flex-col flex-1 overflow-hidden bg-white dark:bg-[#131221]">

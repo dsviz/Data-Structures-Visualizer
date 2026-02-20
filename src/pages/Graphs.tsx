@@ -39,7 +39,7 @@ const Graphs = () => {
     playbackSpeed, setPlaybackSpeed
   } = useGraphVisualizer();
 
-  const [splitRatio, setSplitRatio] = useState(0.6);
+  const [splitRatio, setSplitRatio] = useState(0.7);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<HTMLDivElement>(null);
@@ -253,7 +253,6 @@ const Graphs = () => {
           codeLanguage={codeLanguage}
           setCodeLanguage={setCodeLanguage}
           activeAlgorithm={activeAlgorithm}
-          getNodeLabel={getNodeLabel}
         />
       </div>
     </div>
@@ -310,6 +309,8 @@ const Graphs = () => {
   if (!currentFrame || !currentFrame.nodes) {
     return <div className="p-10 text-red-600 font-bold">Error: Graph data missing. Check console.</div>;
   }
+
+  const isProgramFinished = activeAlgorithm !== null && frames.length > 0 && currentStep === frames.length - 1;
 
   return (
     <VisualizationLayout
@@ -496,46 +497,114 @@ const Graphs = () => {
           })}
 
         </div>
-        {/* Queue / Stack / Data Structures Visualizer Overlay */}
-        {(currentFrame.queue?.length > 0 || currentFrame.stack?.length > 0) && (
-          <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
-            {currentFrame.queue?.length > 0 && (
-              <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur border border-indigo-200 dark:border-indigo-900/40 rounded-xl p-3 shadow-lg flex flex-col gap-2 max-w-[200px]">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
-                  Queue (BFS/Shortest Path)
-                </span>
-                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                  {currentFrame.queue.map((nodeId, idx) => (
-                    <div
-                      key={`q-${idx}-${nodeId}`}
-                      className="min-w-[32px] h-[32px] flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-sm rounded-lg border border-indigo-200 dark:border-indigo-800 shrink-0"
-                    >
-                      {getNodeLabel(nodeId)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Data Structures Overlay (Top Right) */}
+        <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 max-w-md w-full pointer-events-none">
 
-            {currentFrame.stack?.length > 0 && (
-              <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur border border-rose-200 dark:border-rose-900/40 rounded-xl p-3 shadow-lg flex flex-col gap-2 max-w-[200px] max-h-[300px]">
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
-                  Stack (DFS)
-                </span>
-                <div className="flex flex-col-reverse gap-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                  {currentFrame.stack.map((nodeId, idx) => (
-                    <div
-                      key={`s-${idx}-${nodeId}`}
-                      className="w-full h-[32px] flex items-center justify-center bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 font-mono font-bold text-sm rounded-lg border border-rose-200 dark:border-rose-800 shrink-0"
-                    >
-                      {getNodeLabel(nodeId)}
-                    </div>
-                  ))}
+          {!isProgramFinished && (currentFrame.queue?.length > 0 || currentFrame.stack?.length > 0 || currentFrame.visited?.length > 0 || currentFrame.distances) && (
+            <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur border border-gray-200 dark:border-[#272546] rounded-xl p-3 shadow-lg pointer-events-auto flex flex-col gap-3 w-full max-h-[40vh] overflow-y-auto custom-scrollbar">
+
+              {/* Visited Array */}
+              {currentFrame.visited && currentFrame.visited.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Visited</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {currentFrame.visited.map((nodeId, idx) => (
+                      <div key={`v-${idx}-${nodeId}`} className="size-6 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs rounded border border-emerald-200 dark:border-emerald-800">
+                        {getNodeLabel(nodeId)}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Queue */}
+              {currentFrame.queue && currentFrame.queue.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 text-right">Queue (Front → Back)</span>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 justify-end">
+                    {currentFrame.queue.map((nodeId, idx) => (
+                      <div key={`q-${idx}-${nodeId}`} className="min-w-[24px] h-[24px] flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-xs rounded border border-indigo-200 dark:border-indigo-800 shrink-0 px-1">
+                        {getNodeLabel(nodeId)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Stack */}
+              {currentFrame.stack && currentFrame.stack.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 text-right">Stack (Top → Bottom)</span>
+                  <div className="flex flex-col-reverse gap-1.5 overflow-y-auto max-h-[120px] pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 items-end">
+                    {currentFrame.stack.map((nodeId, idx) => (
+                      <div key={`s-${idx}-${nodeId}`} className="min-w-[40px] h-[24px] flex items-center justify-center bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 font-mono font-bold text-xs rounded border border-rose-200 dark:border-rose-800 shrink-0">
+                        {getNodeLabel(nodeId)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Distances Array */}
+              {currentFrame.distances && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Distances Array</span>
+                  <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                    <div className="flex gap-2 min-w-max">
+                      {Object.entries(currentFrame.distances).map(([nodeId, dist]) => (
+                        <div key={nodeId} className="flex flex-col items-center bg-gray-50 dark:bg-[#1e1c33] rounded px-2 py-1 border border-gray-100 dark:border-gray-800 min-w-[40px]">
+                          <span className="text-[10px] text-gray-500 font-bold">{getNodeLabel(parseInt(nodeId))}</span>
+                          <span className={`font-mono font-bold text-sm ${dist !== Infinity && dist !== '∞' ? 'text-amber-500' : 'text-gray-400'}`}>{dist === Infinity ? '∞' : dist}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Distance Matrix */}
+              {currentFrame.distances2D && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1">Distance Matrix</span>
+                  <div className="bg-white dark:bg-[#151426] p-2 rounded border border-gray-100 dark:border-[#272546] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 max-h-[200px] overflow-y-auto">
+                    <table className="w-full text-xs text-center border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="border-b border-r dark:border-gray-700/50 p-1 text-gray-500 border-gray-200">\</th>
+                          {Object.keys(currentFrame.distances2D).map(k => (
+                            <th key={`th-${k}`} className="border-b dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary">{getNodeLabel(parseInt(k))}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(currentFrame.distances2D).map(([u, row]) => (
+                          <tr key={`tr-${u}`}>
+                            <td className="border-r dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary font-bold">{getNodeLabel(parseInt(u))}</td>
+                            {Object.entries(row).map(([v, val]) => (
+                              <td key={`td-${u}-${v}`} className={`p-1 font-mono ${val !== Infinity && val !== '∞' ? 'text-slate-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}`}>{val === Infinity ? '∞' : val}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+        </div>
+
+        {/* Description Overlay (Bottom Right) */}
+        <div className="absolute bottom-4 right-4 z-40 flex flex-col items-end gap-2 max-w-md w-full pointer-events-none">
+          <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 w-full">
+            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+              {currentFrame.description || "Ready to visualize..."}
+            </p>
           </div>
-        )}
+        </div>
 
       </div>
 
