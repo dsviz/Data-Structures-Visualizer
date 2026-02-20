@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Frame } from '../../hooks/useTreeVisualizer';
+import { Dropdown } from '../ui/Dropdown';
 
 interface TreeAction {
     id: string;
@@ -190,35 +191,21 @@ export const TreeControls: React.FC<TreeControlsProps> = (props) => {
                 {/* Category Dropdown */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Category</label>
-                    <div className="relative">
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
-                        >
-                            {CATEGORIES.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <Dropdown
+                        value={selectedCategory}
+                        onChange={(val) => setSelectedCategory(val)}
+                        options={CATEGORIES.map(cat => ({ value: cat.id, label: cat.label }))}
+                    />
                 </div>
 
                 {/* Algorithm/Action Dropdown */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Action</label>
-                    <div className="relative">
-                        <select
-                            value={selectedActionId}
-                            onChange={(e) => setSelectedActionId(e.target.value)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
-                        >
-                            {currentCategory.actions.map(action => (
-                                <option key={action.id} value={action.id}>{action.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <Dropdown
+                        value={selectedActionId}
+                        onChange={(val) => setSelectedActionId(val)}
+                        options={currentCategory.actions.map(action => ({ value: action.id, label: action.label }))}
+                    />
                 </div>
 
                 {/* Input Area */}

@@ -76,7 +76,7 @@ const Navbar = () => {
       <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-8">
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-3">
-            <div className="size-8 text-primary flex items-center justify-center">
+            <div className="size-12 text-primary flex items-center justify-center">
               <img src="/Site_logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors">Data Structure Visualizer</h1>

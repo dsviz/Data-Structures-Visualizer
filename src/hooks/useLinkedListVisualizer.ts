@@ -44,6 +44,8 @@ export interface Frame {
     opValues?: { [key: string]: string | number }; // For dynamic code replacement
     tempNodes?: TempNode[];
     tempArrows?: TempArrow[];
+    visited?: number[];
+    output?: string;
 }
 
 // --- Constants ---
@@ -137,7 +139,7 @@ export const useLinkedListVisualizer = () => {
     const timerRef = useRef<number | null>(null);
 
     // --- Generator Helpers ---
-    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[], opName: string, opValues?: { [key: string]: string | number }, tempNodes: TempNode[] = [], tempArrows: TempArrow[] = []): Frame => ({
+    const createFrame = (nodes: number[], highlights: number[], pointers: Pointer[], line: number, desc: string, pLines: string[], opName: string, opValues?: { [key: string]: string | number }, tempNodes: TempNode[] = [], tempArrows: TempArrow[] = [], visited?: number[], output?: string): Frame => ({
         nodes: [...nodes],
         highlights,
         pointers,
@@ -148,7 +150,9 @@ export const useLinkedListVisualizer = () => {
         opName,
         opValues,
         tempNodes,
-        tempArrows
+        tempArrows,
+        visited,
+        output
     });
 
     const generateCreateFrames = (vals: number[]) => {
@@ -363,92 +367,156 @@ export const useLinkedListVisualizer = () => {
     };
 
     const generateSearchFrames = (target: number) => {
-        const opName = 'search';
+        const isTraversal = target === -9999;
+        const opName = isTraversal ? 'iterativeTraversal' : 'search';
         const pLines = PSEUDOCODE.search;
-        const opValues = { target };
+        const opValues: Record<string, string | number> = isTraversal ? {} : { target };
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
+        const visited: number[] = [];
+        let output = isTraversal ? "Start traversal: " : "";
 
-        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 0, "curr = head", pLines, opName, opValues, [], [], [...visited], output));
 
         for (let i = 0; i < currentNodes.length; i++) {
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, "while curr != null", pLines, opName, opValues));
-            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `val ${currentNodes[i]} == ${target}?`, pLines, opName, opValues));
+            visited.push(currentNodes[i]);
+            output += (i > 0 ? " -> " : "") + currentNodes[i];
 
-            if (currentNodes[i] === target) {
-                return { endNodes: currentNodes, timeline: [...frames, createFrame(currentNodes, [i], [{ index: i, label: 'FOUND', color: 'green' }], 1, "Found match", pLines, opName, opValues)] };
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 1, "while curr != null", pLines, opName, opValues, [], [], [...visited], output));
+
+            if (!isTraversal) {
+                frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `val ${currentNodes[i]} == ${target}?`, pLines, opName, opValues, [], [], [...visited], output));
+
+                if (currentNodes[i] === target) {
+                    return { endNodes: currentNodes, timeline: [...frames, createFrame(currentNodes, [i], [{ index: i, label: 'FOUND', color: 'green' }], 1, "Found match", pLines, opName, opValues, [], [], [...visited], output + " (Found!)")] };
+                }
             }
 
             if (i < currentNodes.length - 1) {
-                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues));
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, opValues, [], [], [...visited], output));
             }
         }
 
-        frames.push(createFrame(currentNodes, [], [], 1, "while curr == null", pLines, opName, opValues));
-        frames.push(createFrame(currentNodes, [], [], 4, "return false", pLines, opName, opValues));
+        frames.push(createFrame(currentNodes, [], [], 1, "while curr == null", pLines, opName, opValues, [], [], [...visited], output));
+        frames.push(createFrame(currentNodes, [], [], 4, isTraversal ? "Traversal Complete" : "return false", pLines, opName, opValues, [], [], [...visited], isTraversal ? output + " -> null" : output + " (Not Found)"));
         return { endNodes: currentNodes, timeline: frames };
     };
 
+    const generateFeatureComingSoon = (opName: string, title?: string) => {
+        const pLines = ["// Feature coming soon in the next update!"];
+        const frames = [createFrame([...initialNodes], [], [], 0, `${title || opName} is currently in development!`, pLines, opName, {}, [], [], [], "This feature is coming soon.")];
+        return { endNodes: [...initialNodes], timeline: frames };
+    };
+
     // --- Actions ---
-    const handleCreate = () => {
-        const vals = createInput.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
-        if (vals.length > MAX_NODES) return setError(`Max ${MAX_NODES}`);
-
-        const res = generateCreateFrames(vals);
-        run(res);
-        setIsPlaying(true);
-        setCreateStep('size');
+    const runAction = (actionId: string) => {
         setError(null);
-    };
-
-    const handleCreateRandom = () => {
-        const size = parseInt(createSize) || 5;
-        const vals = Array.from({ length: size }, () => Math.floor(Math.random() * 99) + 1);
-        setCreateInput(vals.join(', '));
-
-        const res = generateCreateFrames(vals);
-        run(res);
-        setIsPlaying(true);
-        setCreateStep('size');
-    };
-
-    const handleInsert = (type: 'head' | 'tail' | 'index') => {
-        const val = parseInt(inputValue);
-        if (isNaN(val)) return setError("Invalid Value");
-        if (initialNodes.length >= MAX_NODES) return setError("Full");
-
         let res;
-        if (type === 'head') res = generateInsertHeadFrames(val);
-        else if (type === 'tail') res = generateInsertTailFrames(val);
-        else {
-            const idx = parseInt(inputIndex);
-            if (isNaN(idx) || idx < 0 || idx > initialNodes.length) return setError("Bad Index");
-            res = generateInsertIndexFrames(idx, val);
-        }
-        run(res);
-        setError(null);
-    };
 
-    const handleRemove = (type: 'head' | 'tail' | 'index') => {
-        if (initialNodes.length === 0) return setError("Empty");
-
-        let res;
-        if (type === 'head') res = generateRemoveHeadFrames();
-        else if (type === 'tail') res = generateRemoveTailFrames();
-        else {
-            const idx = parseInt(inputIndex);
-            if (isNaN(idx) || idx < 0 || idx >= initialNodes.length) return setError("Bad Index");
-            res = generateRemoveIndexFrames(idx);
-        }
-        run(res);
-        setError(null);
-    };
-
-    const handleSearch = () => {
         const val = parseInt(inputValue);
-        if (isNaN(val)) return setError("Invalid Value");
-        run(generateSearchFrames(val));
-        setError(null);
+        const idx = parseInt(inputIndex);
+
+        switch (actionId) {
+            case 'createEmpty':
+                res = generateCreateFrames([]);
+                break;
+            case 'createRandom':
+                {
+                    const size = parseInt(createSize) || 5;
+                    const vals = Array.from({ length: size }, () => Math.floor(Math.random() * 99) + 1);
+                    setCreateInput(vals.join(', '));
+                    res = generateCreateFrames(vals);
+                }
+                break;
+            case 'initFromArray':
+                {
+                    const vals = createInput.split(',').map(x => parseInt(x.trim())).filter(x => !isNaN(x));
+                    if (vals.length > MAX_NODES) { setError(`Max ${MAX_NODES}`); return; }
+                    res = generateCreateFrames(vals);
+                }
+                break;
+            case 'clearList':
+                res = generateCreateFrames([]);
+                break;
+            case 'convertToArray':
+                res = generateFeatureComingSoon('Convert to Array');
+                break;
+
+            // Traversal
+            case 'iterativeTraversal':
+                res = generateSearchFrames(-9999); // Will traverse whole list
+                break;
+            case 'recursiveTraversal':
+            case 'reverseTraversal':
+            case 'showLength':
+            case 'findMiddle':
+                res = generateFeatureComingSoon(actionId);
+                break;
+
+            // Insertion
+            case 'insertHead':
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                if (initialNodes.length >= MAX_NODES) { setError("List Full"); return; }
+                res = generateInsertHeadFrames(val);
+                break;
+            case 'insertTail':
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                if (initialNodes.length >= MAX_NODES) { setError("List Full"); return; }
+                res = generateInsertTailFrames(val);
+                break;
+            case 'insertPosition':
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                if (initialNodes.length >= MAX_NODES) { setError("List Full"); return; }
+                if (isNaN(idx) || idx < 0 || idx > initialNodes.length) { setError("Bad Index"); return; }
+                res = generateInsertIndexFrames(idx, val);
+                break;
+            case 'insertAfterValue':
+            case 'insertBeforeValue':
+            case 'sortedInsert':
+                res = generateFeatureComingSoon(actionId);
+                break;
+
+            // Deletion
+            case 'deleteHead':
+                if (initialNodes.length === 0) { setError("List Empty"); return; }
+                res = generateRemoveHeadFrames();
+                break;
+            case 'deleteTail':
+                if (initialNodes.length === 0) { setError("List Empty"); return; }
+                res = generateRemoveTailFrames();
+                break;
+            case 'deletePosition':
+                if (initialNodes.length === 0) { setError("List Empty"); return; }
+                if (isNaN(idx) || idx < 0 || idx >= initialNodes.length) { setError("Bad Index"); return; }
+                res = generateRemoveIndexFrames(idx);
+                break;
+            case 'deleteByValue':
+            case 'deleteAllOccurrences':
+            case 'deleteList':
+                res = generateFeatureComingSoon(actionId);
+                break;
+
+            // Searching
+            case 'linearSearch':
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                res = generateSearchFrames(val);
+                break;
+            case 'findNthNode':
+            case 'findNthFromEnd':
+            case 'findMiddleNode':
+            case 'countOccurrences':
+                res = generateFeatureComingSoon(actionId);
+                break;
+
+            // Advanced / Special
+            default:
+                res = generateFeatureComingSoon(actionId);
+                break;
+        }
+
+        if (res) {
+            run(res);
+        }
     };
 
     // --- Playback Effect ---
@@ -467,7 +535,7 @@ export const useLinkedListVisualizer = () => {
 
     const currentFrame = frames[currentStep] || {
         nodes: initialNodes, highlights: [], pointers: [], codeLine: -1, description: "Ready",
-        listType, pseudoLines: [], opName: '', opValues: {}
+        listType, pseudoLines: [], opName: '', opValues: {}, visited: [], output: ''
     };
 
     return {
@@ -502,10 +570,6 @@ export const useLinkedListVisualizer = () => {
         setListType,
 
         // Handlers
-        handleCreate,
-        handleCreateRandom,
-        handleInsert,
-        handleRemove,
-        handleSearch
+        runAction
     };
 };

@@ -10,40 +10,28 @@ import { useLayout } from '../context/LayoutContext';
 export default function LinkedList() {
     const {
         // State
-        mode,
-        frames,
-        currentStep,
-        isPlaying,
-        playbackSpeed,
-        activeOp,
-        error,
         createInput,
-        createStep,
-        createSize,
         inputValue,
         inputIndex,
         listType,
         currentFrame,
+        frames,
+        currentStep,
+        isPlaying,
+        playbackSpeed,
+        error,
 
         // Setters
-        setMode,
-        setIsPlaying,
-        setCurrentStep,
-        setPlaybackSpeed,
-        setActiveOp,
         setCreateInput,
-        setCreateStep,
-        setCreateSize,
         setInputValue,
         setInputIndex,
         setListType,
+        setCurrentStep,
+        setIsPlaying,
+        setPlaybackSpeed,
 
         // Handlers
-        handleCreate,
-        handleCreateRandom,
-        handleInsert,
-        handleRemove,
-        handleSearch
+        runAction
     } = useLinkedListVisualizer();
 
     const [splitRatio, setSplitRatio] = useState(0.6); // 60% controls, 40% tabs
@@ -114,18 +102,13 @@ export default function LinkedList() {
             {/* Controls Section */}
             <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
                 <LinkedListControls
-                    activeOp={activeOp} setActiveOp={setActiveOp}
-                    mode={mode} setMode={setMode}
                     listType={listType} setListType={setListType}
                     createInput={createInput} setCreateInput={setCreateInput}
-                    createStep={createStep} setCreateStep={setCreateStep}
-                    createSize={createSize} setCreateSize={setCreateSize}
                     inputValue={inputValue} setInputValue={setInputValue}
                     inputIndex={inputIndex} setInputIndex={setInputIndex}
                     error={error}
-                    handleCreate={handleCreate} handleCreateRandom={handleCreateRandom}
-                    handleInsert={handleInsert} handleRemove={handleRemove}
-                    handleSearch={handleSearch}
+                    runAction={runAction}
+                    frames={frames} currentStep={currentStep}
                 />
             </div>
 
@@ -346,6 +329,18 @@ export default function LinkedList() {
                         })}
                     </svg>
                 </div>
+
+                {/* Description Overlay (Bottom Right) */}
+                {currentFrame && (
+                    <div className="absolute bottom-4 right-4 z-40 flex flex-col items-end gap-2 max-w-md w-full pointer-events-none">
+                        <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 w-full">
+                            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                                {currentFrame.description || "Ready to visualize..."}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
         </VisualizationLayout>
     );

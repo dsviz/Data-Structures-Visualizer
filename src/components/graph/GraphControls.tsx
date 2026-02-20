@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Dropdown } from '../ui/Dropdown';
+import { Frame } from '../../hooks/useGraphVisualizer';
 
 interface GraphControlsProps {
     isDirected: boolean;
@@ -33,6 +35,9 @@ interface GraphControlsProps {
     snapAllToGrid: () => void;
     updateWeightsByDistance: () => void;
     loadExampleGraph: (category: string) => void;
+    frames: Frame[];
+    currentStep: number;
+    getNodeLabel: (id: number) => string;
 }
 
 export const GraphControls: React.FC<GraphControlsProps> = ({
@@ -48,8 +53,12 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     activeAlgorithm,
     isGridSnapped, setIsGridSnapped, snapAllToGrid,
     updateWeightsByDistance,
-    loadExampleGraph
+    loadExampleGraph,
+    frames, currentStep,
+    getNodeLabel
 }) => {
+
+    const currentFrame = frames[currentStep];
 
     const [selectedCategory, setSelectedCategory] = useState<string>('Traversal');
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
@@ -130,36 +139,22 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                 {/* Category Dropdown */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Category</label>
-                    <div className="relative">
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
-                        >
-                            {CATEGORIES.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <Dropdown
+                        value={selectedCategory}
+                        onChange={(val) => setSelectedCategory(val)}
+                        options={CATEGORIES.map(cat => ({ value: cat.id, label: cat.label }))}
+                    />
                 </div>
 
                 {/* Algorithm Dropdown */}
                 {ALGORITHMS[selectedCategory] && ALGORITHMS[selectedCategory].length > 0 ? (
                     <div className="space-y-1.5">
                         <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Algorithm</label>
-                        <div className="relative">
-                            <select
-                                value={selectedAlgorithm}
-                                onChange={(e) => setSelectedAlgorithm(e.target.value)}
-                                className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-indigo-600 transition-colors cursor-pointer shadow-sm"
-                            >
-                                {ALGORITHMS[selectedCategory].map(algo => (
-                                    <option key={algo.id} value={algo.id}>{algo.label}</option>
-                                ))}
-                            </select>
-                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                        </div>
+                        <Dropdown
+                            value={selectedAlgorithm}
+                            onChange={(val) => setSelectedAlgorithm(val)}
+                            options={ALGORITHMS[selectedCategory].map(algo => ({ value: algo.id, label: algo.label }))}
+                        />
                     </div>
                 ) : (
                     <div className="text-[11px] text-gray-400 dark:text-gray-500 italic py-2">
@@ -264,6 +259,118 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Output Section */}
+            {currentFrame && (
+                <div className="space-y-4 mt-4 animate-in fade-in slide-in-from-bottom-2 pb-4">
+                    {/* Data Structures Details */}
+                    {(currentFrame.queue?.length > 0 || currentFrame.stack?.length > 0 || currentFrame.visited?.length > 0 || currentFrame.distances || currentFrame.distances2D) && (
+                        <div className="bg-gray-50 dark:bg-[#1a182e] border border-gray-200 dark:border-[#272546] rounded-xl p-3 shadow-inner flex flex-col gap-3 w-full max-h-[40vh] overflow-y-auto custom-scrollbar">
+
+                            {/* Visited Array */}
+                            {currentFrame.visited && currentFrame.visited.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">Visited</span>
+                                    <div className="flex gap-1.5 flex-wrap">
+                                        {currentFrame.visited.map((nodeId, idx) => (
+                                            <div key={`v-${idx}-${nodeId}`} className="size-6 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs rounded border border-emerald-200 dark:border-emerald-800">
+                                                {getNodeLabel(nodeId)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Queue */}
+                            {currentFrame.queue && currentFrame.queue.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">Queue (Front → Back)</span>
+                                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                                        {currentFrame.queue.map((nodeId, idx) => (
+                                            <div key={`q-${idx}-${nodeId}`} className="min-w-[24px] h-[24px] flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-xs rounded border border-indigo-200 dark:border-indigo-800 shrink-0 px-1">
+                                                {getNodeLabel(nodeId)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Stack */}
+                            {currentFrame.stack && currentFrame.stack.length > 0 && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">Stack (Top → Bottom)</span>
+                                    <div className="flex gap-1.5 overflow-x-auto max-h-[120px] pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                                        {currentFrame.stack.map((nodeId, idx) => (
+                                            <div key={`s-${idx}-${nodeId}`} className="min-w-[40px] h-[24px] flex items-center justify-center bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 font-mono font-bold text-xs rounded border border-rose-200 dark:border-rose-800 shrink-0">
+                                                {getNodeLabel(nodeId)}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Distances Array */}
+                            {currentFrame.distances && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">Distances Array</span>
+                                    <div className="bg-white dark:bg-[#121121] p-2 rounded border border-gray-200 dark:border-[#272546] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 shadow-sm">
+                                        <div className="flex gap-2 min-w-max">
+                                            {Object.entries(currentFrame.distances).map(([nodeId, dist]) => (
+                                                <div key={nodeId} className="flex flex-col items-center bg-gray-50 dark:bg-[#1e1c33] rounded px-2 py-1 border border-gray-100 dark:border-gray-800 min-w-[40px]">
+                                                    <span className="text-[10px] text-gray-500 font-bold">{getNodeLabel(parseInt(nodeId))}</span>
+                                                    <span className={`font-mono font-bold text-sm ${dist !== Infinity && dist !== '∞' ? 'text-amber-500' : 'text-gray-400'}`}>{dist === Infinity ? '∞' : dist}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Distance Matrix */}
+                            {currentFrame.distances2D && (
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">Distance Matrix</span>
+                                    <div className="bg-white dark:bg-[#121121] p-2 rounded border border-gray-200 dark:border-[#272546] overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 max-h-[200px] overflow-y-auto shadow-sm">
+                                        <table className="w-full text-xs text-center border-collapse">
+                                            <thead>
+                                                <tr>
+                                                    <th className="border-b border-r dark:border-gray-700/50 p-1 text-gray-500 border-gray-200">\</th>
+                                                    {Object.keys(currentFrame.distances2D).map(k => (
+                                                        <th key={`th-${k}`} className="border-b dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary">{getNodeLabel(parseInt(k))}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {Object.entries(currentFrame.distances2D).map(([u, row]) => (
+                                                    <tr key={`tr-${u}`}>
+                                                        <td className="border-r dark:border-gray-700/50 border-gray-200 p-1 font-mono text-primary font-bold">{getNodeLabel(parseInt(u))}</td>
+                                                        {Object.entries(row).map(([v, val]) => (
+                                                            <td key={`td-${u}-${v}`} className={`p-1 font-mono ${val !== Infinity && val !== '∞' ? 'text-slate-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600'}`}>{val === Infinity ? '∞' : val}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    )}
+
+                    {/* Final Output Text (if any) */}
+                    {currentFrame.output && (
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Output</label>
+                            <div className="p-4 mt-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 shadow-sm">
+                                <p className="text-sm font-mono text-indigo-700 dark:text-indigo-300 break-words leading-relaxed font-bold">
+                                    {currentFrame.output}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Reset Footer */}
             <div className="mt-auto pt-4 border-t border-gray-200 dark:border-[#272546]">

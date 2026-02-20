@@ -27,6 +27,7 @@ export interface Frame {
     description: string;
     distances?: Record<number, number | string>; // For algorithms like Bellman-Ford/Dijkstra
     distances2D?: Record<number, Record<number, number | string>>; // For Floyd-Warshall
+    output?: string; // For traversal output
 }
 
 const INITIAL_NODES = [
@@ -244,7 +245,8 @@ export const useGraphVisualizer = () => {
             edgeHighlights: [],
             codeLine: 0,
             pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-            description: `Starting BFS from node ${getNodeLabel(start)}.`
+            description: `Starting BFS from node ${getNodeLabel(start)}.`,
+            output: `BFS: `
         });
 
         // Start
@@ -260,7 +262,8 @@ export const useGraphVisualizer = () => {
             edgeHighlights: [],
             codeLine: 1,
             pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-            description: `Added start node ${getNodeLabel(start)} to queue and visited set.`
+            description: `Added start node ${getNodeLabel(start)} to queue and visited set.`,
+            output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
         });
 
         while (queue.length > 0) {
@@ -274,7 +277,8 @@ export const useGraphVisualizer = () => {
                 edgeHighlights: [],
                 codeLine: 2,
                 pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-                description: `Checking if queue is empty. It's not.`
+                description: `Checking if queue is empty. It's not.`,
+                output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
             });
 
             const u = queue.shift()!;
@@ -289,7 +293,8 @@ export const useGraphVisualizer = () => {
                 edgeHighlights: [],
                 codeLine: 3,
                 pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-                description: `Dequeued node ${getNodeLabel(u)}.`
+                description: `Dequeued node ${getNodeLabel(u)}.`,
+                output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
             });
 
             const neighbors = adj[u] || [];
@@ -304,7 +309,8 @@ export const useGraphVisualizer = () => {
                     edgeHighlights: [{ from: u, to: v }],
                     codeLine: 4,
                     pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-                    description: `Checking neighbor ${getNodeLabel(v)} of node ${getNodeLabel(u)}.`
+                    description: `Checking neighbor ${getNodeLabel(v)} of node ${getNodeLabel(u)}.`,
+                    output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
                 });
 
                 if (!visited.has(v)) {
@@ -321,7 +327,8 @@ export const useGraphVisualizer = () => {
                         edgeHighlights: [{ from: u, to: v }],
                         codeLine: 6,
                         pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-                        description: `Node ${getNodeLabel(v)} is not visited. Marking as visited and adding to queue.`
+                        description: `Node ${getNodeLabel(v)} is not visited. Marking as visited and adding to queue.`,
+                        output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
                     });
                 }
             }
@@ -337,7 +344,8 @@ export const useGraphVisualizer = () => {
             edgeHighlights: [],
             codeLine: 0, // End
             pseudoLines: ["Initialize visited set and queue", "Add start node to visited and queue", "While queue is not empty:", "  Dequeue node u", "  For each neighbor v of u:", "    If v not visited:", "      Mark v visited, enqueue v"],
-            description: `BFS traversal completed.`
+            description: `BFS traversal completed.`,
+            output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
         });
 
         setFrames(newFrames);
@@ -374,7 +382,8 @@ export const useGraphVisualizer = () => {
                 edgeHighlights: [],
                 codeLine: 0,
                 pseudoLines: ["Function DFS(u):", "  Mark u as visited", "  For each neighbor v of u:", "    If v not visited:", "      DFS(v)"],
-                description: `Visiting node ${getNodeLabel(u)}.`
+                description: `Visiting node ${getNodeLabel(u)}.`,
+                output: `DFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
             });
 
             const neighbors = adj[u] || [];
@@ -389,7 +398,8 @@ export const useGraphVisualizer = () => {
                     edgeHighlights: [{ from: u, to: v }],
                     codeLine: 2,
                     pseudoLines: ["Function DFS(u):", "  Mark u as visited", "  For each neighbor v of u:", "    If v not visited:", "      DFS(v)"],
-                    description: `Checking neighbor ${getNodeLabel(v)} of node ${getNodeLabel(u)}.`
+                    description: `Checking neighbor ${getNodeLabel(v)} of node ${getNodeLabel(u)}.`,
+                    output: `DFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
                 });
 
                 if (!visited.has(v)) {
@@ -411,7 +421,8 @@ export const useGraphVisualizer = () => {
             edgeHighlights: [],
             codeLine: 0, // End
             pseudoLines: ["Function DFS(u):", "  Mark u as visited", "  For each neighbor v of u:", "    If v not visited:", "      DFS(v)"],
-            description: `DFS traversal completed.`
+            description: `DFS traversal completed.`,
+            output: `DFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
         });
 
         setFrames(newFrames);

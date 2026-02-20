@@ -1,82 +1,160 @@
-import React, { useEffect } from 'react';
-import { Operation, ListType } from '../../hooks/useLinkedListVisualizer';
+import React, { useState, useEffect } from 'react';
+import { Dropdown } from '../ui/Dropdown';
+import { ListType, Frame } from '../../hooks/useLinkedListVisualizer';
 
-interface LinkedListControlsProps {
-    activeOp: Operation;
-    setActiveOp: (op: Operation) => void;
-    mode: 'standard' | 'apps';
-    setMode: (mode: 'standard' | 'apps') => void;
-    // List Type
+interface LinkedListAction {
+    id: string;
+    label: string;
+    action: () => void;
+    needsValue?: boolean;
+    needsIndex?: boolean;
+    needsArrayInput?: boolean;
+    disabled?: boolean;
+}
+
+interface LinkedListCategory {
+    id: string;
+    label: string;
+    actions: LinkedListAction[];
+}
+
+export interface LinkedListControlsProps {
     listType: ListType;
     setListType: (type: ListType) => void;
-    // Inputs
-    createInput: string;
-    setCreateInput: (val: string) => void;
-    createStep: 'size' | 'values';
-    setCreateStep: (step: 'size' | 'values') => void;
-    createSize: string;
-    setCreateSize: (size: string) => void;
     inputValue: string;
     setInputValue: (val: string) => void;
     inputIndex: string;
     setInputIndex: (val: string) => void;
+    createInput: string;
+    setCreateInput: (val: string) => void;
     error: string | null;
-    // Handlers
-    handleCreate: () => void;
-    handleCreateRandom: () => void;
-    handleInsert: (type: 'head' | 'tail' | 'index') => void;
-    handleRemove: (type: 'head' | 'tail' | 'index') => void;
-    handleSearch: () => void;
+    runAction: (id: string) => void;
+    frames: Frame[];
+    currentStep: number;
 }
 
 export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
-    activeOp, setActiveOp, mode, setMode,
     listType, setListType,
-    createInput, setCreateInput, createStep, setCreateStep, createSize, setCreateSize,
-    inputValue, setInputValue, inputIndex, setInputIndex, error,
-    handleCreate, handleCreateRandom, handleInsert, handleRemove, handleSearch
+    inputValue, setInputValue, inputIndex, setInputIndex, createInput, setCreateInput, error,
+    runAction,
+    frames, currentStep
 }) => {
+    const currentFrame = frames[currentStep];
 
-    const OPERATIONS = mode === 'standard' ? [
-        { id: 'create', label: 'Initialize List' },
-        { id: 'insert', label: 'Insert Node' },
-        { id: 'remove', label: 'Remove Node' },
-        { id: 'search', label: 'Search Value' },
-    ] : [
-        { id: 'app_coming_soon', label: 'More Apps Coming Soon...' },
+    const [selectedCategory, setSelectedCategory] = useState<string>('Basics');
+    const [selectedActionId, setSelectedActionId] = useState<string>('');
+
+    const CATEGORIES: LinkedListCategory[] = [
+        {
+            id: 'Basics',
+            label: 'Basics / Fundamentals',
+            actions: [
+                { id: 'createEmpty', label: 'Create Empty List', action: () => runAction('createEmpty') },
+                { id: 'createRandom', label: 'Create Random List', action: () => runAction('createRandom') },
+                { id: 'initFromArray', label: 'Initialize from Array', action: () => runAction('initFromArray'), needsArrayInput: true },
+                { id: 'clearList', label: 'Clear List', action: () => runAction('clearList') },
+                { id: 'convertToArray', label: 'Convert to Array', action: () => runAction('convertToArray') }
+            ]
+        },
+        {
+            id: 'Traversal',
+            label: 'Traversal Operations',
+            actions: [
+                { id: 'iterativeTraversal', label: 'Iterative Traversal', action: () => runAction('iterativeTraversal') },
+                { id: 'recursiveTraversal', label: 'Recursive Traversal', action: () => runAction('recursiveTraversal') },
+                { id: 'reverseTraversal', label: 'Reverse Traversal (Doubly)', action: () => runAction('reverseTraversal'), disabled: listType !== 'doubly' },
+                { id: 'showLength', label: 'Show Length', action: () => runAction('showLength') },
+                { id: 'findMiddle', label: 'Find Middle', action: () => runAction('findMiddle') }
+            ]
+        },
+        {
+            id: 'Insertion',
+            label: 'Insertion Operations',
+            actions: [
+                { id: 'insertHead', label: 'Insert at Head', action: () => runAction('insertHead'), needsValue: true },
+                { id: 'insertTail', label: 'Insert at Tail', action: () => runAction('insertTail'), needsValue: true },
+                { id: 'insertPosition', label: 'Insert at Position', action: () => runAction('insertPosition'), needsValue: true, needsIndex: true },
+                { id: 'insertAfterValue', label: 'Insert After Value', action: () => runAction('insertAfterValue'), needsValue: true, needsIndex: true },
+                { id: 'insertBeforeValue', label: 'Insert Before Value', action: () => runAction('insertBeforeValue'), needsValue: true, needsIndex: true },
+                { id: 'sortedInsert', label: 'Sorted Insert', action: () => runAction('sortedInsert'), needsValue: true }
+            ]
+        },
+        {
+            id: 'Deletion',
+            label: 'Deletion Operations',
+            actions: [
+                { id: 'deleteHead', label: 'Delete Head', action: () => runAction('deleteHead') },
+                { id: 'deleteTail', label: 'Delete Tail', action: () => runAction('deleteTail') },
+                { id: 'deleteByValue', label: 'Delete by Value', action: () => runAction('deleteByValue'), needsValue: true },
+                { id: 'deletePosition', label: 'Delete at Position', action: () => runAction('deletePosition'), needsIndex: true },
+                { id: 'deleteAllOccurrences', label: 'Delete All Occurrences', action: () => runAction('deleteAllOccurrences'), needsValue: true },
+                { id: 'deleteList', label: 'Delete List', action: () => runAction('deleteList') }
+            ]
+        },
+        {
+            id: 'Searching',
+            label: 'Searching Operations',
+            actions: [
+                { id: 'linearSearch', label: 'Linear Search', action: () => runAction('linearSearch'), needsValue: true },
+                { id: 'findNthNode', label: 'Find Nth Node', action: () => runAction('findNthNode'), needsIndex: true },
+                { id: 'findNthFromEnd', label: 'Find Nth from End', action: () => runAction('findNthFromEnd'), needsIndex: true },
+                { id: 'findMiddleNode', label: 'Find Middle Node', action: () => runAction('findMiddleNode') },
+                { id: 'countOccurrences', label: 'Count Occurrences', action: () => runAction('countOccurrences'), needsValue: true }
+            ]
+        },
+        {
+            id: 'Advanced',
+            label: 'Advanced Operations',
+            actions: [
+                { id: 'reverseList', label: 'Reverse List', action: () => runAction('reverseList') },
+                { id: 'reverseInKGroups', label: 'Reverse in K Groups', action: () => runAction('reverseInKGroups'), needsValue: true },
+                { id: 'detectCycle', label: 'Detect Cycle (Floyd)', action: () => runAction('detectCycle') },
+                { id: 'removeCycle', label: 'Remove Cycle', action: () => runAction('removeCycle') },
+                { id: 'mergeTwoLists', label: 'Merge Two Lists', action: () => runAction('mergeTwoLists') },
+                { id: 'mergeSortList', label: 'Merge Sort List', action: () => runAction('mergeSortList') },
+                { id: 'checkPalindrome', label: 'Check Palindrome', action: () => runAction('checkPalindrome') },
+                { id: 'rotateList', label: 'Rotate List', action: () => runAction('rotateList'), needsIndex: true }
+            ]
+        },
+        {
+            id: 'Special',
+            label: 'Special Algorithms',
+            actions: [
+                { id: 'intersectionPoint', label: 'Intersection Point', action: () => runAction('intersectionPoint') },
+                { id: 'unionOfLists', label: 'Union of Lists', action: () => runAction('unionOfLists') },
+                { id: 'cloneRandomList', label: 'Clone Random List', action: () => runAction('cloneRandomList') },
+                { id: 'partitionList', label: 'Partition List', action: () => runAction('partitionList'), needsValue: true },
+                { id: 'oddEvenRearrange', label: 'Odd Even Rearrange', action: () => runAction('oddEvenRearrange') },
+                { id: 'swapNodesPairwise', label: 'Swap Nodes Pairwise', action: () => runAction('swapNodesPairwise') }
+            ]
+        },
     ];
 
+    const currentCategoryObj = CATEGORIES.find(c => c.id === selectedCategory);
+    const actions = currentCategoryObj?.actions || [];
+    const currentAction = actions.find(a => a.id === selectedActionId);
+
+    // Auto-select first action when category changes
     useEffect(() => {
-        if (!activeOp && mode === 'standard') {
-            setActiveOp('create');
+        if (actions.length > 0) {
+            setSelectedActionId(actions[0].id);
+        } else {
+            setSelectedActionId('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode]);
+    }, [selectedCategory]);
+
+    const handleRunAlgorithm = () => {
+        if (currentAction && !currentAction.disabled) {
+            currentAction.action();
+        }
+    };
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5 h-full overflow-y-auto pr-2">
 
-            {/* Selection Area */}
+            {/* Config Box */}
             <div className="space-y-4">
-                {/* Mode Selector */}
-                <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Work Mode</label>
-                    <div className="bg-gray-100 dark:bg-[#121121] p-1 rounded-lg flex shadow-inner">
-                        <button
-                            onClick={() => setMode('standard')}
-                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'standard' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            Standard
-                        </button>
-                        <button
-                            onClick={() => setMode('apps')}
-                            className={`flex-1 py-2 text-[11px] uppercase font-bold rounded-md transition-all ${mode === 'apps' ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            Apps
-                        </button>
-                    </div>
-                </div>
-
                 {/* List Type Selector */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">List Type</label>
@@ -93,113 +171,118 @@ export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
                     </div>
                 </div>
 
-                {/* Operation Dropdown */}
                 <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
-                    <div className="relative">
-                        <select
-                            value={activeOp || ''}
-                            onChange={(e) => setActiveOp(e.target.value as Operation)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
-                        >
-                            {OPERATIONS.map(op => (
-                                <option key={op.id} value={op.id}>{op.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Category</label>
+                    <Dropdown
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        options={CATEGORIES.map(c => ({ value: c.id, label: c.label }))}
+                    />
                 </div>
 
-                {/* Dynamic Inputs Area */}
-                <div className="animate-in fade-in slide-in-from-top-2">
-                    {mode === 'standard' && (
-                        <>
-                            {activeOp === 'create' && (
-                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                    {createStep === 'size' ? (
-                                        <div className="space-y-3">
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">List Size</span>
-                                                <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
-                                            </div>
-                                            <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Next</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
-                                                <span className="text-xs font-bold text-gray-500">Method</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
-                                                <button onClick={handleCreate} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
-                                            </div>
-                                            <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
+                    <Dropdown
+                        value={selectedActionId}
+                        onChange={setSelectedActionId}
+                        options={actions.map(a => ({ value: a.id, label: a.label }))}
+                    />
+                </div>
 
-                            {activeOp === 'insert' && (
-                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Value</span>
-                                            <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-bold" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Index</span>
-                                            <input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button onClick={() => handleInsert('head')} className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-2.5 rounded-lg border border-primary/20 transition-all">Head</button>
-                                        <button onClick={() => handleInsert('tail')} className="bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-bold py-2.5 rounded-lg border border-primary/20 transition-all">Tail</button>
-                                        <button onClick={() => handleInsert('index')} className="bg-primary text-white text-[10px] font-bold py-2.5 rounded-lg shadow-sm">Fixed</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeOp === 'remove' && (
-                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Target Index</span>
-                                        <input type="number" value={inputIndex} onChange={e => setInputIndex(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button onClick={() => handleRemove('head')} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold py-2.5 rounded-lg border border-red-500/20 transition-all">Head</button>
-                                        <button onClick={() => handleRemove('tail')} className="bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold py-2.5 rounded-lg border border-red-500/20 transition-all">Tail</button>
-                                        <button onClick={() => handleRemove('index')} className="bg-red-500 text-white text-[10px] font-bold py-2.5 rounded-lg shadow-sm">Index</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeOp === 'search' && (
-                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Search Value</span>
-                                    <input type="number" value={inputValue} onChange={e => setInputValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" placeholder="Value..." />
-                                    <button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Search List</button>
-                                </div>
-                            )}
-                        </>
+                {/* Dynamic Inputs Area based on selected Action */}
+                <div className="space-y-3 pt-2">
+                    {currentAction?.needsArrayInput && (
+                        <div className="space-y-1 animate-in fade-in zoom-in-95 duration-200">
+                            <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] ml-1">Comma-separated Values</label>
+                            <input
+                                type="text"
+                                value={createInput}
+                                onChange={e => setCreateInput(e.target.value)}
+                                className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary shadow-sm transition-all"
+                                placeholder="e.g. 5, 10, 15, 20"
+                                onKeyDown={(e) => e.key === 'Enter' && handleRunAlgorithm()}
+                            />
+                        </div>
                     )}
 
-                    {mode === 'apps' && (
-                        <div className="p-8 text-center bg-gray-50/50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/5">
-                            <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-3">construction</span>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium italic">Advanced applications like Cycle Detection & Reversal coming soon!</p>
+                    <div className="flex gap-2 w-full">
+                        {currentAction?.needsValue && (
+                            <div className="space-y-1 flex-1 animate-in fade-in zoom-in-95 duration-200">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] ml-1">Value (K)</label>
+                                <input
+                                    type="number"
+                                    value={inputValue}
+                                    onChange={e => setInputValue(e.target.value)}
+                                    className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary shadow-sm transition-all text-center font-mono font-bold"
+                                    placeholder="0"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRunAlgorithm()}
+                                />
+                            </div>
+                        )}
+                        {currentAction?.needsIndex && (
+                            <div className="space-y-1 flex-1 animate-in fade-in zoom-in-95 duration-200">
+                                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7] ml-1">Index / Target</label>
+                                <input
+                                    type="number"
+                                    value={inputIndex}
+                                    onChange={e => setInputIndex(e.target.value)}
+                                    className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-primary shadow-sm transition-all text-center font-mono font-bold"
+                                    placeholder="0"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleRunAlgorithm()}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={handleRunAlgorithm}
+                        disabled={currentAction?.disabled}
+                        className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2
+                            ${currentAction?.disabled ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/40'}
+                        `}
+                    >
+                        <span className="material-symbols-outlined text-sm">{currentAction?.disabled ? 'block' : 'play_arrow'}</span>
+                        {currentAction?.disabled ? 'Unavailable for list type' : 'Run Operation'}
+                    </button>
+                    {error && (
+                        <div className="p-2.5 text-xs text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-lg animate-in shake font-medium flex items-center gap-2 mt-2">
+                            <span className="material-symbols-outlined text-[16px]">error</span>
+                            {error}
                         </div>
                     )}
                 </div>
-
-                {/* Error Display */}
-                {error && (
-                    <div className="p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl animate-in shake duration-500">
-                        <p className="text-red-600 dark:text-red-400 text-xs font-medium leading-relaxed">{error}</p>
-                    </div>
-                )}
             </div>
+
+            <div className="flex-1 mt-4"></div>
+
+            {/* Output Bar and Data Structures */}
+            {currentFrame && (
+                <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-[#272546]">
+                    {currentFrame.visited && currentFrame.visited.length > 0 && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Visited Array</label>
+                            <div className="flex flex-wrap gap-1.5 mt-2 bg-white dark:bg-[#151426] p-2 rounded-xl border border-gray-100 dark:border-[#272546]">
+                                {currentFrame.visited.map((v, i) => (
+                                    <div key={i} className="size-6 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs rounded border border-emerald-200 dark:border-emerald-800">
+                                        {v}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {currentFrame.output && (
+                        <div className="animate-in fade-in slide-in-from-bottom-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Output Log</label>
+                            <div className="p-4 mt-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 shadow-sm">
+                                <p className="text-sm font-mono text-indigo-700 dark:text-indigo-300 break-words leading-relaxed font-bold">
+                                    {currentFrame.output}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
-
