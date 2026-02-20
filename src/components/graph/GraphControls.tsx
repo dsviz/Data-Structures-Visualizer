@@ -10,8 +10,22 @@ interface GraphControlsProps {
     runBFS: () => void;
     runDFS: () => void;
     runDijkstra: () => void;
+    runBellmanFord: () => void;
+    runFloydWarshall: () => void;
+    runAStar: () => void;
     runPrim: () => void;
     runKruskal: () => void;
+    runBoruvka: () => void;
+    runNodeDegree: () => void;
+    runHighlightNeighbors: () => void;
+    runCheckConnectivity: () => void;
+    runDetectCycle: () => void;
+    runTopologicalSort: () => void;
+    runKahn: () => void;
+    runTarjanBridges: () => void;
+    runArticulationPoints: () => void;
+    runFordFulkerson: () => void;
+    runEdmondsKarp: () => void;
     reset: () => void;
     activeAlgorithm: string | null;
     isGridSnapped: boolean;
@@ -25,7 +39,12 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     isDirected, setIsDirected,
     isWeighted, setIsWeighted,
     startNode, setStartNode,
-    runBFS, runDFS, runDijkstra, runPrim, runKruskal, reset,
+    runBFS, runDFS, runDijkstra, runBellmanFord, runFloydWarshall, runAStar, runPrim, runKruskal, runBoruvka,
+    runNodeDegree, runHighlightNeighbors, runCheckConnectivity, runDetectCycle,
+    runTopologicalSort, runKahn,
+    runTarjanBridges, runArticulationPoints,
+    runFordFulkerson, runEdmondsKarp,
+    reset,
     activeAlgorithm,
     isGridSnapped, setIsGridSnapped, snapAllToGrid,
     updateWeightsByDistance,
@@ -48,12 +67,16 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     const renderAlgorithmButtons = () => {
         const loadBtn = (
             <button
-                onClick={() => loadExampleGraph(selectedCategory)}
-                disabled={!!activeAlgorithm}
+                onClick={() => {
+                    reset();
+                    loadExampleGraph(selectedCategory);
+                }}
                 className="col-span-2 w-full py-2 px-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-xs font-bold transition-all flex items-center justify-center gap-2 mb-2"
             >
                 <span className="material-symbols-outlined text-lg">auto_fix</span>
-                Load {selectedCategory} Example
+                {['MST', 'Traversal', 'Basics', 'Shortest Path', 'DAG', 'Connectivity', 'Flow'].includes(selectedCategory)
+                    ? `Load Next Example / Draw Own`
+                    : `Load Example / Draw Own`}
             </button>
         );
 
@@ -71,9 +94,9 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                     <div className="grid grid-cols-2 gap-2 w-full">
                         {loadBtn}
                         <button onClick={runDijkstra} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Dijkstra's</button>
-                        <button disabled className={disabledAlgoBtnClass}>Bellman-Ford</button>
-                        <button disabled className={disabledAlgoBtnClass}>Floyd-Warshall</button>
-                        <button disabled className={disabledAlgoBtnClass}>A* Search</button>
+                        <button onClick={runBellmanFord} disabled={!!activeAlgorithm} className={algoBtnClass}>Bellman-Ford</button>
+                        <button onClick={runFloydWarshall} disabled={!!activeAlgorithm} className={algoBtnClass}>Floyd-Warshall</button>
+                        <button onClick={runAStar} disabled={!!activeAlgorithm} className={algoBtnClass}>A* Search</button>
                     </div>
                 );
             case 'MST':
@@ -82,24 +105,41 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                         {loadBtn}
                         <button onClick={runPrim} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Prim's MST</button>
                         <button onClick={runKruskal} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Kruskal's MST</button>
-                        <button disabled className={disabledAlgoBtnClass}>Borůvka's</button>
+                        <button onClick={runBoruvka} disabled={!!activeAlgorithm} className={algoBtnClass}>Run Boruvka's</button>
                     </div>
                 );
             case 'Basics':
                 return (
                     <div className="grid grid-cols-2 gap-2 w-full">
                         {loadBtn}
-                        <div className="col-span-2 text-xs text-gray-500 text-center py-2 italic font-medium">
-                            Explore graph properties and structures.
-                        </div>
+                        <button onClick={runNodeDegree} disabled={!!activeAlgorithm} className={algoBtnClass}>Find Node Degree</button>
+                        <button onClick={runHighlightNeighbors} disabled={!!activeAlgorithm} className={algoBtnClass}>Highlight Neighbors</button>
+                        <button onClick={runCheckConnectivity} disabled={!!activeAlgorithm} className={algoBtnClass}>Check Connectivity</button>
+                        <button onClick={runDetectCycle} disabled={!!activeAlgorithm} className={algoBtnClass}>Detect Cycle</button>
                     </div>
                 );
             case 'DAG':
                 return (
                     <div className="grid grid-cols-2 gap-2 w-full">
                         {loadBtn}
-                        <button disabled className={disabledAlgoBtnClass}>Topological Sort</button>
-                        <button disabled className={disabledAlgoBtnClass}>Kahn's Algorithm</button>
+                        <button onClick={runTopologicalSort} disabled={!!activeAlgorithm} className={algoBtnClass}>Topological Sort</button>
+                        <button onClick={runKahn} disabled={!!activeAlgorithm} className={algoBtnClass}>Kahn's Algorithm</button>
+                    </div>
+                );
+            case 'Connectivity':
+                return (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
+                        <button onClick={runTarjanBridges} disabled={!!activeAlgorithm} className={algoBtnClass}>Tarjan's Bridges</button>
+                        <button onClick={runArticulationPoints} disabled={!!activeAlgorithm} className={algoBtnClass}>Articulation Points</button>
+                    </div>
+                );
+            case 'Flow':
+                return (
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {loadBtn}
+                        <button onClick={runFordFulkerson} disabled={!!activeAlgorithm} className={algoBtnClass}>Ford-Fulkerson</button>
+                        <button onClick={runEdmondsKarp} disabled={!!activeAlgorithm} className={algoBtnClass}>Edmonds-Karp</button>
                     </div>
                 );
             default:
@@ -115,7 +155,6 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     };
 
     const algoBtnClass = `h-10 flex items-center justify-center bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium rounded-lg text-xs transition-colors`;
-    const disabledAlgoBtnClass = `h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed font-medium rounded-lg text-xs border border-gray-300 dark:border-gray-700`;
 
     return (
         <div className="flex flex-col gap-6 h-full overflow-y-auto pr-2">
@@ -188,16 +227,18 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                     </button>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Start Node:</span>
-                    <input
-                        className="w-full bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono"
-                        placeholder="0"
-                        type="text"
-                        value={startNode}
-                        onChange={(e) => setStartNode(e.target.value)}
-                    />
-                </div>
+                {['Traversal', 'Shortest Path', 'MST'].includes(selectedCategory) && (
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs font-medium text-gray-500 whitespace-nowrap">Start Node:</span>
+                        <input
+                            className="w-full bg-gray-100 dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono"
+                            placeholder="0"
+                            type="text"
+                            value={startNode}
+                            onChange={(e) => setStartNode(e.target.value)}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Reset - Clean and Minimal */}

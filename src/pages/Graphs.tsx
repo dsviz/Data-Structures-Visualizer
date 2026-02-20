@@ -13,7 +13,12 @@ const Graphs = () => {
     isWeighted, setIsWeighted,
     startNode, setStartNode,
     activeAlgorithm,
-    runBFS, runDFS, runDijkstra, runPrim, runKruskal,
+    runBFS, runDFS, runDijkstra, runBellmanFord, runFloydWarshall, runAStar, runPrim, runKruskal,
+    runBoruvka,
+    runNodeDegree, runHighlightNeighbors, runCheckConnectivity, runDetectCycle,
+    runTopologicalSort, runKahn,
+    runTarjanBridges, runArticulationPoints,
+    runFordFulkerson, runEdmondsKarp,
     resetGraph, clearCanvas,
     getCurrentFrame,
     activeTool, setActiveTool,
@@ -217,7 +222,13 @@ const Graphs = () => {
           isWeighted={isWeighted} setIsWeighted={setIsWeighted}
           startNode={startNode} setStartNode={setStartNode}
           runBFS={runBFS} runDFS={runDFS}
-          runDijkstra={runDijkstra} runPrim={runPrim} runKruskal={runKruskal}
+          runDijkstra={runDijkstra} runBellmanFord={runBellmanFord} runFloydWarshall={runFloydWarshall} runAStar={runAStar} runPrim={runPrim} runKruskal={runKruskal}
+          runBoruvka={runBoruvka}
+          runNodeDegree={runNodeDegree} runHighlightNeighbors={runHighlightNeighbors}
+          runCheckConnectivity={runCheckConnectivity} runDetectCycle={runDetectCycle}
+          runTopologicalSort={runTopologicalSort} runKahn={runKahn}
+          runTarjanBridges={runTarjanBridges} runArticulationPoints={runArticulationPoints}
+          runFordFulkerson={runFordFulkerson} runEdmondsKarp={runEdmondsKarp}
           reset={resetGraph}
           activeAlgorithm={activeAlgorithm}
           isGridSnapped={isGridSnapped}
@@ -242,6 +253,7 @@ const Graphs = () => {
           codeLanguage={codeLanguage}
           setCodeLanguage={setCodeLanguage}
           activeAlgorithm={activeAlgorithm}
+          getNodeLabel={getNodeLabel}
         />
       </div>
     </div>
@@ -367,10 +379,10 @@ const Graphs = () => {
               const offsetX = length > 0 ? (-dy / length) * 15 : 0;
               const offsetY = length > 0 ? (dx / length) * 15 : -15;
 
-              // Dim Logic for Kruskal/Prim/Dijkstra (Only at the end)
-              const isMSTAlgo = activeAlgorithm === 'kruskal' || activeAlgorithm === 'prim' || activeAlgorithm === 'dijkstra';
+              // Dim Logic for Kruskal/Prim/Dijkstra/Bellman-Ford/A* (Only at the end)
+              const isTreeAlgo = activeAlgorithm === 'kruskal' || activeAlgorithm === 'prim' || activeAlgorithm === 'dijkstra' || activeAlgorithm === 'bellmanFord' || activeAlgorithm === 'aStar';
               const isFinished = frames.length > 0 && currentStep === frames.length - 1;
-              const isDimmed = isMSTAlgo && isFinished && !isHighlighted;
+              const isDimmed = isTreeAlgo && isFinished && !isHighlighted;
 
               return (
                 <g key={i} className={`pointer-events-auto cursor-pointer group ${activeTool === 'delete' ? 'hover:opacity-50' : ''}`}
@@ -465,6 +477,17 @@ const Graphs = () => {
                 style={{ left: node.x, top: node.y }}
               >
                 {getNodeLabel(node.id)}
+
+                {/* Distance Overlay */}
+                {currentFrame.distances && currentFrame.distances[node.id] !== undefined && (
+                  <div className={`absolute -bottom-7 px-1.5 py-0.5 rounded shadow-sm text-[10px] font-bold tracking-tight border pointer-events-none whitespace-nowrap z-50 ${currentFrame.distances[node.id] !== Infinity && currentFrame.distances[node.id] !== '∞'
+                    ? 'bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-100'
+                    : 'bg-white dark:bg-[#131221] border-gray-200 dark:border-gray-700 text-gray-400'
+                    }`}>
+                    d: {currentFrame.distances[node.id] === Infinity ? '∞' : currentFrame.distances[node.id]}
+                  </div>
+                )}
+
                 {isQueued && !isVisited && (
                   <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white dark:border-[#131221]"></div>
                 )}
@@ -473,6 +496,47 @@ const Graphs = () => {
           })}
 
         </div>
+        {/* Queue / Stack / Data Structures Visualizer Overlay */}
+        {(currentFrame.queue?.length > 0 || currentFrame.stack?.length > 0) && (
+          <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+            {currentFrame.queue?.length > 0 && (
+              <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur border border-indigo-200 dark:border-indigo-900/40 rounded-xl p-3 shadow-lg flex flex-col gap-2 max-w-[200px]">
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                  Queue (BFS/Shortest Path)
+                </span>
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  {currentFrame.queue.map((nodeId, idx) => (
+                    <div
+                      key={`q-${idx}-${nodeId}`}
+                      className="min-w-[32px] h-[32px] flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-sm rounded-lg border border-indigo-200 dark:border-indigo-800 shrink-0"
+                    >
+                      {getNodeLabel(nodeId)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentFrame.stack?.length > 0 && (
+              <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur border border-rose-200 dark:border-rose-900/40 rounded-xl p-3 shadow-lg flex flex-col gap-2 max-w-[200px] max-h-[300px]">
+                <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                  Stack (DFS)
+                </span>
+                <div className="flex flex-col-reverse gap-2 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                  {currentFrame.stack.map((nodeId, idx) => (
+                    <div
+                      key={`s-${idx}-${nodeId}`}
+                      className="w-full h-[32px] flex items-center justify-center bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 font-mono font-bold text-sm rounded-lg border border-rose-200 dark:border-rose-800 shrink-0"
+                    >
+                      {getNodeLabel(nodeId)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
     </VisualizationLayout>
