@@ -3,7 +3,7 @@ import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useTreeVisualizer } from '../hooks/useTreeVisualizer';
 import { TreeControls } from '../components/tree/TreeControls';
 import { TreeTabs } from '../components/tree/TreeTabs';
-import { TreeTools, TreeTool } from '../components/tree/TreeTools';
+import { TreeTools } from '../components/tree/TreeTools';
 import { Language } from '../data/TreeCode';
 import { useLayout } from '../context/LayoutContext';
 
@@ -14,11 +14,13 @@ const Trees = () => {
     isPlaying, setIsPlaying,
     playbackSpeed, setPlaybackSpeed,
     activeAlgorithm,
-    getCurrentFrame
+    getCurrentFrame,
+    // Interactive tools from hook
+    activeTool, setActiveTool,
+    addNode, addEdge, removeNode, moveNode,
+    selectedNode, setSelectedNode,
+    clear
   } = treeVisualizer;
-
-  // Destructure common actions for local usage if needed, or access via treeVisualizer
-  const { clear } = treeVisualizer;
 
   const [splitRatio, setSplitRatio] = useState(0.6);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -31,7 +33,11 @@ const Trees = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [codeLanguage, setCodeLanguage] = useState<Language>('python');
-  const [activeTool, setActiveTool] = useState<TreeTool>('move');
+
+  // Interactive State
+  const [draggedNode, setDraggedNode] = useState<number | null>(null);
+  const [edgeSource, setEdgeSource] = useState<number | null>(null);
+  const [tempEdge, setTempEdge] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
 
   const currentFrame = getCurrentFrame();
 
@@ -40,50 +46,15 @@ const Trees = () => {
     setIsSidebarOpen(false);
   }, [setIsSidebarOpen]);
 
-  // Dynamic Scaling Logic
-  useEffect(() => {
-    if (currentFrame.nodes.length === 0) return;
-
-    // 1. Calculate Bounding Box of Nodes
-    let minX = Infinity, maxX = -Infinity;
-    let minY = Infinity, maxY = -Infinity;
-
-    currentFrame.nodes.forEach(node => {
-      minX = Math.min(minX, node.x);
-      maxX = Math.max(maxX, node.x);
-      minY = Math.min(minY, node.y);
-      maxY = Math.max(maxY, node.y);
-    });
-
-    // Add padding
-    const padding = 100;
-    const treeWidth = maxX - minX + padding * 2;
-    const treeHeight = maxY - minY + padding * 2;
-
-    // 2. Get Container Dimensions (approximate or ref based)
-    // efficient way: use the containerRef if available, or fixed estimate
-    const containerWidth = containerRef.current ? containerRef.current.clientWidth : 800;
-    const containerHeight = containerRef.current ? containerRef.current.clientHeight : 600;
-
-    // 3. Calculate Scale to Fit
-    const elementScaleX = containerWidth / treeWidth;
-    const elementScaleY = containerHeight / treeHeight;
-    let newScale = Math.min(elementScaleX, elementScaleY);
-
-    // 4. Constraints
-    // - Don't zoom in too much (max 0.7 as requested for default look)
-    // - Don't zoom out too much (min 0.2 is existing constraint)
-    // - If tree is small, we want it at 0.7
-
-    newScale = Math.min(0.7, newScale); // Valid upper bound from requirements
-    newScale = Math.max(0.4, newScale); // Min size constraint "visually good size"
-
-    // Only update if difference is significant to avoid jitter
-    if (Math.abs(newScale - scale) > 0.05) {
-      setScale(newScale);
-    }
-
-  }, [currentFrame.nodes]); // Run when nodes change position/count
+  // Coordinate Transformation Helper
+  const getSvgPoint = (clientX: number, clientY: number) => {
+    if (!containerRef.current) return { x: 0, y: 0 };
+    const rect = containerRef.current.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - pan.x) / scale,
+      y: (clientY - rect.top - pan.y) / scale
+    };
+  };
 
   // Resizing Logic
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -116,24 +87,74 @@ const Trees = () => {
     }
   };
 
-  // Canvas Interaction Handlers
+  // --- Canvas Interaction Handlers ---
+
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    setSelectedNode(null);
+    // Only handle if clicking empty space (not captured by node)
     if (activeTool === 'move') {
       setIsPanning(true);
       setLastMousePos({ x: e.clientX, y: e.clientY });
+    } else if (activeTool === 'node') {
+      const { x, y } = getSvgPoint(e.clientX, e.clientY);
+      addNode(x, y);
     }
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (isPanning && activeTool === 'move') {
-      setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y }));
-      setLastMousePos({ x: e.clientX, y: e.clientY });
+    if (activeTool === 'move') {
+      if (isPanning) {
+        setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y }));
+        setLastMousePos({ x: e.clientX, y: e.clientY });
+      } else if (draggedNode !== null) {
+        const { x, y } = getSvgPoint(e.clientX, e.clientY);
+        moveNode(draggedNode, x, y);
+      }
+    } else if (activeTool === 'edge' && edgeSource !== null) {
+      const { x, y } = getSvgPoint(e.clientX, e.clientY);
+      const sourceNode = currentFrame.nodes.find(n => n.id === edgeSource);
+      if (sourceNode) {
+        setTempEdge({ x1: sourceNode.x, y1: sourceNode.y, x2: x, y2: y });
+      }
     }
   };
 
   const handleCanvasMouseUp = () => {
     setIsPanning(false);
+    setDraggedNode(null);
+    setEdgeSource(null);
+    setTempEdge(null);
   };
+
+  // --- Node Interaction Handlers ---
+
+  const handleNodeMouseDown = (e: React.MouseEvent, nodeId: number) => {
+    e.stopPropagation(); // prevent canvas pan
+
+    // Select node in any mode for visual feedback, or tool specific logic
+    setSelectedNode(nodeId);
+
+    if (activeTool === 'move') {
+      setDraggedNode(nodeId);
+    } else if (activeTool === 'edge') {
+      setEdgeSource(nodeId);
+      const node = currentFrame.nodes.find(n => n.id === nodeId);
+      if (node) setTempEdge({ x1: node.x, y1: node.y, x2: node.x, y2: node.y });
+    } else if (activeTool === 'delete') {
+      removeNode(nodeId);
+      setSelectedNode(null); // Clear selection if deleted
+    }
+  };
+
+  const handleNodeMouseUp = (e: React.MouseEvent, nodeId: number) => {
+    e.stopPropagation();
+    if (activeTool === 'edge' && edgeSource !== null) {
+      addEdge(edgeSource, nodeId);
+      setEdgeSource(null);
+      setTempEdge(null);
+    }
+  };
+
 
   // Sidebar Content
   const sidebarContent = (
@@ -228,6 +249,9 @@ const Trees = () => {
         ref={containerRef}
         className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
             ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
+            ${activeTool === 'node' ? 'cursor-crosshair' : ''}
+            ${activeTool === 'edge' ? 'cursor-alias' : ''}
+            ${activeTool === 'delete' ? 'cursor-not-allowed' : ''}
         `}
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleCanvasMouseMove}
@@ -241,10 +265,10 @@ const Trees = () => {
           onClear={clear}
         />
 
-        {/* Graph Canvas */}
-        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none">
+        {/* Tree Canvas */}
+        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
 
-          <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
+          <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
             <defs>
               {/* Glow Filter */}
               <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
@@ -252,6 +276,7 @@ const Trees = () => {
                 <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
               </filter>
             </defs>
+
             {/* Edges */}
             {currentFrame.edges.map((edge, i) => {
               const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
@@ -268,32 +293,51 @@ const Trees = () => {
               );
             })}
 
+            {/* Temporary Edge (Drag) */}
+            {tempEdge && (
+              <line
+                x1={tempEdge.x1} y1={tempEdge.y1}
+                x2={tempEdge.x2} y2={tempEdge.y2}
+                className="stroke-primary stroke-2 stroke-dasharray-4"
+              />
+            )}
+
             {/* Nodes */}
             {currentFrame.nodes.map((node) => {
               const isHighlighted = currentFrame.highlights?.includes(node.id);
               const isEvaluated = currentFrame.evaluated?.includes(node.id);
+              const isSelected = selectedNode === node.id;
+              const isDragged = draggedNode === node.id;
 
               return (
-                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="transition-all duration-500">
+                <g
+                  key={node.id}
+                  transform={`translate(${node.x}, ${node.y})`}
+                  className={`transition-all duration-500 ${isDragged ? 'transition-none' : ''}`}
+                  onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                  onMouseUp={(e) => handleNodeMouseUp(e, node.id)}
+                >
                   <circle
                     r="24"
-                    className={`transition-all duration-300
-                                            ${isHighlighted
+                    className={`transition-all duration-300 cursor-pointer hover:stroke-primary/50
+                        ${isHighlighted
                         ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
                         : isEvaluated
                           ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
-                          : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
+                          : isSelected
+                            ? 'fill-white dark:fill-[#1e1c33] stroke-primary stroke-[3px]'
+                            : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
                       }
-                                            stroke-[2.5px]
-                                        `}
+                        stroke-[2.5px]
+                    `}
                   />
                   <text
                     textAnchor="middle"
                     dominantBaseline="middle"
                     y="1"
                     className={`text-sm font-bold font-mono select-none pointer-events-none
-                                            ${isHighlighted ? 'fill-white' : 'fill-slate-900 dark:fill-white'}
-                                        `}
+                        ${isHighlighted ? 'fill-white' : 'fill-slate-900 dark:fill-white'}
+                    `}
                   >
                     {node.value}
                   </text>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { TreeTool } from '../components/tree/TreeTools';
 
 // Types
 export interface TreeNode {
@@ -57,6 +58,8 @@ export const useTreeVisualizer = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [activeAlgorithm, setActiveAlgorithm] = useState<string | null>(null);
+    const [activeTool, setActiveTool] = useState<TreeTool>('move');
+    const [selectedNode, setSelectedNode] = useState<number | null>(null);
 
     // Refs
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -682,6 +685,192 @@ export const useTreeVisualizer = () => {
         setIsPlaying(false);
         setActiveAlgorithm(null);
     }
+
+    // --- INTERACTIVE EDITING ---
+    const addNode = (x: number, y: number) => {
+        // Find existing values to propose a new unique value
+        let val = 10;
+        const existingValues = new Set(nodes.map(n => n.value));
+        while (existingValues.has(val)) {
+            val += 5;
+        }
+
+        // Simple prompt for now, could be improved with UI
+        const input = prompt("Enter value for new node:", val.toString());
+        if (input === null) return;
+        const value = parseInt(input);
+        if (isNaN(value)) return;
+
+        const newNode: TreeNode = {
+            id: nextIdRef.current++,
+            value,
+            x,
+            y
+        };
+
+        setNodes(prev => [...prev, newNode]);
+        setFrames([]); // Clear animation frames
+        setCurrentStep(0);
+        setIsPlaying(false);
+        setActiveAlgorithm(null);
+
+        // If it's the first node, make it root
+        if (nodes.length === 0) {
+            setRootId(newNode.id);
+        }
+    };
+
+    const addEdge = (from: number, to: number) => {
+        if (from === to) return; // No self-loops
+
+        // Check if edge already exists
+        const existingEdge = edges.find(e => e.from === from && e.to === to);
+        if (existingEdge) return;
+
+        // Validation: Parent (from) can have max 2 children
+        const children = edges.filter(e => e.from === from);
+        if (children.length >= 2) {
+            alert("Node already has 2 children!");
+            return;
+        }
+
+        // Cycle Detection (Simple: Check if 'to' is ancestor of 'from')
+        let currId = from;
+        const parentMap = new Map<number, number>();
+        edges.forEach(e => parentMap.set(e.to, e.from));
+
+        let path = new Set<number>();
+        while (parentMap.has(currId)) {
+            currId = parentMap.get(currId)!;
+            path.add(currId);
+            if (currId === to) {
+                alert("Cannot create cycle!");
+                return;
+            }
+        }
+
+        // Also check if 'to' already has a parent
+        if (parentMap.has(to)) {
+            alert("Target node already has a parent!");
+            return;
+        }
+
+        // Decide Left or Right child
+        // If no children, check values to decide BST property? 
+        // Or just fill left then right? 
+        // Let's try to maintain BST property if values allow, 
+        // otherwise default to Left first, then Right.
+
+        const fromNode = nodes.find(n => n.id === from);
+        const toNode = nodes.find(n => n.id === to);
+
+        if (!fromNode || !toNode) return;
+
+        // Update Node Structure
+        const newNodes = nodes.map(n => {
+            if (n.id === from) {
+                // If BST property matches
+                if (toNode.value < fromNode.value && !n.left) {
+                    return { ...n, left: to };
+                } else if (toNode.value > fromNode.value && !n.right) {
+                    return { ...n, right: to };
+                } else {
+                    // Fallback: fill empty slot
+                    if (!n.left) return { ...n, left: to };
+                    if (!n.right) return { ...n, right: to };
+                }
+            }
+            // Also need to set parentId for 'to' node
+            if (n.id === to) {
+                return { ...n, parentId: from };
+            }
+            return n;
+        });
+
+        const newEdges = [...edges, { from, to }];
+        setNodes(newNodes);
+        setEdges(newEdges);
+
+        // Clear animation
+        setFrames([]);
+        setCurrentStep(0);
+        setIsPlaying(false);
+    };
+
+    const removeNodeById = (id: number) => {
+        // Remove node
+        const newNodes = nodes.filter(n => n.id !== id).map(n => {
+            // Remove references from parents
+            if (n.left === id) return { ...n, left: undefined };
+            if (n.right === id) return { ...n, right: undefined };
+            return n;
+        });
+
+        // Remove connected edges
+        const newEdges = edges.filter(e => e.from !== id && e.to !== id);
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+
+        // Update root if root was deleted
+        if (rootId === id) {
+            // Find new potential root (node with no parent)
+            // Or set to null if empty
+            if (newNodes.length === 0) setRootId(null);
+            else {
+                // Anyone without parent could be a root of a subtree
+                // We'll just let the effect handle it or pick one
+                // The effect: const root = nodes.find(n => n.parentId === undefined || n.parentId === null);
+                // But we modified nodes to remove parent refs? No, we didn't update parentId of children of deleted node.
+                // Their parentId is now pointing to deleted node.
+                // We should clear their parentId.
+                const cleanedNodes = newNodes.map(n => {
+                    if (n.parentId === id) return { ...n, parentId: undefined };
+                    return n;
+                });
+                setNodes(cleanedNodes);
+            }
+        } else {
+            const cleanedNodes = newNodes.map(n => {
+                if (n.parentId === id) return { ...n, parentId: undefined };
+                return n;
+            });
+            setNodes(cleanedNodes);
+        }
+
+        setFrames([]);
+        setCurrentStep(0);
+        setIsPlaying(false);
+    };
+
+    const removeEdge = (from: number, to: number) => {
+        const newEdges = edges.filter(e => !(e.from === from && e.to === to));
+        const newNodes = nodes.map(n => {
+            if (n.id === from) {
+                if (n.left === to) return { ...n, left: undefined };
+                if (n.right === to) return { ...n, right: undefined };
+            }
+            if (n.id === to) {
+                return { ...n, parentId: undefined };
+            }
+            return n;
+        });
+
+        setNodes(newNodes);
+        setEdges(newEdges);
+        setFrames([]);
+        setCurrentStep(0);
+        setIsPlaying(false);
+    };
+
+    const moveNode = (id: number, x: number, y: number) => {
+        setNodes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n));
+        // We might want to clear frames if layout changes significantly, 
+        // but for dragging we might want to keep state? 
+        // Usually better to clear to avoid confusion between "visualized layout" and "manual layout"
+        // setFrames([]); 
+        // setCurrentStep(0);
+    };
 
     // --- DATA TRANSFORMATION / HELPERS ---
     const generateRandomTree = () => {
@@ -2415,10 +2604,45 @@ export const useTreeVisualizer = () => {
         generateRandomTree,
         traverseZigZag,
         findMin, findMax, findSuccessor, findPredecessor, validateBST,
-        checkHeight, countNodes, countLeafNodes, checkDiameter, checkBalanced, isFull, isComplete,
-        buildFromArray, buildFromPreIn, buildFromPostIn, buildBalancedBST, deserialize,
-        insertAVL, deleteAVL, rotateLeft, rotateRight, showBalanceFactors,
-        findLCA, getLeftView, getRightView, getTopView, getBottomView, boundaryTraversal, mirrorTree,
+        checkHeight,
+        countNodes,
+        countLeafNodes,
+        checkDiameter,
+        checkBalanced,
+        isFull,
+        isComplete,
+
+        // Construction
+        buildFromArray,
+        buildFromPreIn,
+        buildFromPostIn,
+        buildBalancedBST,
+        deserialize,
+
+        // Balancing
+        insertAVL,
+        deleteAVL,
+        rotateLeft,
+        rotateRight,
+        showBalanceFactors,
+
+        // Special
+        findLCA,
+        getLeftView,
+        getRightView,
+        getTopView,
+        getBottomView,
+        boundaryTraversal,
+        mirrorTree,
+
+        // Interactive Tools
+        activeTool, setActiveTool,
+        selectedNode, setSelectedNode,
+        addNode,
+        addEdge,
+        removeNode: removeNodeById,
+        removeEdge,
+        moveNode,
 
         // playback props
         frames,

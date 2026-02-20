@@ -143,7 +143,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         alt: 'Abstract Tree Branching Pattern',
         image: '/bst.gif',
 
-        imageBg: 'bg-[#e18ba0]'
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Graphs',
@@ -163,7 +163,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Network Nodes Pattern',
         alt: 'Abstract Network Nodes Pattern',
         image: '/graphds.gif',
-        imageBg: 'bg-[#e48879]'
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Recursion',
