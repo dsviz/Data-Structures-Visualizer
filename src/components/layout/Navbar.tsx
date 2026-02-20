@@ -77,7 +77,7 @@ const Navbar = () => {
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-3">
             <div className="size-8 text-primary flex items-center justify-center">
-              <span className="material-symbols-outlined text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>polyline</span>
+              <img src="/Site_logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors">Data Structure Visualizer</h1>
           </Link>
