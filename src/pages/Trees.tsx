@@ -1,266 +1,321 @@
 import { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
+import { useTreeVisualizer } from '../hooks/useTreeVisualizer';
+import { TreeControls } from '../components/tree/TreeControls';
+import { TreeTabs } from '../components/tree/TreeTabs';
+import { TreeTools, TreeTool } from '../components/tree/TreeTools';
+import { Language } from '../data/TreeCode';
 import { useLayout } from '../context/LayoutContext';
 
 const Trees = () => {
-  // Zoom & Pan
-  const { isSidebarOpen } = useLayout();
-  const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const treeVisualizer = useTreeVisualizer();
+  const {
+    frames, currentStep, setCurrentStep,
+    isPlaying, setIsPlaying,
+    playbackSpeed, setPlaybackSpeed,
+    activeAlgorithm,
+    getCurrentFrame
+  } = treeVisualizer;
+
+  // Destructure common actions for local usage if needed, or access via treeVisualizer
+  const { clear } = treeVisualizer;
+
+  const [splitRatio, setSplitRatio] = useState(0.6);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-Resize
+  // Zoom & Pan
+  const { setIsSidebarOpen } = useLayout();
+  const [scale, setScale] = useState(0.7);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const [codeLanguage, setCodeLanguage] = useState<Language>('python');
+  const [activeTool, setActiveTool] = useState<TreeTool>('move');
+
+  const currentFrame = getCurrentFrame();
+
+  // Ensure Left Sidebar is Closed
   useEffect(() => {
-    if (!containerRef.current) return;
-    const contentWidth = 800; // SVG viewBox width
-    const availableWidth = containerRef.current.clientWidth;
+    setIsSidebarOpen(false);
+  }, [setIsSidebarOpen]);
 
-    if (contentWidth > availableWidth) {
-      const newScale = Math.max(0.4, availableWidth / contentWidth);
-      if (newScale < 1) setScale(newScale * 0.9);
-    } else {
-      // Optional: Scale up if huge space? Nah, 1 is fine.
+  // Dynamic Scaling Logic
+  useEffect(() => {
+    if (currentFrame.nodes.length === 0) return;
+
+    // 1. Calculate Bounding Box of Nodes
+    let minX = Infinity, maxX = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    currentFrame.nodes.forEach(node => {
+      minX = Math.min(minX, node.x);
+      maxX = Math.max(maxX, node.x);
+      minY = Math.min(minY, node.y);
+      maxY = Math.max(maxY, node.y);
+    });
+
+    // Add padding
+    const padding = 100;
+    const treeWidth = maxX - minX + padding * 2;
+    const treeHeight = maxY - minY + padding * 2;
+
+    // 2. Get Container Dimensions (approximate or ref based)
+    // efficient way: use the containerRef if available, or fixed estimate
+    const containerWidth = containerRef.current ? containerRef.current.clientWidth : 800;
+    const containerHeight = containerRef.current ? containerRef.current.clientHeight : 600;
+
+    // 3. Calculate Scale to Fit
+    const elementScaleX = containerWidth / treeWidth;
+    const elementScaleY = containerHeight / treeHeight;
+    let newScale = Math.min(elementScaleX, elementScaleY);
+
+    // 4. Constraints
+    // - Don't zoom in too much (max 0.7 as requested for default look)
+    // - Don't zoom out too much (min 0.2 is existing constraint)
+    // - If tree is small, we want it at 0.7
+
+    newScale = Math.min(0.7, newScale); // Valid upper bound from requirements
+    newScale = Math.max(0.4, newScale); // Min size constraint "visually good size"
+
+    // Only update if difference is significant to avoid jitter
+    if (Math.abs(newScale - scale) > 0.05) {
+      setScale(newScale);
     }
-  }, [isSidebarOpen]);
 
+  }, [currentFrame.nodes]); // Run when nodes change position/count
+
+  // Resizing Logic
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startRatio = splitRatio;
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      if (!sidebarRef.current) return;
+      const h = sidebarRef.current.offsetHeight;
+      const delta = ev.clientY - startY;
+      const newRatio = Math.min(0.8, Math.max(0.2, startRatio + delta / h));
+      setSplitRatio(newRatio);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Zoom Handlers
   const handleWheel = (e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey || true) {
       const delta = -e.deltaY;
-      setScale(prev => {
-        const newScale = prev + (delta * 0.001);
-        return Math.min(Math.max(0.2, newScale), 3);
-      });
+      setScale(prev => Math.min(Math.max(0.2, prev + (delta * 0.001)), 3));
     }
   };
 
-  const handleReset = () => {
-    setScale(1);
-    setPan({ x: 0, y: 0 });
+  // Canvas Interaction Handlers
+  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+    if (activeTool === 'move') {
+      setIsPanning(true);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
   };
 
-  const sidebar = (
-    <div className="flex flex-col h-full">
-      {/* Status Card */}
-      <div className="p-6 border-b border-gray-200 dark:border-[#272546]">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="size-2 rounded-full bg-primary animate-pulse"></div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9794c7]">Status</h3>
-        </div>
-        <div className="bg-slate-50 dark:bg-[#1c1a32] rounded-lg p-4 border-l-4 border-primary">
-          <p className="text-slate-900 dark:text-white font-medium mb-1">Inserting node <span className="text-primary font-mono">85</span></p>
-          <p className="text-slate-500 dark:text-[#9794c7] text-sm leading-relaxed">
-            Comparing 85 with 80. Since 85 &gt; 80, moving to right child.
-          </p>
-        </div>
+  const handleCanvasMouseMove = (e: React.MouseEvent) => {
+    if (isPanning && activeTool === 'move') {
+      setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y }));
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleCanvasMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  // Sidebar Content
+  const sidebarContent = (
+    <div className="h-full flex flex-col relative" ref={sidebarRef}>
+      {/* Controls Section */}
+      <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
+        <TreeControls
+          {...treeVisualizer}
+        />
       </div>
 
-      {/* Pseudo Code */}
-      <div className="p-6 flex-1 flex flex-col min-h-[200px]">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9794c7]">Algorithm</h3>
-          <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-[#272546] text-slate-500 dark:text-[#9794c7] font-mono">insert(node, val)</span>
-        </div>
-        <div className="bg-slate-100 dark:bg-[#0f111a] rounded-lg p-4 font-mono text-sm overflow-x-auto text-slate-500 dark:text-gray-400 leading-6 border border-gray-200 dark:border-[#272546] shadow-inner">
-          <pre><code>if (node == null)
-            return createNode(val);
+      {/* Resizer Handle */}
+      <div
+        className="h-1 bg-gray-100 dark:bg-[#272546] hover:bg-primary cursor-row-resize transition-colors absolute w-full z-10"
+        style={{ top: `${splitRatio * 100}%` }}
+        onMouseDown={handleMouseDown}
+      ></div>
 
-            if (val &lt; node.key)
-            node.left = insert(node.left, val);
-
-            <span className="block bg-primary/20 -mx-4 px-4 text-slate-900 dark:text-white border-l-2 border-primary">else if (val &gt; node.key)
-              node.right = insert(node.right, val);</span>
-
-            return node;</code></pre>
-        </div>
-      </div>
-
-      {/* Tree Stats */}
-      <div className="p-6 border-t border-gray-200 dark:border-[#272546]">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9794c7] mb-4">Tree Statistics</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {/* Balance Indicator */}
-          <div className="col-span-2 bg-slate-50 dark:bg-[#1c1a32] p-4 rounded-lg flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 dark:text-[#9794c7] text-xs font-medium mb-1">Balance Status</p>
-              <p className="text-green-600 dark:text-green-400 font-bold text-sm flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Balanced
-              </p>
-            </div>
-            <div className="relative size-12">
-              <svg className="size-full -rotate-90" viewBox="0 0 36 36">
-                <path className="text-slate-200 dark:text-[#272546]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4"></path>
-                <path className="text-green-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeDasharray="85, 100" strokeWidth="4"></path>
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-white">85%</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer Log */}
-      <div className="p-6 border-t border-gray-200 dark:border-[#272546] bg-slate-50 dark:bg-[#0f111a] flex-1">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9794c7] mb-3">Action Log</h3>
-        <div className="space-y-3">
-          <div className="flex gap-3 text-sm">
-            <span className="text-slate-400 font-mono text-xs pt-0.5">10:42:15</span>
-            <p className="text-slate-600 dark:text-slate-300">Inserted <span className="text-slate-900 dark:text-white font-bold">45</span> successfully.</p>
-          </div>
-        </div>
+      {/* Tabs Section */}
+      <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-[#1e1c33]">
+        <TreeTabs
+          currentFrame={currentFrame}
+          codeLanguage={codeLanguage}
+          setCodeLanguage={setCodeLanguage}
+          activeAlgorithm={activeAlgorithm}
+        />
       </div>
     </div>
   );
 
-  const controls = (
-    <div className="bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] p-4 lg:p-6 z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.2)]">
-      <div className="flex flex-col xl:flex-row gap-4 justify-between items-center max-w-7xl mx-auto w-full">
-        {/* Input & Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-          <div className="relative flex-1 sm:w-40 min-w-[120px]">
-            <input className="w-full h-11 px-4 rounded-lg bg-slate-100 dark:bg-[#1c1a32] border border-slate-300 dark:border-[#383564] text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-mono font-medium" placeholder="Value..." type="number" defaultValue="85" />
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            <button className="flex-1 sm:flex-none h-11 px-5 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/25 min-w-[100px]">
-              <span className="material-symbols-outlined text-[18px]">add_circle</span>
-              Insert
-            </button>
-            <button className="flex-1 sm:flex-none h-11 px-5 bg-slate-100 dark:bg-[#272546] hover:bg-slate-200 dark:hover:bg-[#383564] text-slate-900 dark:text-white text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors min-w-[100px]">
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              Search
-            </button>
-            <button className="flex-1 sm:flex-none h-11 px-5 bg-slate-100 dark:bg-[#272546] hover:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-colors min-w-[100px]">
-              <span className="material-symbols-outlined text-[18px]">delete</span>
-              Remove
-            </button>
-          </div>
+  // Playback Controls
+  const playbackControls = (
+    <div className="w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md relative z-20">
+      <div className="flex items-center gap-4">
+        <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
+        <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+        <button
+          onClick={() => setIsPlaying(!isPlaying)}
+          className="rounded-full flex items-center justify-center text-white bg-primary size-12 shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95"
+        >
+          <span className="material-symbols-outlined filled text-[28px]">{isPlaying ? 'pause' : 'play_arrow'}</span>
+        </button>
+        <button onClick={() => setCurrentStep(s => Math.min(frames.length - 1, s + 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_forward</span></button>
+        <button onClick={() => setCurrentStep(frames.length - 1)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_next</span></button>
+      </div>
+
+      <div className="flex-1 flex flex-col gap-2">
+        <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+          <span>Step {currentStep + 1}/{frames.length || 1}</span>
+          <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
         </div>
-        {/* Player Controls */}
-        <div className="flex items-center gap-4 w-full xl:w-auto border-t xl:border-t-0 border-slate-200 dark:border-[#272546] pt-4 xl:pt-0">
-          <div className="flex items-center gap-2">
-            <button className="size-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-[#9794c7] hover:bg-slate-100 dark:hover:bg-[#272546] transition-colors">
-              <span className="material-symbols-outlined">skip_previous</span>
-            </button>
-            <button className="size-11 flex items-center justify-center rounded-full bg-primary text-white shadow-lg hover:bg-primary/90 transition-transform active:scale-95">
-              <span className="material-symbols-outlined">play_arrow</span>
-            </button>
-            <button className="size-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-[#9794c7] hover:bg-slate-100 dark:hover:bg-[#272546] transition-colors">
-              <span className="material-symbols-outlined">skip_next</span>
-            </button>
-          </div>
-          {/* Speed Slider */}
-          <div className="flex items-center gap-3 flex-1 min-w-[150px]">
-            <span className="material-symbols-outlined text-slate-400 text-[18px]">speed</span>
-            <div className="h-1.5 bg-slate-200 dark:bg-[#272546] rounded-full flex-1 relative group cursor-pointer">
-              <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-primary rounded-full"></div>
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-3.5 bg-white rounded-full shadow border-2 border-primary group-hover:scale-125 transition-transform"></div>
-            </div>
-            <span className="text-xs font-mono font-medium text-slate-500 dark:text-[#9794c7]">1.0x</span>
-          </div>
+        <div className="h-1.5 w-full bg-gray-200 dark:bg-[#272546] rounded-full overflow-hidden relative cursor-pointer"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            setCurrentStep(Math.floor(pct * (frames.length - 1)));
+          }}
+        >
+          <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 border-l border-gray-200 dark:border-[#272546] w-40 pl-6">
+        <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+        <input
+          type="range"
+          min="0.5"
+          max="3"
+          step="0.5"
+          value={playbackSpeed}
+          onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+          className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+        />
+        <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
       </div>
     </div>
   );
 
   return (
-    <VisualizationLayout title="Binary Search Tree" sidebar={sidebar} sidebarPosition="right" controls={controls}>
+    <VisualizationLayout
+      title="Binary Tree"
+      sidebarPosition="right"
+      contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
+      sidebarNoPadding={true}
+      sidebarNoScroll={true}
+      sidebar={sidebarContent}
+      rightSidebar={null}
+      leftSidebar={null}
+      controls={playbackControls}
+    >
       <div
         ref={containerRef}
-        className={`flex-1 relative w-full h-full overflow-hidden flex items-center justify-center ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-        onMouseDown={(e) => { setIsDragging(true); setLastMousePos({ x: e.clientX, y: e.clientY }); }}
-        onMouseMove={(e) => {
-          if (isDragging) { setPan(p => ({ x: p.x + e.clientX - lastMousePos.x, y: p.y + e.clientY - lastMousePos.y })); setLastMousePos({ x: e.clientX, y: e.clientY }); }
-        }}
-        onMouseUp={() => setIsDragging(false)}
-        onMouseLeave={() => setIsDragging(false)}
+        className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
+            ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
+        `}
+        onMouseDown={handleCanvasMouseDown}
+        onMouseMove={handleCanvasMouseMove}
+        onMouseUp={handleCanvasMouseUp}
+        onMouseLeave={handleCanvasMouseUp}
         onWheel={handleWheel}
       >
-        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transformOrigin: 'center', transition: 'transform 0.1s ease-out' }}>
-          <svg className="pointer-events-none select-none" height="500" viewBox="0 0 800 500" width="800">
+        <TreeTools
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          onClear={clear}
+        />
+
+        {/* Graph Canvas */}
+        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none">
+
+          <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
             <defs>
+              {/* Glow Filter */}
               <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
                 <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
                 <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
               </filter>
             </defs>
             {/* Edges */}
-            <g className="stroke-slate-400 dark:stroke-[#383564]" strokeWidth="2">
-              <line x1="400" x2="200" y1="50" y2="150"></line>
-              <line className="stroke-primary dark:stroke-primary opacity-50" strokeWidth="3" x1="400" x2="600" y1="50" y2="150"></line>
-              <line x1="200" x2="100" y1="150" y2="250"></line>
-              <line x1="200" x2="300" y1="150" y2="250"></line>
-              <line x1="600" x2="500" y1="150" y2="250"></line>
-              <line className="stroke-primary dark:stroke-primary opacity-80" strokeWidth="3" x1="600" x2="700" y1="150" y2="250"></line>
-              <line x1="300" x2="250" y1="250" y2="350"></line>
-              <line x1="300" x2="350" y1="250" y2="350"></line>
-              <line className="stroke-primary dark:stroke-primary" strokeDasharray="5 5" strokeWidth="3" x1="700" x2="750" y1="250" y2="350"></line>
-            </g>
+            {currentFrame.edges.map((edge, i) => {
+              const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
+              const toNode = currentFrame.nodes.find(n => n.id === edge.to);
+              if (!fromNode || !toNode) return null;
+
+              return (
+                <line
+                  key={`edge-${i}`}
+                  x1={fromNode.x} y1={fromNode.y}
+                  x2={toNode.x} y2={toNode.y}
+                  className="stroke-slate-400 dark:stroke-[#383564] stroke-2 transition-all duration-300"
+                />
+              );
+            })}
 
             {/* Nodes */}
-            <g transform="translate(400, 50)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">50</text>
-            </g>
-            <g transform="translate(200, 150)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564] transition-all hover:stroke-primary hover:stroke-[3px]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">30</text>
-            </g>
-            <g transform="translate(600, 150)">
-              <circle className="fill-primary/20 stroke-primary" r="24" strokeWidth="2"></circle>
-              <text className="fill-primary dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">70</text>
-            </g>
-            <g transform="translate(100, 250)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">20</text>
-            </g>
-            <g transform="translate(300, 250)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">40</text>
-            </g>
-            <g transform="translate(500, 250)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">60</text>
-            </g>
-            <g transform="translate(700, 250)">
-              <circle className="fill-primary shadow-[0_0_15px_rgba(66,54,231,0.5)]" r="26"></circle>
-              <text className="fill-white text-sm font-bold font-display" textAnchor="middle" y="5">80</text>
-              <text className="fill-primary text-xs font-bold uppercase tracking-wide" textAnchor="middle" y="-35">Current</text>
-            </g>
-            <g transform="translate(250, 350)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">35</text>
-            </g>
-            <g transform="translate(350, 350)">
-              <circle className="fill-white dark:fill-[#1e212b] stroke-slate-400 dark:stroke-[#383564]" r="24" strokeWidth="2.5"></circle>
-              <text className="fill-slate-900 dark:fill-white text-sm font-bold font-display" textAnchor="middle" y="5">45</text>
-            </g>
-            <g className="opacity-70" transform="translate(750, 350)">
-              <circle className="fill-transparent stroke-primary stroke-dasharray-4" r="24" strokeDasharray="4 4" strokeWidth="2"></circle>
-              <text className="fill-primary text-sm font-bold font-display" textAnchor="middle" y="5">85?</text>
-            </g>
+            {currentFrame.nodes.map((node) => {
+              const isHighlighted = currentFrame.highlights?.includes(node.id);
+              const isEvaluated = currentFrame.evaluated?.includes(node.id);
+
+              return (
+                <g key={node.id} transform={`translate(${node.x}, ${node.y})`} className="transition-all duration-500">
+                  <circle
+                    r="24"
+                    className={`transition-all duration-300
+                                            ${isHighlighted
+                        ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
+                        : isEvaluated
+                          ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
+                          : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
+                      }
+                                            stroke-[2.5px]
+                                        `}
+                  />
+                  <text
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    y="1"
+                    className={`text-sm font-bold font-mono select-none pointer-events-none
+                                            ${isHighlighted ? 'fill-white' : 'fill-slate-900 dark:fill-white'}
+                                        `}
+                  >
+                    {node.value}
+                  </text>
+                </g>
+              );
+            })}
           </svg>
+        </div>
+
+        {/* Description Overlay */}
+        <div className="absolute bottom-4 right-4 max-w-sm w-full pointer-events-none flex justify-end">
+          <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100">
+            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+              {currentFrame.description || "Ready to visualize..."}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Reset Zoom Button overlay */}
-      <div className="absolute bottom-28 right-6 z-10">
-        <button onClick={handleReset} className="flex items-center justify-center size-10 rounded-lg bg-white dark:bg-[#272546] shadow-lg text-slate-700 dark:text-white hover:text-primary dark:hover:text-primary transition-colors" title="Reset View">
-          <span className="material-symbols-outlined">center_focus_strong</span>
-        </button>
-      </div>
-
-      <style>{`
-                .node-enter {
-                    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                }
-                @keyframes popIn {
-                    from { transform: scale(0); opacity: 0; }
-                    to { transform: scale(1); opacity: 1; }
-                }
-            `}</style>
     </VisualizationLayout>
-  )
-}
+  );
+};
 
-export default Trees
+export default Trees;

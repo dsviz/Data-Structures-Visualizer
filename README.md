@@ -11,6 +11,12 @@ An interactive educational web application designed to help students and develop
 ## 🎯 Key Features
 
 - ✅ **Step-by-step visual animations** of algorithms
+- ✅ **Advanced Tree Visualization**:
+  - Binary Search Tree (BST) & AVL Tree operations.
+  - Traversals (Inorder, Preorder, Postorder, BFS, Zigzag).
+  - Special views (Left, Right, Top, Bottom, Boundary).
+  - property checks (Height, Diameter, Balanced, Full, Complete).
+  - LCA, Mirror, and more.
 - ✅ **Advanced Sorting Visualizations**:
   - Tree-based recursion breakdown for Merge Sort & Quick Sort.
   - Classic bar animations for Bubble, Selection, and Insertion Sort.
@@ -18,6 +24,7 @@ An interactive educational web application designed to help students and develop
   - Real-time **Code Analysis** with dynamic value injection.
   - **Complexity Analysis** (Time/Space) for each algorithm.
   - **Color Legends** to explain visual states.
+  - **Step-by-step Description Overlay** for clear understanding.
 - ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment, sound effects)
 - ✅ **Clean separation** of algorithm logic from visualization
 - ✅ **Modular and extensible** architecture
@@ -31,12 +38,6 @@ An interactive educational web application designed to help students and develop
 - **Vite** - Ultra-fast development and build tool
 - **Tailwind CSS** - Utility-first styling
 
-### Backend
-- **Node.js + Express** - HTTP API layer
-- **TypeScript** - Shared types across the stack
-- **Prisma ORM** - Type-safe access to PostgreSQL
-- **PostgreSQL** - Durable relational datastore
-
 ### Visualization
 - **SVG** - For trees, graphs, linked lists
 - **HTML Canvas** - For sorting and array animations
@@ -49,84 +50,51 @@ An interactive educational web application designed to help students and develop
 ```
 dsa-visualizer/
 ├── src/                  # Frontend application (React + Vite)
-└── server/               # Backend service (Express + Prisma)
-        ├── src/              # Application source
-        ├── prisma/           # Database schema & migrations
-        └── .env.example      # Backend environment template
+│   ├── components/       # Reusable UI components
+│   ├── hooks/            # Custom hooks (logic)
+│   ├── pages/            # Page definitions
+│   ├── data/             # Algorithm code & metadata
+│   └── context/          # React Context (Layout, etc.)
 ```
 
 ## 🚀 Getting Started
 
+Follow these steps to set up the project locally on your machine.
+
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- PostgreSQL 14+ (Docker or local install)
+- **Node.js** (v18 or higher) - [Download Here](https://nodejs.org/)
+- **npm** (comes with Node.js) or **yarn**
 
-### Installation
+### Installation & Running
 
-1. **Install frontend dependencies:**
-        ```bash
-        npm install
-        ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/dsa-visualizer.git
+   cd dsa-visualizer
+   ```
 
-2. **Copy frontend environment template:**
-        ```bash
-        cp .env.example .env # use: copy .env.example .env (Windows)
-        ```
-        The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-3. **Install backend dependencies:**
-        ```bash
-        cd server
-        npm install
-        ```
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-4. **Configure backend environment:**
-        ```bash
-        cp .env.example .env # use: copy .env.example .env (Windows)
-        ```
-        Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
+4. **Open in browser:**
+   Open [http://localhost:5173](http://localhost:5173) in your web browser.
 
-5. **Run database migrations:**
-        ```bash
-        npx prisma migrate dev
-        ```
+### Building for Production
 
-6. **Seed algorithm metadata:**
-        ```bash
-        npm run prisma:seed
-        ```
-
-7. **Start backend API:**
-        ```bash
-        npm run dev
-        ```
-
-8. **Start frontend dev server (new terminal):**
-        ```bash
-        cd ..
-        npm run dev
-        ```
-
-9. **Open your browser:**
-        Navigate to `http://localhost:3000`
-
-### Build for Production
+To create a production-ready build:
 
 ```bash
 npm run build
 ```
 
-The production-ready files will be in the `dist/` directory.
-
-### Backend Testing
-
-```bash
-cd server
-npm run test
-```
-
-The Jest suite covers health checks, catalog queries, and authentication flows using mocked Prisma interactions.
+The output files will be in the `dist/` directory, ready to be deployed to static hosting services like Vercel, Netlify, or GitHub Pages.
 
 ## 🎨 Architecture
 
@@ -168,9 +136,11 @@ User Controls
 - Binary Search
 
 ### Tree Operations
-- Binary Search Tree (Insert, Delete, Search)
-- Tree Traversals (Inorder, Preorder, Postorder, Level Order)
-- AVL Tree
+- **Traversals**: Inorder, Preorder, Postorder, BFS, Zigzag
+- **BST Operations**: Insert, Delete, Search, Min, Max, Successor, Predecessor, Validate
+- **Properties**: Height, Size, Leaf Count, Diameter, Balanced Check, Full/Complete Check
+- **Views**: Left, Right, Top, Bottom, Boundary
+- **Special**: LCA, Mirror Tree, AVL Rotation & Balancing
 
 ### Graph Algorithms
 - Breadth-First Search (BFS)
@@ -184,14 +154,13 @@ User Controls
 - [x] Array Operations visualizer
 - [x] Linked List visualizer
 - [x] Sorting visualizer (Advanced Tree Views, Sound, Complexity)
-- [ ] Tree visualizer
+- [x] Tree visualizer (BST, AVL, Traversals, Views)
 - [ ] Graph visualizer
 - [ ] Stack & Queue visualizer
 - [x] Code editor integration (Real-time Value Injection)
 - [x] Complexity analysis display
 - [x] Custom input support
 - [ ] Algorithm comparison mode
-- [ ] User accounts (optional backend)
 
 ## 🤝 Contributing
 
