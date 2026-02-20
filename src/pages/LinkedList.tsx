@@ -140,7 +140,7 @@ export default function LinkedList() {
             <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-[#1e1c33]">
                 <LinkedListTabs
                     currentFrame={currentFrame}
-                    activeOp={activeOp}
+
                     codeLanguage={codeLanguage}
                     setCodeLanguage={setCodeLanguage}
                 />

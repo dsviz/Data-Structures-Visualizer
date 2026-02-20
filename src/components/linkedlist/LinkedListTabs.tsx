@@ -1,17 +1,16 @@
 
 import React, { useState } from 'react';
-import { Frame, COMPLEXITY, Operation } from '../../hooks/useLinkedListVisualizer';
+import { Frame, COMPLEXITY } from '../../hooks/useLinkedListVisualizer';
 import { Language, LINKED_LIST_CODE } from '../../data/LinkedListCode';
 
 interface LinkedListTabsProps {
     currentFrame: Frame;
-    activeOp: Operation;
     codeLanguage: Language;
     setCodeLanguage: (lang: Language) => void;
 }
 
 export const LinkedListTabs: React.FC<LinkedListTabsProps> = ({
-    currentFrame, activeOp, codeLanguage, setCodeLanguage
+    currentFrame, codeLanguage, setCodeLanguage
 }) => {
     const [activeTab, setActiveTab] = useState<'pseudo' | 'code' | 'info'>('pseudo');
 
