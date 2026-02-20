@@ -50,7 +50,7 @@ export interface Frame {
 
 // --- Constants ---
 export const MAX_NODES = 20;
-export const DEFAULT_NODES = [12, 45, 99];
+export const DEFAULT_NODES = [12, 45, 99, 33, 42, 57];
 export const PSEUDOCODE = {
     create: [
         "head = null, tail = null",
@@ -402,6 +402,288 @@ export const useLinkedListVisualizer = () => {
         return { endNodes: currentNodes, timeline: frames };
     };
 
+    const generateConvertToArray = () => {
+        const opName = 'convertToArray';
+        const pLines = ["arr = []", "curr = head", "while curr != null", "  arr.push(curr.val)", "  curr = curr.next", "return arr"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        let arr: number[] = [];
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "List is empty", pLines, opName, {}, [], [], [], "[]")] };
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, {}, [], [], [], "[]"));
+        for (let i = 0; i < currentNodes.length; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, "while curr != null", pLines, opName, {}, [], [], [], JSON.stringify(arr)));
+            arr.push(currentNodes[i]);
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 3, "arr.push(curr.val)", pLines, opName, {}, [], [], [], JSON.stringify(arr)));
+            if (i < currentNodes.length - 1) frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 4, "curr = curr.next", pLines, opName, {}, [], [], [], JSON.stringify(arr)));
+        }
+        frames.push(createFrame(currentNodes, [], [], 5, "return arr", pLines, opName, {}, [], [], [], "Final Array: " + JSON.stringify(arr)));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateShowLength = () => {
+        const opName = 'showLength';
+        const pLines = ["count = 0", "curr = head", "while curr != null", "  count++", "  curr = curr.next", "return count"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        let count = 0;
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "List is empty", pLines, opName, {}, [], [], [], "0")] };
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, {}, [], [], [], `count = ${count}`));
+        for (let i = 0; i < currentNodes.length; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, "while curr != null", pLines, opName, {}, [], [], [], `count = ${count}`));
+            count++;
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 3, "count++", pLines, opName, {}, [], [], [], `count = ${count}`));
+            if (i < currentNodes.length - 1) frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 4, "curr = curr.next", pLines, opName, {}, [], [], [], `count = ${count}`));
+        }
+        frames.push(createFrame(currentNodes, [], [], 5, "return count", pLines, opName, {}, [], [], [], `Final Length: ${count}`));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateDeleteList = () => {
+        const opName = 'deleteList';
+        const pLines = ["head = null", "tail = null"];
+        const frames: Frame[] = [];
+        frames.push(createFrame([...initialNodes], [], [], 0, "head = null", pLines, opName));
+        frames.push(createFrame([], [], [], 1, "List cleared", pLines, opName));
+        return { endNodes: [], timeline: frames };
+    };
+
+    const generateReverseList = () => {
+        const opName = 'reverseList';
+        const pLines = ["prev = null, curr = head", "while curr != null", "  nextTemp = curr.next", "  curr.next = prev", "  prev = curr", "  curr = nextTemp", "head = prev"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "Empty list", pLines, opName)] };
+
+        frames.push(createFrame([...currentNodes], [0], [{ index: 0, label: 'curr', color: 'primary' }], 0, "prev = null, curr = head", pLines, opName));
+
+        for (let i = 0; i < currentNodes.length; i++) {
+            frames.push(createFrame([...currentNodes], [i], [{ index: i, label: 'curr', color: 'primary' }, ...(i > 0 ? [{ index: i - 1, label: 'prev', color: 'green' }] : [])], 1, "while curr != null", pLines, opName));
+        }
+
+        const finalNodes = [...currentNodes].reverse();
+        frames.push(createFrame([...finalNodes], [], [], 6, "head = prev (Reversed!)", pLines, opName));
+        return { endNodes: finalNodes, timeline: frames };
+    };
+
+    const generateFindMiddle = () => {
+        const opName = 'findMiddle';
+        const pLines = ["slow = head, fast = head", "while fast != null && fast.next != null", "  slow = slow.next", "  fast = fast.next.next", "return slow"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "Empty List", pLines, opName)] };
+
+        let slow = 0, fast = 0;
+        frames.push(createFrame(currentNodes, [0], [{ index: slow, label: 'slow=fast', color: 'blue' }], 0, "slow = fast = head", pLines, opName));
+
+        while (fast + 1 < currentNodes.length && fast + 2 < currentNodes.length) {
+            frames.push(createFrame(currentNodes, [slow], [{ index: slow, label: 'slow', color: 'blue' }, { index: fast, label: 'fast', color: 'orange' }], 1, "while fast && fast.next", pLines, opName));
+            slow++;
+            fast += 2;
+            frames.push(createFrame(currentNodes, [slow], [{ index: slow, label: 'slow', color: 'blue' }, { index: fast, label: 'fast', color: 'orange' }], 2, "slow = slow.next; fast = fast.next.next", pLines, opName));
+        }
+
+        frames.push(createFrame(currentNodes, [slow], [{ index: slow, label: 'FOUND', color: 'green' }], 4, `Mid is at index ${slow}`, pLines, opName));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateCountOccurrences = (target: number) => {
+        const opName = 'countOccurrences';
+        const pLines = ["count = 0", "curr = head", "while curr != null", "  if curr.val == target", "    count++", "  curr = curr.next", "return count"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        let count = 0;
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, { target }, [], [], [], `count = ${count}`));
+
+        for (let i = 0; i < currentNodes.length; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, "while curr != null", pLines, opName, { target }, [], [], [], `count = ${count}`));
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 3, "if curr.val == target", pLines, opName, { target }, [], [], [], `count = ${count}`));
+
+            if (currentNodes[i] === target) {
+                count++;
+                frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'MATCH', color: 'green' }], 4, "count++", pLines, opName, { target }, [], [], [], `count = ${count}`));
+            }
+            if (i < currentNodes.length - 1) frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 5, "curr = curr.next", pLines, opName, { target }, [], [], [], `count = ${count}`));
+        }
+        frames.push(createFrame(currentNodes, [], [], 6, "return count", pLines, opName, { target }, [], [], [], `Final Count: ${count}`));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateDeleteByValue = (target: number) => {
+        const opName = 'deleteByValue';
+        const pLines = ["if head == null return", "if head.val == target: head = head.next", "curr = head", "while curr.next != null", "  if curr.next.val == target", "    curr.next = curr.next.next", "  else curr = curr.next"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "List Empty", pLines, opName, { target })] };
+
+        if (currentNodes[0] === target) {
+            frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'MATCH', color: 'red' }], 1, "if head.val == target", pLines, opName, { target }));
+            const newNodes = currentNodes.slice(1);
+            frames.push(createFrame(newNodes, [], [], 1, "head = head.next", pLines, opName, { target }));
+            return { endNodes: newNodes, timeline: frames };
+        }
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 2, "curr = head", pLines, opName, { target }));
+
+        let i = 0;
+        while (i < currentNodes.length - 1) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 3, "while curr.next != null", pLines, opName, { target }));
+            frames.push(createFrame(currentNodes, [i + 1], [{ index: i, label: 'CURR', color: 'primary' }, { index: i + 1, label: 'NEXT', color: 'orange' }], 4, `curr.next.val == target?`, pLines, opName, { target }));
+
+            if (currentNodes[i + 1] === target) {
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i, label: 'CURR', color: 'primary' }, { index: i + 1, label: 'MATCH', color: 'red' }], 5, "curr.next = curr.next.next", pLines, opName, { target }, [], [{ from: i, to: i + 2, color: 'red', curved: true }]));
+                const newNodes = [...currentNodes];
+                newNodes.splice(i + 1, 1);
+                frames.push(createFrame(newNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 5, "Node removed", pLines, opName, { target }));
+                return { endNodes: newNodes, timeline: frames };
+            } else {
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 6, "curr = curr.next", pLines, opName, { target }));
+                i++;
+            }
+        }
+
+        frames.push(createFrame(currentNodes, [], [], 3, "Not Found", pLines, opName, { target }));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateFindNthNode = (n: number) => {
+        const opName = 'findNthNode';
+        const pLines = ["curr = head", "for (i=0; i<N; i++)", "  if curr == null return null", "  curr = curr.next", "return curr"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+        if (n < 0 || n >= currentNodes.length) return { endNodes: currentNodes, timeline: [createFrame(currentNodes, [], [], 0, "Invalid N", pLines, opName, { N: n })] };
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, { N: n }));
+
+        for (let i = 0; i < n; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `i < N`, pLines, opName, { N: n }));
+            frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 4, "curr = curr.next", pLines, opName, { N: n }));
+        }
+
+        frames.push(createFrame(currentNodes, [n], [{ index: n, label: 'FOUND', color: 'green' }], 5, `Found node at index ${n}`, pLines, opName, { N: n }));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateFindNthFromEnd = (n: number) => {
+        const opName = 'findNthFromEnd';
+        const pLines = ["main = head, ref = head", "for (i=0; i<N; i++) ref = ref.next", "while ref != null", "  main = main.next", "  ref = ref.next", "return main"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+
+        if (n <= 0 || n > currentNodes.length) return { endNodes: currentNodes, timeline: [createFrame(currentNodes, [], [], 0, "Invalid N", pLines, opName, { N: n })] };
+
+        let ref = 0;
+        let main = 0;
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'main/ref', color: 'primary' }], 1, "main = ref = head", pLines, opName, { N: n }));
+
+        for (let i = 0; i < n; i++) {
+            frames.push(createFrame(currentNodes, [ref], [{ index: main, label: 'main', color: 'primary' }, { index: ref, label: 'ref', color: 'orange' }], 2, `Advance ref (${i + 1}/${n})`, pLines, opName, { N: n }));
+            ref++;
+        }
+
+        while (ref < currentNodes.length) {
+            frames.push(createFrame(currentNodes, [main, ref], [{ index: main, label: 'main', color: 'primary' }, { index: ref, label: 'ref', color: 'orange' }], 3, "while ref != null", pLines, opName, { N: n }));
+            main++;
+            ref++;
+            if (ref < currentNodes.length) {
+                frames.push(createFrame(currentNodes, [main, ref], [{ index: main, label: 'main', color: 'primary' }, { index: ref, label: 'ref', color: 'orange' }], 4, "Advance both pointers", pLines, opName, { N: n }));
+            }
+        }
+
+        frames.push(createFrame(currentNodes, [main], [{ index: main, label: 'FOUND', color: 'green' }], 6, `Found ${n}th from end`, pLines, opName, { N: n }));
+        return { endNodes: currentNodes, timeline: frames };
+    };
+
+    const generateInsertAfterValue = (target: number, insertVal: number) => {
+        const opName = 'insertAfterValue';
+        const pLines = ["curr = head", "while curr != null && curr.val != target", "  curr = curr.next", "if curr == null return", "v = new Node(val)", "v.next = curr.next", "curr.next = v"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+
+        if (currentNodes.length >= MAX_NODES) return { endNodes: currentNodes, timeline: [createFrame(currentNodes, [], [], 0, "List Full", pLines, opName, { target, val: insertVal })] };
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "List Empty", pLines, opName, { target, val: insertVal })] };
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 1, "curr = head", pLines, opName, { target, val: insertVal }));
+
+        let foundIdx = -1;
+        for (let i = 0; i < currentNodes.length; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 2, `curr != null && curr.val != target?`, pLines, opName, { target, val: insertVal }));
+            if (currentNodes[i] === target) {
+                foundIdx = i;
+                frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'MATCH', color: 'green' }], 2, "Found target", pLines, opName, { target, val: insertVal }));
+                break;
+            }
+            if (i < currentNodes.length - 1) {
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 3, "curr = curr.next", pLines, opName, { target, val: insertVal }));
+            }
+        }
+
+        if (foundIdx === -1) {
+            frames.push(createFrame(currentNodes, [], [], 4, "Target not found", pLines, opName, { target, val: insertVal }));
+            return { endNodes: currentNodes, timeline: frames };
+        }
+
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 5, "v = new Node(val)", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }]));
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 6, "v.next = curr.next", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }], [{ from: 'temp', to: foundIdx + 1, curved: true }]));
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 7, "curr.next = v", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }], [{ from: foundIdx, to: 'temp', curved: true }, { from: 'temp', to: foundIdx + 1, curved: true }]));
+
+        const newNodes = [...currentNodes];
+        newNodes.splice(foundIdx + 1, 0, insertVal);
+        frames.push(createFrame(newNodes, [foundIdx + 1], [{ index: foundIdx + 1, label: 'Inserted', color: 'green' }], 7, "Inserted!", pLines, opName, { target, val: insertVal }));
+
+        return { endNodes: newNodes, timeline: frames };
+    };
+
+    const generateInsertBeforeValue = (target: number, insertVal: number) => {
+        const opName = 'insertBeforeValue';
+        const pLines = ["if head == null return", "if head.val == target", "  v = new Node(val)", "  v.next = head; head = v", "curr = head", "while curr.next != null && curr.next.val != target", "  curr = curr.next", "if curr.next == null return", "v = new Node(val)", "v.next = curr.next", "curr.next = v"];
+        const frames: Frame[] = [];
+        const currentNodes = [...initialNodes];
+
+        if (currentNodes.length >= MAX_NODES) return { endNodes: currentNodes, timeline: [createFrame(currentNodes, [], [], 0, "List Full", pLines, opName, { target, val: insertVal })] };
+        if (currentNodes.length === 0) return { endNodes: [], timeline: [createFrame([], [], [], 0, "List Empty", pLines, opName, { target, val: insertVal })] };
+
+        if (currentNodes[0] === target) {
+            frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'MATCH', color: 'green' }], 2, "if head.val == target", pLines, opName, { target, val: insertVal }));
+            const newNodes = [insertVal, ...currentNodes];
+            frames.push(createFrame(currentNodes, [0], [], 3, "v = new Node(val)", pLines, opName, { target, val: insertVal }, [{ id: 't', val: insertVal, label: 'v', position: 'left-of-head' }]));
+            frames.push(createFrame(newNodes, [0], [{ index: 0, label: 'HEAD', color: 'green' }], 4, "head = v", pLines, opName, { target, val: insertVal }));
+            return { endNodes: newNodes, timeline: frames };
+        }
+
+        frames.push(createFrame(currentNodes, [0], [{ index: 0, label: 'CURR', color: 'primary' }], 5, "curr = head", pLines, opName, { target, val: insertVal }));
+
+        let foundIdx = -1;
+        for (let i = 0; i < currentNodes.length - 1; i++) {
+            frames.push(createFrame(currentNodes, [i], [{ index: i, label: 'CURR', color: 'primary' }], 6, `curr.next.val != target?`, pLines, opName, { target, val: insertVal }));
+            if (currentNodes[i + 1] === target) {
+                foundIdx = i;
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i, label: 'CURR', color: 'primary' }, { index: i + 1, label: 'MATCH', color: 'green' }], 6, "Found target", pLines, opName, { target, val: insertVal }));
+                break;
+            }
+            if (i < currentNodes.length - 2) {
+                frames.push(createFrame(currentNodes, [i + 1], [{ index: i + 1, label: 'CURR', color: 'primary' }], 7, "curr = curr.next", pLines, opName, { target, val: insertVal }));
+            }
+        }
+
+        if (foundIdx === -1) {
+            frames.push(createFrame(currentNodes, [], [], 8, "Target not found", pLines, opName, { target, val: insertVal }));
+            return { endNodes: currentNodes, timeline: frames };
+        }
+
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 9, "v = new Node(val)", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }]));
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 10, "v.next = curr.next", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }], [{ from: 'temp', to: foundIdx + 1, curved: true }]));
+        frames.push(createFrame(currentNodes, [foundIdx], [{ index: foundIdx, label: 'curr', color: 'primary' }], 11, "curr.next = v", pLines, opName, { target, val: insertVal }, [{ id: 'temp', val: insertVal, label: 'v', position: 'above-at-index', offsetIndex: foundIdx + 1 }], [{ from: foundIdx, to: 'temp', curved: true }, { from: 'temp', to: foundIdx + 1, curved: true }]));
+
+        const newNodes = [...currentNodes];
+        newNodes.splice(foundIdx + 1, 0, insertVal);
+        frames.push(createFrame(newNodes, [foundIdx + 1], [{ index: foundIdx + 1, label: 'Inserted', color: 'green' }], 11, "Inserted", pLines, opName, { target, val: insertVal }));
+
+        return { endNodes: newNodes, timeline: frames };
+    };
+
     const generateFeatureComingSoon = (opName: string, title?: string) => {
         const pLines = ["// Feature coming soon in the next update!"];
         const frames = [createFrame([...initialNodes], [], [], 0, `${title || opName} is currently in development!`, pLines, opName, {}, [], [], [], "This feature is coming soon.")];
@@ -436,20 +718,24 @@ export const useLinkedListVisualizer = () => {
                 }
                 break;
             case 'clearList':
-                res = generateCreateFrames([]);
+                res = generateDeleteList();
                 break;
             case 'convertToArray':
-                res = generateFeatureComingSoon('Convert to Array');
+                res = generateConvertToArray();
                 break;
 
             // Traversal
             case 'iterativeTraversal':
                 res = generateSearchFrames(-9999); // Will traverse whole list
                 break;
+            case 'showLength':
+                res = generateShowLength();
+                break;
+            case 'findMiddle':
+                res = generateFindMiddle();
+                break;
             case 'recursiveTraversal':
             case 'reverseTraversal':
-            case 'showLength':
-            case 'findMiddle':
                 res = generateFeatureComingSoon(actionId);
                 break;
 
@@ -471,7 +757,15 @@ export const useLinkedListVisualizer = () => {
                 res = generateInsertIndexFrames(idx, val);
                 break;
             case 'insertAfterValue':
+                if (isNaN(val) || isNaN(idx)) { setError("Invalid Inputs: Need Val and Target"); return; }
+                if (initialNodes.length >= MAX_NODES) { setError("List Full"); return; }
+                res = generateInsertAfterValue(idx, val); // idx represents target input box
+                break;
             case 'insertBeforeValue':
+                if (isNaN(val) || isNaN(idx)) { setError("Invalid Inputs: Need Val and Target"); return; }
+                if (initialNodes.length >= MAX_NODES) { setError("List Full"); return; }
+                res = generateInsertBeforeValue(idx, val); // idx represents target input box
+                break;
             case 'sortedInsert':
                 res = generateFeatureComingSoon(actionId);
                 break;
@@ -490,9 +784,14 @@ export const useLinkedListVisualizer = () => {
                 if (isNaN(idx) || idx < 0 || idx >= initialNodes.length) { setError("Bad Index"); return; }
                 res = generateRemoveIndexFrames(idx);
                 break;
-            case 'deleteByValue':
-            case 'deleteAllOccurrences':
             case 'deleteList':
+                res = generateDeleteList();
+                break;
+            case 'deleteByValue':
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                res = generateDeleteByValue(val);
+                break;
+            case 'deleteAllOccurrences':
                 res = generateFeatureComingSoon(actionId);
                 break;
 
@@ -501,14 +800,26 @@ export const useLinkedListVisualizer = () => {
                 if (isNaN(val)) { setError("Invalid Value"); return; }
                 res = generateSearchFrames(val);
                 break;
-            case 'findNthNode':
-            case 'findNthFromEnd':
-            case 'findMiddleNode':
             case 'countOccurrences':
-                res = generateFeatureComingSoon(actionId);
+                if (isNaN(val)) { setError("Invalid Value"); return; }
+                res = generateCountOccurrences(val);
+                break;
+            case 'findMiddleNode':
+                res = generateFindMiddle();
+                break;
+            case 'findNthNode':
+                if (isNaN(idx)) { setError("Invalid Index"); return; }
+                res = generateFindNthNode(idx);
+                break;
+            case 'findNthFromEnd':
+                if (isNaN(idx)) { setError("Invalid N"); return; }
+                res = generateFindNthFromEnd(idx);
                 break;
 
             // Advanced / Special
+            case 'reverseList':
+                res = generateReverseList();
+                break;
             default:
                 res = generateFeatureComingSoon(actionId);
                 break;

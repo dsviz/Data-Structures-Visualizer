@@ -44,7 +44,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Sorting Bars Pattern',
         alt: 'Abstract Sorting Bars Pattern',
         image: '/sorting.gif',
-        imageBg: 'bg-[#65c377]'
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Linked Lists',
@@ -64,7 +64,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Chain Link Pattern',
         alt: 'Abstract Chain Link Pattern',
         image: '/list.gif',
-        imageBg: 'bg-[#5c74c3]'
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Arrays',
@@ -103,7 +103,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-amber-400',
         pattern: 'Abstract Stack Layers',
         alt: 'Abstract Stack Layers',
-        // image: '/stack.gif' // Not found in list, maybe use generic or none
+        image: '/stack.gif',
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Queue',
@@ -122,7 +123,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         darkIconColor: 'dark:text-sky-400',
         pattern: 'Abstract Queue Line',
         alt: 'Abstract Queue Line',
-        // isPlaceholder: true // Enabled now
+        image: '/queue.gif',
+        imageBg: 'bg-[#ffffff]'
     },
     {
         title: 'Binary Tree',
