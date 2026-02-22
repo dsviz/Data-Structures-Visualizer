@@ -132,7 +132,7 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
     };
 
     return (
-        <div className="flex flex-col gap-5 h-full overflow-y-auto pr-2">
+        <div className="flex flex-col gap-5 pr-2">
 
             {/* Selection Area */}
             <div className="space-y-4">
@@ -222,9 +222,9 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                             <span className="text-sm font-medium text-slate-600 dark:text-gray-400">Directed Graph</span>
                             <button
                                 onClick={() => setIsDirected(!isDirected)}
-                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isDirected ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                                className={`w-10 h-6 rounded-full relative transition-colors ${isDirected ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
                             >
-                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isDirected ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                                <span className={`absolute top-0.5 size-5 bg-white rounded-full shadow-sm transition-all ${isDirected ? 'right-0.5' : 'left-0.5'}`}></span>
                             </button>
                         </div>
 
@@ -233,9 +233,9 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                             <span className="text-sm font-medium text-slate-600 dark:text-gray-400">Weighted Graph</span>
                             <button
                                 onClick={() => setIsWeighted(!isWeighted)}
-                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isWeighted ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                                className={`w-10 h-6 rounded-full relative transition-colors ${isWeighted ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
                             >
-                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isWeighted ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                                <span className={`absolute top-0.5 size-5 bg-white rounded-full shadow-sm transition-all ${isWeighted ? 'right-0.5' : 'left-0.5'}`}></span>
                             </button>
                         </div>
 
@@ -251,9 +251,9 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                                         updateWeightsByDistance();
                                     }
                                 }}
-                                className={`w-10 h-5.5 rounded-full relative transition-colors ${isGridSnapped ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
+                                className={`w-10 h-6 rounded-full relative transition-colors ${isGridSnapped ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-[#272546]'}`}
                             >
-                                <span className={`absolute top-[2px] size-4.5 bg-white rounded-full shadow-sm transition-all ${isGridSnapped ? 'right-[2px]' : 'left-[2px]'}`}></span>
+                                <span className={`absolute top-0.5 size-5 bg-white rounded-full shadow-sm transition-all ${isGridSnapped ? 'right-0.5' : 'left-0.5'}`}></span>
                             </button>
                         </div>
                     </div>

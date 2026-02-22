@@ -29,6 +29,7 @@ export interface LinkedListControlsProps {
     setCreateInput: (val: string) => void;
     error: string | null;
     runAction: (id: string) => void;
+    handleExample: () => void;
     frames: Frame[];
     currentStep: number;
 }
@@ -36,7 +37,7 @@ export interface LinkedListControlsProps {
 export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
     listType, setListType,
     inputValue, setInputValue, inputIndex, setInputIndex, createInput, setCreateInput, error,
-    runAction,
+    runAction, handleExample,
     frames, currentStep
 }) => {
     const currentFrame = frames[currentStep];
@@ -49,10 +50,6 @@ export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
             id: 'Basics',
             label: 'Basics / Fundamentals',
             actions: [
-                { id: 'createEmpty', label: 'Create Empty List', action: () => runAction('createEmpty') },
-                { id: 'createRandom', label: 'Create Random List', action: () => runAction('createRandom') },
-                { id: 'initFromArray', label: 'Initialize from Array', action: () => runAction('initFromArray'), needsArrayInput: true },
-                { id: 'clearList', label: 'Clear List', action: () => runAction('clearList') },
                 { id: 'convertToArray', label: 'Convert to Array', action: () => runAction('convertToArray') }
             ]
         },
@@ -234,16 +231,26 @@ export const LinkedListControls: React.FC<LinkedListControlsProps> = ({
                         )}
                     </div>
 
-                    <button
-                        onClick={handleRunAlgorithm}
-                        disabled={currentAction?.disabled}
-                        className={`w-full py-2.5 rounded-lg font-bold text-sm transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2
-                            ${currentAction?.disabled ? 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/40'}
-                        `}
-                    >
-                        <span className="material-symbols-outlined text-sm">{currentAction?.disabled ? 'block' : 'play_arrow'}</span>
-                        {currentAction?.disabled ? 'Unavailable for list type' : 'Run Operation'}
-                    </button>
+                    {/* Standardized Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button
+                            onClick={handleExample}
+                            className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[13px] font-bold transition-all shadow-sm group"
+                        >
+                            <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">auto_fix</span>
+                            Example
+                        </button>
+
+                        <button
+                            onClick={handleRunAlgorithm}
+                            disabled={currentAction?.disabled}
+                            className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-500/20 ${currentAction?.disabled ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-500'}`}
+                        >
+                            <span className="material-symbols-outlined text-[20px]">{currentAction?.disabled ? 'block' : 'play_arrow'}</span>
+                            Run
+                        </button>
+                    </div>
+
                     {error && (
                         <div className="p-2.5 text-xs text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 rounded-lg animate-in shake font-medium flex items-center gap-2 mt-2">
                             <span className="material-symbols-outlined text-[16px]">error</span>

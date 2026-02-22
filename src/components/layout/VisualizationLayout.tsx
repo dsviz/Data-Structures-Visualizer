@@ -133,7 +133,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                 {actualRightSidebar && (
                     <aside
                         ref={sidebarRef}
-                        className="flex flex-col border-l border-gray-200 dark:border-[#272546] bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md z-10 shrink-0 overflow-y-auto shadow-xl transition-none relative group"
+                        className={`flex flex-col border-l border-gray-200 dark:border-[#272546] bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md z-10 shrink-0 shadow-xl transition-none relative group ${sidebarNoScroll ? 'overflow-hidden' : 'overflow-y-auto'}`}
                         style={{ width: `${sidebarWidth}px` }}
                     >
                         {/* Drag Handle */}

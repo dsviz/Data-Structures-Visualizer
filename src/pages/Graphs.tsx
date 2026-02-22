@@ -216,35 +216,37 @@ const Graphs = () => {
   const sidebarContent = (
     <div className="h-full flex flex-col relative" ref={sidebarRef}>
       {/* Controls Section */}
-      <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
-        <GraphControls
-          isDirected={isDirected} setIsDirected={setIsDirected}
-          isWeighted={isWeighted} setIsWeighted={setIsWeighted}
-          startNode={startNode} setStartNode={setStartNode}
-          runBFS={runBFS} runDFS={runDFS}
-          runDijkstra={runDijkstra} runBellmanFord={runBellmanFord} runFloydWarshall={runFloydWarshall} runAStar={runAStar} runPrim={runPrim} runKruskal={runKruskal}
-          runBoruvka={runBoruvka}
-          runNodeDegree={runNodeDegree} runHighlightNeighbors={runHighlightNeighbors}
-          runCheckConnectivity={runCheckConnectivity} runDetectCycle={runDetectCycle}
-          runTopologicalSort={runTopologicalSort} runKahn={runKahn}
-          runTarjanBridges={runTarjanBridges} runArticulationPoints={runArticulationPoints}
-          runFordFulkerson={runFordFulkerson} runEdmondsKarp={runEdmondsKarp}
-          reset={resetGraph}
-          activeAlgorithm={activeAlgorithm}
-          isGridSnapped={isGridSnapped}
-          setIsGridSnapped={setIsGridSnapped}
-          snapAllToGrid={snapAllToGrid}
-          updateWeightsByDistance={updateWeightsByDistance}
-          loadExampleGraph={loadExampleGraph}
-          frames={frames}
-          currentStep={currentStep}
-          getNodeLabel={getNodeLabel}
-        />
+      <div style={{ height: `${splitRatio * 100}%` }} className="overflow-y-auto border-b border-gray-200 dark:border-[#272546] custom-scrollbar">
+        <div className="p-4">
+          <GraphControls
+            isDirected={isDirected} setIsDirected={setIsDirected}
+            isWeighted={isWeighted} setIsWeighted={setIsWeighted}
+            startNode={startNode} setStartNode={setStartNode}
+            runBFS={runBFS} runDFS={runDFS}
+            runDijkstra={runDijkstra} runBellmanFord={runBellmanFord} runFloydWarshall={runFloydWarshall} runAStar={runAStar} runPrim={runPrim} runKruskal={runKruskal}
+            runBoruvka={runBoruvka}
+            runNodeDegree={runNodeDegree} runHighlightNeighbors={runHighlightNeighbors}
+            runCheckConnectivity={runCheckConnectivity} runDetectCycle={runDetectCycle}
+            runTopologicalSort={runTopologicalSort} runKahn={runKahn}
+            runTarjanBridges={runTarjanBridges} runArticulationPoints={runArticulationPoints}
+            runFordFulkerson={runFordFulkerson} runEdmondsKarp={runEdmondsKarp}
+            reset={resetGraph}
+            activeAlgorithm={activeAlgorithm}
+            isGridSnapped={isGridSnapped}
+            setIsGridSnapped={setIsGridSnapped}
+            snapAllToGrid={snapAllToGrid}
+            updateWeightsByDistance={updateWeightsByDistance}
+            loadExampleGraph={loadExampleGraph}
+            frames={frames}
+            currentStep={currentStep}
+            getNodeLabel={getNodeLabel}
+          />
+        </div>
       </div>
 
       {/* Resizer Handle */}
       <div
-        className="h-1 bg-gray-100 dark:bg-[#272546] hover:bg-primary cursor-row-resize transition-colors absolute w-full z-10"
+        className="h-1.5 bg-gray-100 dark:bg-[#272546] hover:bg-primary cursor-row-resize transition-colors absolute w-full z-10 -translate-y-1/2"
         style={{ top: `${splitRatio * 100}%` }}
         onMouseDown={handleMouseDown}
       ></div>
@@ -278,7 +280,7 @@ const Graphs = () => {
       </div>
 
       <div className="flex-1 flex flex-col gap-2">
-        <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+        <div className="flex justify-between text-xs font-medium font-mono text-gray-400">
           <span>Step {currentStep + 1}/{frames.length || 1}</span>
           <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
         </div>

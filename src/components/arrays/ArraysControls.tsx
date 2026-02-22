@@ -1,21 +1,12 @@
 import React, { useEffect } from 'react';
-import { MAX_CAPACITY, Operation, SearchType } from '../../hooks/useArraysVisualizer';
+import { Operation, SearchType } from '../../hooks/useArraysVisualizer';
+import { Dropdown } from '../ui/Dropdown';
 
 interface ArraysControlsProps {
     activeOp: Operation;
     setActiveOp: React.Dispatch<React.SetStateAction<Operation>>;
     mode: 'standard' | 'apps';
     setMode: React.Dispatch<React.SetStateAction<'standard' | 'apps'>>;
-
-    // Create
-    createStep: 'size' | 'values';
-    setCreateStep: (step: 'size' | 'values') => void;
-    createSize: string;
-    setCreateSize: (size: string) => void;
-    createInput: string;
-    setCreateInput: (input: string) => void;
-    handleCreateRandom: () => void;
-    handleCreateCustom: () => void;
 
     // Search
     searchType: SearchType;
@@ -43,32 +34,44 @@ interface ArraysControlsProps {
     setUpdateValue: (val: string) => void;
     handleUpdate: () => void;
 
+    // Apps
+    twoSumTarget: string;
+    setTwoSumTarget: (val: string) => void;
+    handleReverse: () => void;
+    handleTwoSum: () => void;
+    handleCycleDetection: () => void;
+    handleExample: () => void;
+
     error: string | null;
 }
 
 export const ArraysControls: React.FC<ArraysControlsProps> = ({
     activeOp, setActiveOp, mode, setMode,
-    createStep, setCreateStep, createSize, setCreateSize, createInput, setCreateInput, handleCreateRandom, handleCreateCustom,
     searchType, setSearchType, searchInput, setSearchInput, handleSearch,
     insertIndex, setInsertIndex, insertValue, setInsertValue, handleInsert,
     removeIndex, setRemoveIndex, handleRemove,
     updateIndex, setUpdateIndex, updateValue, setUpdateValue, handleUpdate,
+    twoSumTarget, setTwoSumTarget, handleReverse, handleTwoSum, handleCycleDetection,
+    handleExample,
     error
 }) => {
 
     const OPERATIONS = mode === 'standard' ? [
-        { id: 'create', label: 'Initialize Array' },
         { id: 'search', label: 'Search Element' },
         { id: 'insert', label: 'Insert Element' },
         { id: 'remove', label: 'Remove Element' },
         { id: 'update', label: 'Update Element' },
     ] : [
-        { id: 'app_coming_soon', label: 'More Apps Coming Soon...' },
+        { id: 'reverse', label: 'Array Reversal' },
+        { id: '2sum', label: 'Two Sum (Sorted)' },
+        { id: 'cycle_detection', label: 'Cycle Detection (Array as Graph)' },
     ];
 
     useEffect(() => {
         if (!activeOp && mode === 'standard') {
-            setActiveOp('create');
+            setActiveOp('search');
+        } else if (activeOp === 'create') {
+            setActiveOp('search');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode]);
@@ -100,49 +103,18 @@ export const ArraysControls: React.FC<ArraysControlsProps> = ({
                 {/* Operation Dropdown */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
-                    <div className="relative">
-                        <select
-                            value={activeOp || ''}
-                            onChange={(e) => setActiveOp(e.target.value as Operation)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
-                        >
-                            {OPERATIONS.map(op => (
-                                <option key={op.id} value={op.id}>{op.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <Dropdown
+                        value={activeOp || ''}
+                        options={OPERATIONS.map(op => ({ value: op.id, label: op.label }))}
+                        onChange={(val) => setActiveOp(val as Operation)}
+                        placeholder="Select Operation..."
+                    />
                 </div>
 
                 {/* Dynamic Inputs Area */}
                 <div className="animate-in fade-in slide-in-from-top-2">
                     {mode === 'standard' && (
                         <>
-                            {activeOp === 'create' && (
-                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                    {createStep === 'size' ? (
-                                        <div className="space-y-3">
-                                            <div className="space-y-1">
-                                                <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Array Size (Max {MAX_CAPACITY})</span>
-                                                <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
-                                            </div>
-                                            <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Next</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
-                                                <span className="text-xs font-bold text-gray-500">Method</span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
-                                                <button onClick={handleCreateCustom} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
-                                            </div>
-                                            <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
                             {activeOp === 'search' && (
                                 <div className="space-y-4 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
@@ -154,7 +126,6 @@ export const ArraysControls: React.FC<ArraysControlsProps> = ({
                                         <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Target Value</span>
                                         <input type="number" value={searchInput} onChange={e => setSearchInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
                                     </div>
-                                    <button onClick={handleSearch} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Search Array</button>
                                 </div>
                             )}
 
@@ -170,7 +141,6 @@ export const ArraysControls: React.FC<ArraysControlsProps> = ({
                                             <input type="number" value={insertValue} onChange={e => setInsertValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button onClick={handleInsert} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Insert Node</button>
                                 </div>
                             )}
 
@@ -180,7 +150,6 @@ export const ArraysControls: React.FC<ArraysControlsProps> = ({
                                         <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Index to Remove</span>
                                         <input type="number" value={removeIndex} onChange={e => setRemoveIndex(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center" />
                                     </div>
-                                    <button onClick={handleRemove} className="w-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Remove Node</button>
                                 </div>
                             )}
 
@@ -196,18 +165,64 @@ export const ArraysControls: React.FC<ArraysControlsProps> = ({
                                             <input type="number" value={updateValue} onChange={e => setUpdateValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button onClick={handleUpdate} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Update Value</button>
                                 </div>
                             )}
                         </>
                     )}
 
                     {mode === 'apps' && (
-                        <div className="p-8 text-center bg-gray-50/50 dark:bg-white/5 rounded-2xl border border-dashed border-gray-200 dark:border-white/5">
-                            <span className="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-3">construction</span>
-                            <p className="text-gray-500 dark:text-gray-400 text-xs font-medium italic">Advanced applications like Array Reversal & Partitioning coming soon!</p>
+                        <div className="animate-in fade-in slide-in-from-top-2">
+                            {activeOp === 'reverse' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <p className="text-xs text-gray-500 italic leading-relaxed">Visualize two pointers swapping elements from outside in.</p>
+                                </div>
+                            )}
+
+                            {activeOp === '2sum' && (
+                                <div className="space-y-4 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Target Sum</span>
+                                        <input type="number" value={twoSumTarget} onChange={e => setTwoSumTarget(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeOp === 'cycle_detection' && (
+                                <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                    <p className="text-xs text-gray-500 italic leading-relaxed">Treat array as a graph where arr[i] is the next pointer. Detect cycles using Floyd's algorithm.</p>
+                                </div>
+                            )}
                         </div>
                     )}
+                </div>
+
+                {/* Final Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                        onClick={handleExample}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[13px] font-bold transition-all shadow-sm group"
+                    >
+                        <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">auto_fix</span>
+                        Example
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            switch (activeOp) {
+                                case 'search': handleSearch(); break;
+                                case 'insert': handleInsert(); break;
+                                case 'remove': handleRemove(); break;
+                                case 'update': handleUpdate(); break;
+                                case 'reverse': handleReverse(); break;
+                                case '2sum': handleTwoSum(); break;
+                                case 'cycle_detection': handleCycleDetection(); break;
+                            }
+                        }}
+                        className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-500/20 ${activeOp === 'remove' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'}`}
+                    >
+                        <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                        Run
+                    </button>
                 </div>
 
                 {/* Error Display */}

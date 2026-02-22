@@ -686,6 +686,10 @@ export const useTreeVisualizer = () => {
         setActiveAlgorithm(null);
     }
 
+    const handleExample = () => {
+        reset();
+    };
+
     // --- INTERACTIVE EDITING ---
     const addNode = (x: number, y: number) => {
         // Find existing values to propose a new unique value
@@ -2600,6 +2604,7 @@ export const useTreeVisualizer = () => {
         traverse,
         reset,
         clear,
+        handleExample,
         // New Ops
         generateRandomTree,
         traverseZigZag,

@@ -3,6 +3,7 @@ import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useStackVisualizer, MAX_CAPACITY } from '../hooks/useStackVisualizer';
 import { StackControls } from '../components/stack/StackControls';
 import { StackTabs } from '../components/stack/StackTabs';
+import { StackTools, StackTool } from '../components/stack/StackTools';
 
 const Stack = () => {
     const {
@@ -15,8 +16,6 @@ const Stack = () => {
         error,
         mode,
         activeStackIndex,
-        createSize,
-        createInput,
         pushValue,
         appInput,
         currentFrame,
@@ -26,19 +25,18 @@ const Stack = () => {
         setCurrentStep,
         setPlaybackSpeed,
         setActiveOp,
-        setCreateSize,
-        setCreateInput,
         setPushValue,
         setAppInput,
         setMode,
-        setActiveStackIndex,
 
         // Handlers
         handlePush,
         handlePop,
         handlePeek,
-        handleCreateCustom,
-        handleCreateRandom,
+        handleCanvasPush,
+        handleCanvasPop,
+        handleCanvasClear,
+        handleCanvasUpdate,
         handleReverseString,
         handleBalancedParentheses,
         handlePostfixEval,
@@ -50,7 +48,8 @@ const Stack = () => {
         setBrowserInput,
         handleBrowserVisit,
         handleBrowserBack,
-        handleBrowserForward
+        handleBrowserForward,
+        handleExample
     } = useStackVisualizer();
 
     const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
@@ -63,9 +62,25 @@ const Stack = () => {
     const [zoom, setZoom] = useState(1);
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-    const [createStep, setCreateStep] = useState<'size' | 'values'>('size');
+
+    // Tool State
+    const [activeTool, setActiveTool] = useState<StackTool>(null);
+    const [editPopup, setEditPopup] = useState<{ index: number, value: string, x: number, y: number } | null>(null);
 
     // Canvas Handlers
+    const handleNodeClick = (index: number, value: string, e: React.MouseEvent) => {
+        if (activeTool === 'edit') {
+            e.stopPropagation();
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setEditPopup({
+                index,
+                value: String(value),
+                x: rect.left + rect.width / 2,
+                y: rect.top - 10
+            });
+        }
+    };
+
     const handleMouseDown = (e: React.MouseEvent) => {
         setIsDragging(true);
         setLastMousePos({ x: e.clientX, y: e.clientY });
@@ -129,11 +144,6 @@ const Stack = () => {
                         <StackControls
                             mode={mode} setMode={setMode}
                             activeOp={activeOp} setActiveOp={setActiveOp}
-                            activeStackIndex={activeStackIndex} setActiveStackIndex={setActiveStackIndex}
-                            createStep={createStep} setCreateStep={setCreateStep}
-                            createSize={createSize} setCreateSize={setCreateSize}
-                            createInput={createInput} setCreateInput={setCreateInput}
-                            handleCreateRandom={handleCreateRandom} handleCreateCustom={handleCreateCustom}
                             pushValue={pushValue} setPushValue={setPushValue}
                             handlePush={handlePush} handlePop={handlePop} handlePeek={handlePeek}
                             appInput={appInput} setAppInput={setAppInput} handleReverseString={handleReverseString}
@@ -141,6 +151,7 @@ const Stack = () => {
                             postfixInput={postfixInput} setPostfixInput={setPostfixInput} handlePostfixEval={handlePostfixEval}
                             browserInput={browserInput} setBrowserInput={setBrowserInput} handleBrowserVisit={handleBrowserVisit}
                             handleBrowserBack={handleBrowserBack} handleBrowserForward={handleBrowserForward}
+                            handleExample={handleExample}
                             error={error} currentFrame={currentFrame}
                         />
                     </div>
@@ -208,6 +219,14 @@ const Stack = () => {
             }
         >
             {/* Canvas */}
+            <StackTools
+                activeTool={activeTool}
+                setActiveTool={setActiveTool}
+                onPush={handleCanvasPush}
+                onPop={handleCanvasPop}
+                onClear={handleCanvasClear}
+            />
+
             <div
                 className={`flex-1 flex flex-col items-center justify-center overflow-hidden relative z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 onMouseDown={handleMouseDown}
@@ -237,7 +256,15 @@ const Stack = () => {
                                     const pointers = currentFrame.pointers?.filter(p => p.index === i) || [];
 
                                     return (
-                                        <div key={i} className="relative w-32 h-12 flex-shrink-0">
+                                        <div
+                                            key={i}
+                                            className={`relative w-32 h-12 flex-shrink-0 ${activeTool === 'edit' && stackIndex === activeStackIndex ? 'cursor-pointer hover:-translate-y-1 transition-transform' : ''}`}
+                                            onClick={(e) => {
+                                                if (stackIndex === activeStackIndex) {
+                                                    handleNodeClick(i, String(val), e);
+                                                }
+                                            }}
+                                        >
                                             {/* Value Box */}
                                             <div
                                                 title={String(val)}
@@ -289,6 +316,51 @@ const Stack = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Edit Popup */}
+                {editPopup && (
+                    <div
+                        className="fixed z-50 bg-white dark:bg-[#1e1c33] p-2 rounded-lg shadow-xl border border-gray-200 dark:border-[#383564] flex gap-2 animate-in zoom-in-95 duration-200"
+                        style={{
+                            left: editPopup.x,
+                            top: editPopup.y,
+                            transform: 'translate(-50%, -100%)'
+                        }}
+                    >
+                        <input
+                            type="text"
+                            value={editPopup.value}
+                            onChange={(e) => setEditPopup({ ...editPopup, value: e.target.value })}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleCanvasUpdate(editPopup.index, editPopup.value);
+                                    setEditPopup(null);
+                                    setActiveTool(null);
+                                } else if (e.key === 'Escape') {
+                                    setEditPopup(null);
+                                }
+                            }}
+                            autoFocus
+                            className="w-20 px-2 py-1 bg-gray-50 dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                            onClick={() => {
+                                handleCanvasUpdate(editPopup.index, editPopup.value);
+                                setEditPopup(null);
+                                setActiveTool(null);
+                            }}
+                            className="px-2 py-1 bg-primary text-white rounded text-xs font-bold hover:bg-indigo-500"
+                        >
+                            Save
+                        </button>
+                        <button
+                            onClick={() => setEditPopup(null)}
+                            className="px-2 py-1 bg-gray-200 dark:bg-[#272546] text-gray-600 dark:text-gray-300 rounded text-xs font-bold hover:bg-gray-300 dark:hover:bg-[#383564]"
+                        >
+                            <span className="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                    </div>
+                )}
 
             </div>
 

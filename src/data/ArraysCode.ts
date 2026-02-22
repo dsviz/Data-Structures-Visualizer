@@ -252,5 +252,144 @@ export const ARRAYS_CODE: OperationCodes = {
             ],
             mapping: { 2: 0 }
         }
+    },
+    reverse: {
+        c: {
+            lines: [
+                "int left = 0, right = n - 1;",
+                "while (left < right) {",
+                "    int temp = arr[left];",
+                "    arr[left] = arr[right];",
+                "    arr[right] = temp;",
+                "    left++; right--;",
+                "}"
+            ],
+            mapping: { 1: 1, 2: 2 }
+        },
+        cpp: {
+            lines: [
+                "int left = 0, right = n - 1;",
+                "while (left < right) {",
+                "    std::swap(arr[left++], arr[right--]);",
+                "}"
+            ],
+            mapping: { 1: 1, 2: 2 }
+        },
+        java: {
+            lines: [
+                "int left = 0, right = n - 1;",
+                "while (left < right) {",
+                "    int temp = arr[left];",
+                "    arr[left] = arr[right];",
+                "    arr[right] = temp;",
+                "    left++; right--;",
+                "}"
+            ],
+            mapping: { 1: 1, 2: 2 }
+        },
+        python: {
+            lines: [
+                "left, right = 0, n - 1",
+                "while left < right:",
+                "    arr[left], arr[right] = arr[right], arr[left]",
+                "    left += 1; right -= 1"
+            ],
+            mapping: { 1: 1, 2: 2 }
+        }
+    },
+    '2sum': {
+        c: {
+            lines: [
+                "// Assuming sorted array",
+                "int L = 0, R = n - 1;",
+                "while (L < R) {",
+                "    int sum = arr[L] + arr[R];",
+                "    if (sum == target) return {L, R};",
+                "    if (sum < target) L++;",
+                "    else R--;",
+                "}"
+            ],
+            mapping: { 1: 2, 2: 4, 3: 5, 4: 6 }
+        },
+        cpp: {
+            lines: [
+                "int L = 0, R = n - 1;",
+                "while (L < R) {",
+                "    int sum = arr[L] + arr[R];",
+                "    if (sum == target) return {L, R};",
+                "    if (sum < target) L++;",
+                "    else R--;",
+                "}"
+            ],
+            mapping: { 1: 1, 2: 3, 3: 4, 4: 5 }
+        },
+        java: {
+            lines: [
+                "int L = 0, R = n - 1;",
+                "while (L < R) {",
+                "    int sum = arr[L] + arr[R];",
+                "    if (sum == target) return new int[]{L, R};",
+                "    if (sum < target) L++;",
+                "    else R--;",
+                "}"
+            ],
+            mapping: { 1: 1, 2: 3, 3: 4, 4: 5 }
+        },
+        python: {
+            lines: [
+                "L, R = 0, n - 1",
+                "while L < R:",
+                "    s = arr[L] + arr[R]",
+                "    if s == target: return L, R",
+                "    if s < target: L += 1",
+                "    else: R -= 1"
+            ],
+            mapping: { 1: 1, 2: 3, 3: 4, 4: 5 }
+        }
+    },
+    cycle_detection: {
+        c: {
+            lines: [
+                "int slow = 0, fast = 0;",
+                "while (1) {",
+                "    slow = arr[slow];",
+                "    fast = arr[arr[fast]];",
+                "    if (slow == fast) return true;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 2, 2: 4 }
+        },
+        cpp: {
+            lines: [
+                "int slow = 0, fast = 0;",
+                "while (true) {",
+                "    slow = arr[slow];",
+                "    fast = arr[arr[fast]];",
+                "    if (slow == fast) return true;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 2, 2: 4 }
+        },
+        java: {
+            lines: [
+                "int slow = 0, fast = 0;",
+                "while (true) {",
+                "    slow = arr[slow];",
+                "    fast = arr[arr[fast]];",
+                "    if (slow == fast) return true;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 2, 2: 4 }
+        },
+        python: {
+            lines: [
+                "slow = fast = 0",
+                "while True:",
+                "    slow = arr[slow]",
+                "    fast = arr[arr[fast]]",
+                "    if slow == fast: return True"
+            ],
+            mapping: { 0: 0, 1: 2, 2: 4 }
+        }
     }
 };

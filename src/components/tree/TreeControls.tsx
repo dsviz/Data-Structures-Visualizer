@@ -69,6 +69,7 @@ interface TreeControlsProps {
     // --- Common ---
     reset: () => void;
     clear: () => void;
+    handleExample: () => void;
 
     isPlaying: boolean;
     frames: Frame[];
@@ -236,15 +237,25 @@ export const TreeControls: React.FC<TreeControlsProps> = (props) => {
                     </div>
                 )}
 
-                {/* Action Button */}
-                <button
-                    onClick={handleRun}
-                    disabled={props.isPlaying}
-                    className="w-full h-11 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-[13px] transition-all shadow-md shadow-indigo-500/20 disabled:opacity-50"
-                >
-                    <span className="material-symbols-outlined text-[20px]">play_arrow</span>
-                    Run Operation
-                </button>
+                {/* Standardized Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                        onClick={props.handleExample}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[13px] font-bold transition-all shadow-sm group"
+                    >
+                        <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">auto_fix</span>
+                        Example
+                    </button>
+
+                    <button
+                        onClick={handleRun}
+                        disabled={props.isPlaying}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-500/20"
+                    >
+                        <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                        Run
+                    </button>
+                </div>
             </div>
 
             {/* Output Section */}

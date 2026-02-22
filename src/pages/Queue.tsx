@@ -3,6 +3,7 @@ import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useQueueVisualizer } from '../hooks/useQueueVisualizer';
 import { QueueControls } from '../components/queue/QueueControls';
 import { QueueTabs } from '../components/queue/QueueTabs';
+import { QueueTools, QueueTool } from '../components/queue/QueueTools';
 
 const Queue = () => {
     const {
@@ -13,9 +14,11 @@ const Queue = () => {
         playbackSpeed,
         activeOp,
         error,
-        createSize,
-        createInput,
         enqueueValue,
+        mode,
+        binaryNumInput,
+        hotPotatoPlayers,
+        hotPotatoPasses,
         currentFrame,
 
         // Setters
@@ -23,16 +26,23 @@ const Queue = () => {
         setCurrentStep,
         setPlaybackSpeed,
         setActiveOp,
-        setCreateSize,
-        setCreateInput,
         setEnqueueValue,
+        setMode,
+        setBinaryNumInput,
+        setHotPotatoPlayers,
+        setHotPotatoPasses,
 
         // Handlers
         handleEnqueue,
         handleDequeue,
         handlePeek,
-        handleCreateCustom,
-        handleCreateRandom
+        handleExample,
+        handleCanvasEnqueue,
+        handleCanvasDequeue,
+        handleCanvasClear,
+        handleCanvasUpdate,
+        handleBinaryNumbers,
+        handleHotPotato
     } = useQueueVisualizer();
 
     const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
@@ -45,7 +55,10 @@ const Queue = () => {
     const [zoom, setZoom] = useState(1);
     const [isDragging, setIsDragging] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
-    const [createStep, setCreateStep] = useState<'size' | 'values'>('size');
+
+    // Tool State
+    const [activeTool, setActiveTool] = useState<QueueTool>(null);
+    const [editPopup, setEditPopup] = useState<{ index: number, value: string, x: number, y: number } | null>(null);
 
     // Canvas Handlers
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -66,6 +79,19 @@ const Queue = () => {
         // e.preventDefault();
         const scaleAmount = -e.deltaY * 0.001;
         setZoom(prev => Math.min(Math.max(0.5, prev + scaleAmount), 3));
+    };
+
+    const handleNodeClick = (index: number, value: string, e: React.MouseEvent) => {
+        if (activeTool === 'edit') {
+            e.stopPropagation();
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setEditPopup({
+                index,
+                value: String(value),
+                x: rect.left + rect.width / 2,
+                y: rect.top - 10
+            });
+        }
     };
 
     const handleSidebarDrag = (e: React.MouseEvent) => {
@@ -110,12 +136,14 @@ const Queue = () => {
                     <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
                         <QueueControls
                             activeOp={activeOp} setActiveOp={setActiveOp}
-                            createStep={createStep} setCreateStep={setCreateStep}
-                            createSize={createSize} setCreateSize={setCreateSize}
-                            createInput={createInput} setCreateInput={setCreateInput}
-                            handleCreateRandom={handleCreateRandom} handleCreateCustom={handleCreateCustom}
+                            mode={mode} setMode={setMode}
                             enqueueValue={enqueueValue} setEnqueueValue={setEnqueueValue}
+                            binaryNumInput={binaryNumInput} setBinaryNumInput={setBinaryNumInput}
+                            hotPotatoPlayers={hotPotatoPlayers} setHotPotatoPlayers={setHotPotatoPlayers}
+                            hotPotatoPasses={hotPotatoPasses} setHotPotatoPasses={setHotPotatoPasses}
                             handleEnqueue={handleEnqueue} handleDequeue={handleDequeue} handlePeek={handlePeek}
+                            handleBinaryNumbers={handleBinaryNumbers} handleHotPotato={handleHotPotato}
+                            handleExample={handleExample}
                             error={error}
                         />
                     </div>
@@ -183,6 +211,14 @@ const Queue = () => {
             }
         >
             {/* Canvas */}
+            <QueueTools
+                activeTool={activeTool}
+                setActiveTool={setActiveTool}
+                onEnqueue={handleCanvasEnqueue}
+                onDequeue={handleCanvasDequeue}
+                onClear={handleCanvasClear}
+            />
+
             <div
                 className={`flex-1 flex flex-col items-center justify-center overflow-hidden relative z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 onMouseDown={handleMouseDown}
@@ -207,7 +243,11 @@ const Queue = () => {
                             const pointers = currentFrame.pointers.filter(p => p.index === i);
 
                             return (
-                                <div key={i} className="relative w-16 h-16 flex-shrink-0 animate-in fade-in zoom-in duration-300">
+                                <div
+                                    key={i}
+                                    className={`relative w-16 h-16 flex-shrink-0 animate-in fade-in zoom-in duration-300 ${activeTool === 'edit' ? 'cursor-pointer hover:-translate-y-1 transition-transform' : ''}`}
+                                    onClick={(e) => handleNodeClick(i, String(val), e)}
+                                >
                                     {/* Value Box */}
                                     <div className={`
                                             w-full h-full rounded-lg flex items-center justify-center text-lg font-mono font-bold shadow-md border-2 transition-all duration-300
@@ -244,6 +284,51 @@ const Queue = () => {
                         })}
                     </div>
                 </div>
+
+                {/* Edit Popup */}
+                {editPopup && (
+                    <div
+                        className="fixed z-50 bg-white dark:bg-[#1e1c33] p-2 rounded-lg shadow-xl border border-gray-200 dark:border-[#383564] flex gap-2 animate-in zoom-in-95 duration-200"
+                        style={{
+                            left: editPopup.x,
+                            top: editPopup.y,
+                            transform: 'translate(-50%, -100%)'
+                        }}
+                    >
+                        <input
+                            type="text"
+                            value={editPopup.value}
+                            onChange={(e) => setEditPopup({ ...editPopup, value: e.target.value })}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleCanvasUpdate(editPopup.index, editPopup.value);
+                                    setEditPopup(null);
+                                    setActiveTool(null);
+                                } else if (e.key === 'Escape') {
+                                    setEditPopup(null);
+                                }
+                            }}
+                            autoFocus
+                            className="w-20 px-2 py-1 bg-gray-50 dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                        <button
+                            onClick={() => {
+                                handleCanvasUpdate(editPopup.index, editPopup.value);
+                                setEditPopup(null);
+                                setActiveTool(null);
+                            }}
+                            className="px-2 py-1 bg-primary text-white rounded text-xs font-bold hover:bg-indigo-500"
+                        >
+                            Save
+                        </button>
+                        <button
+                            onClick={() => setEditPopup(null)}
+                            className="px-2 py-1 bg-gray-200 dark:bg-[#272546] text-gray-600 dark:text-gray-300 rounded text-xs font-bold hover:bg-gray-300 dark:hover:bg-[#383564]"
+                        >
+                            <span className="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                    </div>
+                )}
 
             </div>
 

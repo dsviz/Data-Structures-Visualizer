@@ -830,6 +830,58 @@ export const useLinkedListVisualizer = () => {
         }
     };
 
+    const handleExample = () => {
+        if (mode === 'apps') {
+            // For now, apps might be things like 'findMiddleNode', 'reverseList', etc.
+            // These don't usually require special input, but we can set defaults if needed.
+            setInputValue("42");
+            setInputIndex("2");
+        } else {
+            const currentSize = initialNodes.length;
+            const validSize = currentSize > 0 ? currentSize : 5;
+            const vals = Array.from({ length: validSize }, () => Math.floor(Math.random() * 99) + 1);
+            setInitialNodes(vals);
+            setCreateInput(vals.join(', '));
+            setCreateSize(validSize.toString());
+            setFrames([createFrame(vals, [], [], 0, "Example List Loaded", PSEUDOCODE.create, "create")]);
+            setCurrentStep(0);
+            setIsPlaying(false);
+        }
+    };
+
+    const handleCanvasAdd = () => {
+        if (initialNodes.length >= MAX_NODES) { setError(`Max capacity ${MAX_NODES} reached`); return; }
+        const vals = [...initialNodes, Math.floor(Math.random() * 99) + 1];
+        setInitialNodes(vals);
+        setFrames([createFrame(vals, [], [], 0, "Node Added", [], "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasDelete = (index: number) => {
+        const vals = initialNodes.filter((_, i) => i !== index);
+        setInitialNodes(vals);
+        setFrames([createFrame(vals, [], [], 0, "Node Removed", [], "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasUpdate = (index: number, val: number) => {
+        const vals = [...initialNodes];
+        vals[index] = val;
+        setInitialNodes(vals);
+        setFrames([createFrame(vals, [], [], 0, "Node Updated", [], "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasClear = () => {
+        setInitialNodes([]);
+        setFrames([createFrame([], [], [], 0, "List Cleared", [], "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
     // --- Playback Effect ---
     useEffect(() => {
         if (isPlaying && frames.length > 0) {
@@ -881,6 +933,11 @@ export const useLinkedListVisualizer = () => {
         setListType,
 
         // Handlers
-        runAction
+        runAction,
+        handleExample,
+        handleCanvasAdd,
+        handleCanvasDelete,
+        handleCanvasUpdate,
+        handleCanvasClear
     };
 };

@@ -597,50 +597,62 @@ export const useStackVisualizer = () => {
         runSimulation(result);
     };
 
-    const handleCreateCustom = () => {
-        const size = parseInt(createSize);
-        if (isNaN(size) || size <= 0 || size > MAX_CAPACITY) return;
+    const handleCanvasPush = () => {
+        const currentStack = initialStacks[activeStackIndex] || [];
+        if (currentStack.length >= MAX_CAPACITY) { setError("Stack Overflow"); return; }
+        const newVal = Math.floor(Math.random() * 99) + 1;
 
-        let vals: StackItem[] = [];
-        if (createInput.trim()) {
-            vals = createInput.split(',')
-                .map(s => s.trim())
-                .filter(s => s !== '')
-                .map(s => {
-                    const n = parseInt(s);
-                    return isNaN(n) ? s : n;
-                });
-        }
-
-        if (vals.length > size) vals = vals.slice(0, size);
-
-        // Update ONLY active stack
         const newStacks = [...initialStacks];
-        // Ensure previous stacks exist
         while (newStacks.length <= activeStackIndex) newStacks.push([]);
-
-        newStacks[activeStackIndex] = vals;
+        newStacks[activeStackIndex] = [...currentStack, newVal];
 
         setInitialStacks(newStacks);
-        setFrames([createFrame(newStacks, [], [{ index: vals.length - 1, label: 'top', color: 'primary' }], 2, `Stack ${activeStackIndex + 1} Initialized (Size ${vals.length})`, "CREATE")]);
+        setFrames([createFrame(newStacks, [], [{ index: newStacks[activeStackIndex].length - 1, label: 'top', color: 'primary' }], 0, `Pushed ${newVal}`, "None")]);
         setCurrentStep(0);
-        setIsPlaying(false);
+        setError(null);
     };
 
-    const handleCreateRandom = () => {
-        const size = parseInt(createSize);
-        const len = (isNaN(size) || size < 1 || size > MAX_CAPACITY) ? 5 : size;
-        const vals = Array.from({ length: len }, () => Math.floor(Math.random() * 99) + 1);
+    const handleCanvasPop = () => {
+        const currentStack = initialStacks[activeStackIndex] || [];
+        if (currentStack.length === 0) { setError("Stack Underflow"); return; }
 
         const newStacks = [...initialStacks];
-        while (newStacks.length <= activeStackIndex) newStacks.push([]);
-        newStacks[activeStackIndex] = vals;
+        const newStack = [...currentStack];
+        newStack.pop();
+        newStacks[activeStackIndex] = newStack;
 
         setInitialStacks(newStacks);
-        setCreateInput(vals.join(', '));
-        setFrames([createFrame(newStacks, [], [{ index: vals.length - 1, label: 'top', color: 'primary' }], 2, `Random Stack ${activeStackIndex + 1} (Size ${len}) Created`, "CREATE")]);
+        const pointers: Pointer[] = newStack.length > 0 ? [{ index: newStack.length - 1, label: 'top', color: 'primary' }] : [];
+        setFrames([createFrame(newStacks, [], pointers, 0, "Popped top element", "None")]);
         setCurrentStep(0);
-        setIsPlaying(false);
+        setError(null);
+    };
+
+    const handleCanvasClear = () => {
+        const newStacks = [...initialStacks];
+        while (newStacks.length <= activeStackIndex) newStacks.push([]);
+        newStacks[activeStackIndex] = [];
+
+        setInitialStacks(newStacks);
+        setFrames([createFrame(newStacks, [], [], 0, "Stack Cleared", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasUpdate = (index: number, newValue: string) => {
+        const currentStack = initialStacks[activeStackIndex] || [];
+        const newStacks = [...initialStacks];
+        const newStack = [...currentStack];
+        if (index >= 0 && index < newStack.length) {
+            newStack[index] = newValue;
+            newStacks[activeStackIndex] = newStack;
+
+            setInitialStacks(newStacks);
+            const pointers: Pointer[] = newStack.length > 0 ? [{ index: newStack.length - 1, label: 'top', color: 'primary' }] : [];
+            setFrames([createFrame(newStacks, [index], pointers, 0, `Updated index ${index} to ${newValue}`, "None")]);
+            setCurrentStep(0);
+            setError(null);
+        }
     };
 
     // Playback Effect
@@ -734,6 +746,34 @@ export const useStackVisualizer = () => {
         setIsPlaying(true);
     };
 
+    const handleExample = () => {
+        if (mode === 'applications') {
+            switch (activeOp) {
+                case 'app_reverse': setAppInput("ALGORITHM"); break;
+                case 'app_balanced_parentheses': setBalancedInput("{[()]}"); break;
+                case 'app_postfix_eval': setPostfixInput("10 5 + 2 *"); break;
+                case 'app_browser_history': setBrowserInput("github.com"); break;
+                default: break;
+            }
+        } else {
+            const currentStack = initialStacks[activeStackIndex] || [];
+            const currentSize = currentStack.length;
+            const validSize = currentSize > 0 ? currentSize : 5;
+            const vals = Array.from({ length: validSize }, () => Math.floor(Math.random() * 99) + 1);
+
+            const newStacks = [...initialStacks];
+            while (newStacks.length <= activeStackIndex) newStacks.push([]);
+            newStacks[activeStackIndex] = vals;
+
+            setInitialStacks(newStacks);
+            setCreateInput(vals.join(', '));
+            setCreateSize(validSize.toString());
+            setFrames([createFrame(newStacks, [], [{ index: vals.length - 1, label: 'top', color: 'primary' }], 2, "Example Stack Loaded", "EXAMPLE")]);
+            setCurrentStep(0);
+            setIsPlaying(false);
+        }
+    };
+
     return {
         // State
         initialStacks,
@@ -777,13 +817,16 @@ export const useStackVisualizer = () => {
         handlePush,
         handlePop,
         handlePeek,
-        handleCreateCustom,
-        handleCreateRandom,
+        handleCanvasPush,
+        handleCanvasPop,
+        handleCanvasClear,
+        handleCanvasUpdate,
         handleReverseString,
         handleBalancedParentheses,
         handlePostfixEval,
         handleBrowserVisit,
         handleBrowserBack,
-        handleBrowserForward
+        handleBrowserForward,
+        handleExample
     };
 };

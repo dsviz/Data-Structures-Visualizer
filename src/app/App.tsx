@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar'
+import MobileWarning from '../components/ui/MobileWarning'
 import Home from '../pages/Home'
 import Arrays from '../pages/Arrays'
 import Graphs from '../pages/Graphs'
@@ -21,6 +22,7 @@ function AppContent() {
   const { isNavbarVisible } = useLayout();
   return (
     <div className="flex flex-col h-screen">
+      <MobileWarning />
       {isNavbarVisible && <Navbar />}
       <main className="flex-1 overflow-auto">
         <Routes>

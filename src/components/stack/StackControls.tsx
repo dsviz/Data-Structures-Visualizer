@@ -1,23 +1,12 @@
 import React, { useEffect } from 'react';
 import { MAX_CAPACITY, Operation } from '../../hooks/useStackVisualizer';
+import { Dropdown } from '../ui/Dropdown';
 
 interface StackControlsProps {
     mode: 'standard' | 'applications';
     setMode: (mode: 'standard' | 'applications') => void;
     activeOp: Operation;
     setActiveOp: React.Dispatch<React.SetStateAction<Operation>>;
-    activeStackIndex: number;
-    setActiveStackIndex: (index: number) => void;
-
-    // Create
-    createStep: 'size' | 'values';
-    setCreateStep: (step: 'size' | 'values') => void;
-    createSize: string;
-    setCreateSize: (size: string) => void;
-    createInput: string;
-    setCreateInput: (input: string) => void;
-    handleCreateRandom: () => void;
-    handleCreateCustom: () => void;
 
     // Operations
     pushValue: string;
@@ -42,23 +31,23 @@ interface StackControlsProps {
     handleBrowserBack: () => void;
     handleBrowserForward: () => void;
 
+    handleExample: () => void;
     error: string | null;
     currentFrame: any;
 }
 
 export const StackControls: React.FC<StackControlsProps> = ({
-    mode, setMode, activeOp, setActiveOp, activeStackIndex, setActiveStackIndex,
-    createStep, setCreateStep, createSize, setCreateSize, createInput, setCreateInput, handleCreateRandom, handleCreateCustom,
+    mode, setMode, activeOp, setActiveOp,
     pushValue, setPushValue, handlePush, handlePop, handlePeek,
     appInput, setAppInput, handleReverseString,
     balancedInput, setBalancedInput, handleBalancedParentheses,
     postfixInput, setPostfixInput, handlePostfixEval,
     browserInput, setBrowserInput, handleBrowserVisit, handleBrowserBack, handleBrowserForward,
+    handleExample,
     error, currentFrame
 }) => {
 
     const OPERATIONS = mode === 'standard' ? [
-        { id: 'create', label: 'Initialize Stack' },
         { id: 'push', label: 'Push Element' },
         { id: 'pop', label: 'Pop Element' },
         { id: 'peek', label: 'Peek Top' },
@@ -112,81 +101,33 @@ export const StackControls: React.FC<StackControlsProps> = ({
                     </div>
                 </div>
 
-                {/* Stack Choice (Standard Only) */}
-                {mode === 'standard' && (
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Active Stack</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {[0, 1].map(idx => (
-                                <button
-                                    key={idx}
-                                    onClick={() => setActiveStackIndex(idx)}
-                                    className={`py-2 text-[11px] font-bold rounded-lg border transition-all ${activeStackIndex === idx ? 'bg-primary/10 border-primary text-primary shadow-sm' : 'border-gray-200 dark:border-[#272546] text-gray-400 hover:bg-gray-50'}`}
-                                >
-                                    Stack {idx + 1}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Operation Dropdown */}
                 <div className="space-y-1.5">
                     <label className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-[#9794c7]">Operation</label>
-                    <div className="relative">
-                        <select
-                            value={activeOp || ''}
-                            onChange={(e) => setActiveOp(e.target.value as Operation)}
-                            className="w-full appearance-none bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#272546] text-slate-700 dark:text-gray-300 text-sm rounded-lg pl-3 pr-10 py-2.5 outline-none focus:ring-2 focus:ring-primary transition-colors cursor-pointer shadow-sm"
-                        >
-                            {OPERATIONS.map(op => (
-                                <option key={op.id} value={op.id}>{op.label}</option>
-                            ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
-                    </div>
+                    <Dropdown
+                        value={activeOp || ''}
+                        options={OPERATIONS.map(op => ({ value: op.id, label: op.label }))}
+                        onChange={(val) => setActiveOp(val as Operation)}
+                        placeholder="Select Operation..."
+                    />
                 </div>
 
                 {/* Dynamic Inputs Area */}
                 <div className="animate-in fade-in slide-in-from-top-2">
-                    {activeOp === 'create' && (
-                        <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                            {createStep === 'size' ? (
-                                <div className="space-y-3">
-                                    <div className="space-y-1">
-                                        <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Capacity (Max {MAX_CAPACITY})</span>
-                                        <input type="number" value={createSize} onChange={e => setCreateSize(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none mt-1" />
-                                    </div>
-                                    <button onClick={() => setCreateStep('values')} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Initialize & Next</button>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <button onClick={() => setCreateStep('size')} className="text-gray-400 hover:text-primary transition-colors"><span className="material-symbols-outlined text-base">arrow_back</span></button>
-                                        <span className="text-xs font-bold text-gray-500">Add Values</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={handleCreateRandom} className="w-full bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#383564] hover:bg-gray-50 text-gray-700 dark:text-white text-xs font-bold py-2 rounded-lg">Randomize</button>
-                                        <button onClick={handleCreateCustom} className="w-full bg-primary text-white text-xs font-bold py-2 rounded-lg">Apply</button>
-                                    </div>
-                                    <input value={createInput} onChange={e => setCreateInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-primary outline-none" placeholder="e.g. 10, 20, 30" />
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     {activeOp === 'push' && (
                         <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Value to Push</span>
                             <input type="text" value={pushValue} onChange={e => setPushValue(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm text-center font-bold" />
-                            <button onClick={handlePush} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">Push to Stack</button>
                         </div>
                     )}
 
                     {(activeOp === 'pop' || activeOp === 'peek') && (
-                        <button onClick={handleRun} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 shadow-primary/20">
-                            Run {activeOp === 'pop' ? 'Pop' : 'Peek'}
-                        </button>
+                        <div className="p-4 rounded-xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5">
+                            <p className="text-xs text-gray-500 italic leading-relaxed">
+                                {activeOp === 'pop' ? 'Remove and return the top element of the stack.' : 'View the top element without removing it.'}
+                            </p>
+                        </div>
                     )}
 
                     {/* App Specific Inputs */}
@@ -194,7 +135,6 @@ export const StackControls: React.FC<StackControlsProps> = ({
                         <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Input Text</span>
                             <input type="text" value={appInput} onChange={e => setAppInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" maxLength={MAX_CAPACITY} />
-                            <button onClick={handleReverseString} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Run Reversal</button>
                         </div>
                     )}
 
@@ -202,7 +142,6 @@ export const StackControls: React.FC<StackControlsProps> = ({
                         <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Expression</span>
                             <input type="text" value={balancedInput} onChange={e => setBalancedInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm" />
-                            <button onClick={handleBalancedParentheses} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Check Balance</button>
                         </div>
                     )}
 
@@ -210,7 +149,6 @@ export const StackControls: React.FC<StackControlsProps> = ({
                         <div className="space-y-3 bg-gray-50/50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">Postfix Expression</span>
                             <input type="text" value={postfixInput} onChange={e => setPostfixInput(e.target.value)} className="w-full bg-white dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded-lg px-3 py-2 text-sm font-mono" placeholder="e.g. 5 3 + 2 *" />
-                            <button onClick={handlePostfixEval} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg">Evaluate</button>
                         </div>
                     )}
 
@@ -222,9 +160,27 @@ export const StackControls: React.FC<StackControlsProps> = ({
                                 <button onClick={handleBrowserBack} className="bg-gray-100 dark:bg-[#272546] hover:bg-gray-200 dark:hover:bg-[#383564] text-slate-700 dark:text-white text-[11px] font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-colors"><span className="material-symbols-outlined text-sm">arrow_back</span> Back</button>
                                 <button onClick={handleBrowserForward} className="bg-gray-100 dark:bg-[#272546] hover:bg-gray-200 dark:hover:bg-[#383564] text-slate-700 dark:text-white text-[11px] font-bold py-2 rounded-lg flex items-center justify-center gap-1 transition-colors">Forward <span className="material-symbols-outlined text-sm">arrow_forward</span></button>
                             </div>
-                            <button onClick={handleBrowserVisit} className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm font-bold">Visit Page</button>
                         </div>
                     )}
+                </div>
+
+                {/* Standardized Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                    <button
+                        onClick={handleExample}
+                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-[13px] font-bold transition-all shadow-sm group"
+                    >
+                        <span className="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">auto_fix</span>
+                        Example
+                    </button>
+
+                    <button
+                        onClick={handleRun}
+                        className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-500/20 ${activeOp === 'pop' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'}`}
+                    >
+                        <span className="material-symbols-outlined text-[20px]">play_arrow</span>
+                        Run
+                    </button>
                 </div>
 
                 {/* Error Display */}

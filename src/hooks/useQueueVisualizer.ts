@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 export { QUEUE_CODE } from '../data/QueueCode';
 
 // --- Types ---
-export type Operation = 'create' | 'enqueue' | 'dequeue' | 'peek' | null;
+export type Operation = 'create' | 'enqueue' | 'dequeue' | 'peek' | 'binaryNum' | 'hotPotato' | null;
 export type QueueItem = number | string | null;
 
-export const MAX_CAPACITY = 8;
+export const MAX_CAPACITY = 15;
 export const DEFAULT_QUEUE = [10, 20, 30];
 
 export interface Pointer {
@@ -34,7 +34,9 @@ export const COMPLEXITY = {
     enqueue: { best: 'O(1)', avg: 'O(1)', worst: 'O(1)', space: 'O(1)' },
     dequeue: { best: 'O(1)', avg: 'O(1)', worst: 'O(1)', space: 'O(1)' },
     peek: { best: 'O(1)', avg: 'O(1)', worst: 'O(1)', space: 'O(1)' },
-    create: { best: 'O(1)', avg: 'O(1)', worst: 'O(1)', space: 'O(N)' }
+    create: { best: 'O(1)', avg: 'O(1)', worst: 'O(1)', space: 'O(N)' },
+    binaryNum: { best: 'O(N)', avg: 'O(N)', worst: 'O(N)', space: 'O(N)' },
+    hotPotato: { best: 'O(N*K)', avg: 'O(N*K)', worst: 'O(N*K)', space: 'O(N)' }
 };
 
 // --- Pseudocode Data ---
@@ -61,6 +63,23 @@ export const PSEUDOCODE = {
         "allocate memory for size N",
         "front = -1, rear = -1",
         "return queue reference"
+    ],
+    binaryNum: [
+        "queue.enqueue('1')",
+        "while N > 0:",
+        "  current = queue.dequeue()",
+        "  print(current)",
+        "  queue.enqueue(current + '0')",
+        "  queue.enqueue(current + '1')",
+        "  N--"
+    ],
+    hotPotato: [
+        "for player in players: queue.enqueue(player)",
+        "while queue.size > 1:",
+        "  for i = 0 to K:",
+        "    queue.enqueue(queue.dequeue())",
+        "  queue.dequeue() // eliminate",
+        "return queue.dequeue() // winner"
     ]
 };
 
@@ -121,12 +140,17 @@ export const useQueueVisualizer = () => {
     // UI State
     const [activeOp, setActiveOp] = useState<Operation>(null);
     const [error, setError] = useState<string | null>(null);
-    const [mode, setMode] = useState<'standard'>('standard');
+    const [mode, setMode] = useState<'standard' | 'apps'>('standard');
 
     // Inputs
     const [createSize, setCreateSize] = useState('5');
     const [createInput, setCreateInput] = useState(DEFAULT_QUEUE.join(', '));
     const [enqueueValue, setEnqueueValue] = useState('42');
+
+    // App Inputs
+    const [binaryNumInput, setBinaryNumInput] = useState('5');
+    const [hotPotatoPlayers, setHotPotatoPlayers] = useState('6');
+    const [hotPotatoPasses, setHotPotatoPasses] = useState('2');
 
     const timerRef = useRef<number | null>(null);
 
@@ -306,20 +330,156 @@ export const useQueueVisualizer = () => {
         setIsPlaying(false);
     };
 
-    const handleCreateRandom = () => {
-        const size = parseInt(createSize);
-        const len = (isNaN(size) || size < 1 || size > MAX_CAPACITY) ? 5 : size;
-        const vals = Array.from({ length: len }, () => Math.floor(Math.random() * 99) + 1);
+
+
+    const handleExample = () => {
+        const currentSize = initialQueue.length;
+        const validSize = currentSize > 0 ? currentSize : 5;
+        const vals = Array.from({ length: validSize }, () => Math.floor(Math.random() * 99) + 1);
 
         setInitialQueue(vals);
         setCreateInput(vals.join(', '));
+        setCreateSize(validSize.toString());
 
         const front = 0;
         const rear = vals.length - 1;
 
-        setFrames([createFrame(vals, [], [{ index: front, label: 'front', color: 'primary' }, { index: rear, label: 'rear', color: 'primary' }], 2, `Random Queue (Size ${len}) Created`, "CREATE")]);
+        setFrames([createFrame(vals, [], [{ index: front, label: 'front', color: 'primary' }, { index: rear, label: 'rear', color: 'primary' }], 2, "Example Queue Loaded", "EXAMPLE")]);
         setCurrentStep(0);
         setIsPlaying(false);
+    };
+
+    const handleCanvasEnqueue = () => {
+        if (initialQueue.length >= MAX_CAPACITY) { setError("Queue Overflow"); return; }
+        const newVal = Math.floor(Math.random() * 99) + 1;
+        const vals = [...initialQueue, newVal];
+        setInitialQueue(vals);
+
+        const front = 0;
+        const rear = vals.length - 1;
+        setFrames([createFrame(vals, [], [{ index: front, label: 'front', color: 'primary' }, { index: rear, label: 'rear', color: 'primary' }], 0, `Enqueued ${newVal}`, "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasDequeue = () => {
+        if (initialQueue.length === 0) { setError("Queue Underflow"); return; }
+        const vals = initialQueue.slice(1);
+        setInitialQueue(vals);
+
+        const front = vals.length > 0 ? 0 : -1;
+        const rear = vals.length > 0 ? vals.length - 1 : -1;
+        const pointers: Pointer[] = [];
+        if (front !== -1) pointers.push({ index: front, label: 'front', color: 'primary' });
+        if (rear !== -1) pointers.push({ index: rear, label: 'rear', color: 'primary' });
+
+        setFrames([createFrame(vals, [], pointers, 0, "Dequeued front element", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasClear = () => {
+        setInitialQueue([]);
+        setFrames([createFrame([], [], [], 0, "Queue Cleared", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasUpdate = (index: number, newValue: string) => {
+        const vals = [...initialQueue];
+        vals[index] = newValue;
+        setInitialQueue(vals);
+
+        const front = vals.length > 0 ? 0 : -1;
+        const rear = vals.length > 0 ? vals.length - 1 : -1;
+        const pointers: Pointer[] = [];
+        if (front !== -1) pointers.push({ index: front, label: 'front', color: 'primary' });
+        if (rear !== -1) pointers.push({ index: rear, label: 'rear', color: 'primary' });
+
+        setFrames([createFrame(vals, [index], pointers, 0, `Updated index ${index} to ${newValue}`, "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleBinaryNumbers = () => {
+        const n = parseInt(binaryNumInput);
+        if (isNaN(n) || n < 1 || n > 15) {
+            setError("Please enter a valid number between 1 and 15");
+            return;
+        }
+
+        const newFrames: Frame[] = [];
+        let currQueue: string[] = ["1"];
+
+        newFrames.push(createFrame(currQueue, [0], [{ index: 0, label: 'front', color: 'primary' }, { index: 0, label: 'rear', color: 'primary' }], 0, `Initial Queue: ["1"]`, "APP"));
+
+        for (let i = 1; i <= n; i++) {
+            const current = currQueue[0];
+            currQueue = currQueue.slice(1);
+
+            const s1 = current + "0";
+            const s2 = current + "1";
+            if (currQueue.length < MAX_CAPACITY) currQueue.push(s1);
+            if (currQueue.length < MAX_CAPACITY) currQueue.push(s2);
+
+            const front = currQueue.length > 0 ? 0 : -1;
+            const rear = currQueue.length > 0 ? currQueue.length - 1 : -1;
+            const ptrs: Pointer[] = [];
+            if (front !== -1) ptrs.push({ index: front, label: 'front', color: 'primary' });
+            if (rear !== -1) ptrs.push({ index: rear, label: 'rear', color: 'primary' });
+
+            newFrames.push(createFrame(currQueue, [], ptrs, 0, `Generated ${current}. Appended ${s1}, ${s2}`, "APP"));
+        }
+
+        setInitialQueue([]);
+        setFrames(newFrames);
+        setCurrentStep(0);
+        setIsPlaying(true);
+        setError(null);
+    };
+
+    const handleHotPotato = () => {
+        const p = parseInt(hotPotatoPlayers);
+        const k = parseInt(hotPotatoPasses);
+
+        if (isNaN(p) || p < 2 || p > MAX_CAPACITY) {
+            setError(`Players must be between 2 and ${MAX_CAPACITY}`);
+            return;
+        }
+        if (isNaN(k) || k < 0) {
+            setError("Passes must be >= 0");
+            return;
+        }
+
+        const newFrames: Frame[] = [];
+        let currQueue = Array.from({ length: p }, (_, i) => `P${i + 1}`);
+
+        newFrames.push(createFrame(currQueue, [], [{ index: 0, label: 'front', color: 'primary' }, { index: currQueue.length - 1, label: 'rear', color: 'primary' }], 0, `Initialized with ${p} players`, "APP"));
+
+        while (currQueue.length > 1) {
+            for (let i = 0; i < k; i++) {
+                const frontElement = currQueue[0] as string;
+                currQueue = [...currQueue.slice(1), frontElement];
+                newFrames.push(createFrame(currQueue, [currQueue.length - 1], [{ index: 0, label: 'front', color: 'primary' }, { index: currQueue.length - 1, label: 'rear', color: 'primary' }], 0, `Passed potato to ${frontElement}`, "APP"));
+            }
+            const eliminated = currQueue[0] as string;
+            currQueue = currQueue.slice(1);
+
+            const ptrs: Pointer[] = [];
+            if (currQueue.length > 0) {
+                ptrs.push({ index: 0, label: 'front', color: 'primary' });
+                ptrs.push({ index: currQueue.length - 1, label: 'rear', color: 'primary' });
+            }
+            newFrames.push(createFrame(currQueue, [], ptrs, 0, `${eliminated} is eliminated!`, "APP"));
+        }
+
+        newFrames.push(createFrame(currQueue, [0], [{ index: 0, label: 'front', color: 'primary' }, { index: 0, label: 'rear', color: 'primary' }], 0, `${currQueue[0]} wins the game!`, "APP"));
+
+        setInitialQueue([]);
+        setFrames(newFrames);
+        setCurrentStep(0);
+        setIsPlaying(true);
+        setError(null);
     };
 
     // Playback Effect
@@ -367,6 +527,9 @@ export const useQueueVisualizer = () => {
         createSize,
         createInput,
         enqueueValue,
+        binaryNumInput,
+        hotPotatoPlayers,
+        hotPotatoPasses,
         currentFrame,
 
         // Setters
@@ -379,12 +542,21 @@ export const useQueueVisualizer = () => {
         setCreateSize,
         setCreateInput,
         setEnqueueValue,
+        setBinaryNumInput,
+        setHotPotatoPlayers,
+        setHotPotatoPasses,
 
         // Handlers
         handleEnqueue,
         handleDequeue,
         handlePeek,
         handleCreateCustom,
-        handleCreateRandom
+        handleExample,
+        handleCanvasEnqueue,
+        handleCanvasDequeue,
+        handleCanvasClear,
+        handleCanvasUpdate,
+        handleBinaryNumbers,
+        handleHotPotato
     };
 };

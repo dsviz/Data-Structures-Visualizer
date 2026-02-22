@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { ArraysControls } from '../components/arrays/ArraysControls';
 import { ArraysTabs } from '../components/arrays/ArraysTabs';
+import { ArrayTools, ArrayTool } from '../components/arrays/ArrayTools';
 import { useArraysVisualizer } from '../hooks/useArraysVisualizer';
 
 const Arrays = () => {
@@ -16,15 +17,13 @@ const Arrays = () => {
         activeOp,
         searchType,
         error,
-        createStep,
-        createSize,
-        createInput,
         searchInput,
         insertIndex,
         insertValue,
         removeIndex,
         updateIndex,
         updateValue,
+        twoSumTarget,
         currentFrame,
 
         // Setters
@@ -34,24 +33,31 @@ const Arrays = () => {
         setPlaybackSpeed,
         setActiveOp,
         setSearchType,
-        setCreateStep,
-        setCreateSize,
-        setCreateInput,
         setSearchInput,
         setInsertIndex,
         setInsertValue,
         setRemoveIndex,
         setUpdateIndex,
         setUpdateValue,
+        setTwoSumTarget,
 
         // Handlers
-        handleCreateCustom,
-        handleCreateRandom,
         handleSearch,
         handleInsert,
         handleRemove,
-        handleUpdate
+        handleUpdate,
+        handleReverse,
+        handleTwoSum,
+        handleCycleDetection,
+        handleExample,
+        handleCanvasAdd,
+        handleCanvasDelete,
+        handleCanvasUpdate,
+        handleCanvasClear
     } = useArraysVisualizer();
+
+    const [activeTool, setActiveTool] = useState<ArrayTool>(null);
+    const [editPopup, setEditPopup] = useState<{ index: number, val: number, x: number, y: number } | null>(null);
 
     // --- Layout State ---
     const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
@@ -109,6 +115,33 @@ const Arrays = () => {
         }
     };
 
+    const handleElementClick = (index: number, val: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (activeTool === 'delete') {
+            handleCanvasDelete(index);
+        } else if (activeTool === 'edit') {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setEditPopup({
+                index,
+                val: val || 0,
+                x: rect.left + rect.width / 2,
+                y: rect.bottom + 10
+            });
+        }
+    };
+
+    const handleEditSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && editPopup) {
+            const newVal = parseInt((e.target as HTMLInputElement).value);
+            if (!isNaN(newVal)) {
+                handleCanvasUpdate(editPopup.index, newVal);
+            }
+            setEditPopup(null);
+        } else if (e.key === 'Escape') {
+            setEditPopup(null);
+        }
+    };
+
     // Auto-Resize Canvas
     useEffect(() => {
         if (containerRef.current) {
@@ -135,10 +168,6 @@ const Arrays = () => {
                         <ArraysControls
                             activeOp={activeOp} setActiveOp={setActiveOp}
                             mode={mode} setMode={setMode}
-                            createStep={createStep} setCreateStep={setCreateStep}
-                            createSize={createSize} setCreateSize={setCreateSize}
-                            createInput={createInput} setCreateInput={setCreateInput}
-                            handleCreateRandom={handleCreateRandom} handleCreateCustom={handleCreateCustom}
                             searchType={searchType} setSearchType={setSearchType}
                             searchInput={searchInput} setSearchInput={setSearchInput}
                             handleSearch={handleSearch}
@@ -150,6 +179,10 @@ const Arrays = () => {
                             updateIndex={updateIndex} setUpdateIndex={setUpdateIndex}
                             updateValue={updateValue} setUpdateValue={setUpdateValue}
                             handleUpdate={handleUpdate}
+                            twoSumTarget={twoSumTarget} setTwoSumTarget={setTwoSumTarget}
+                            handleReverse={handleReverse} handleTwoSum={handleTwoSum}
+                            handleCycleDetection={handleCycleDetection}
+                            handleExample={handleExample}
                             error={error}
                         />
                     </div>
@@ -202,9 +235,9 @@ const Arrays = () => {
                         <button onClick={() => setCurrentStep(frames.length - 1)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="End"><span className="material-symbols-outlined text-[20px]">skip_next</span></button>
                     </div>
                     <div className="flex-1 flex flex-col justify-center gap-1.5" >
-                        <div className="flex justify-between text-xs font-medium text-gray-400">
-                            <span className="font-mono">Step {currentStep + 1}/{frames.length || 1}</span>
-                            <span className="truncate max-w-[200px]">{currentFrame.description}</span>
+                        <div className="flex justify-between text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest">
+                            <span className="text-primary/70">Step {currentStep + 1}/{frames.length || 1}</span>
+                            <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-[#272546] rounded-full overflow-hidden relative cursor-pointer" onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect();
@@ -222,7 +255,31 @@ const Arrays = () => {
             }
         >
             {/* Canvas */}
-            <div ref={containerRef} className={`flex-1 flex flex-col items-center justify-start pt-32 overflow-hidden relative z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel}>
+            <ArrayTools
+                activeTool={activeTool}
+                setActiveTool={(t) => { setActiveTool(t); setEditPopup(null); }}
+                onAdd={handleCanvasAdd}
+                onClear={handleCanvasClear}
+            />
+
+            {editPopup && (
+                <div
+                    className="fixed z-[100] bg-white dark:bg-[#1e1c33] p-2 rounded-lg shadow-xl border border-gray-200 dark:border-[#272546] animate-in zoom-in-95 duration-200"
+                    style={{ left: editPopup.x, top: editPopup.y, transform: 'translateX(-50%)' }}
+                >
+                    <input
+                        type="number"
+                        autoFocus
+                        defaultValue={editPopup.val}
+                        onKeyDown={handleEditSubmit}
+                        onBlur={() => setEditPopup(null)}
+                        className="w-20 bg-gray-50 dark:bg-[#121121] border border-gray-200 dark:border-[#383564] rounded px-2 py-1 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-[#1e1c33] border-t border-l border-gray-200 dark:border-[#272546] rotate-45"></div>
+                </div>
+            )}
+
+            <div ref={containerRef} className={`flex-1 flex flex-col items-center justify-start pt-32 overflow-hidden relative z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${activeTool ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} onClick={() => { if (activeTool) setEditPopup(null); }}>
                 <div ref={contentRef} className="flex flex-col items-start gap-2 transition-transform duration-75 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
                     <div className="flex gap-1 ml-1 select-none">{(currentFrame.array).map((_, i) => <div key={i} className="w-14 text-center text-xs font-mono text-gray-500">{i}</div>)}</div>
                     <div className="flex gap-1">
@@ -230,7 +287,7 @@ const Arrays = () => {
                             const highlight = currentFrame.highlights.indexOf(i) !== -1;
                             const pointers = currentFrame.pointers.filter(p => p.index === i);
                             return (
-                                <div key={i} className={`w-14 h-14 rounded flex items-center justify-center text-lg font-mono font-medium shadow-sm relative group transition-all duration-300 ${highlight ? 'bg-primary text-white border-2 border-primary scale-110 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]' : 'bg-white dark:bg-[#1c1a32] border border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'} ${val === null ? 'border-dashed opacity-50' : ''}`}>
+                                <div key={i} onClick={(e) => handleElementClick(i, val === null ? 0 : val, e)} className={`w-14 h-14 rounded flex items-center justify-center text-lg font-mono font-medium shadow-sm relative group transition-all duration-300 ${highlight ? 'bg-primary text-white border-2 border-primary scale-110 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]' : 'bg-white dark:bg-[#1c1a32] border border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'} ${val === null ? 'border-dashed opacity-50' : ''} ${activeTool ? 'hover:border-primary hover:shadow-md cursor-pointer' : ''}`}>
                                     {val === null ? 'null' : val}
                                     {pointers.map((p, pIdx) => (
                                         <div key={p.label} className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ marginTop: `-${pIdx * 24}px` }}>
@@ -242,6 +299,16 @@ const Arrays = () => {
                             );
                         })}
                     </div>
+                </div>
+            </div>
+
+            {/* Floating Description (Bottom Right) */}
+            <div className="absolute bottom-20 right-4 z-40 flex flex-col items-end gap-3 max-w-md w-full pointer-events-none">
+                <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 w-full">
+                    <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 tracking-wider">Current Operation</h4>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                        {currentFrame.description || "Ready to visualize..."}
+                    </p>
                 </div>
             </div>
 

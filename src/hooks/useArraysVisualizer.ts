@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 
 
 // --- Types ---
-export type Operation = 'create' | 'search' | 'insert' | 'remove' | 'update' | null;
+export type Operation = 'create' | 'search' | 'insert' | 'remove' | 'update' | 'reverse' | '2sum' | 'cycle_detection' | null;
 export type SearchType = 'linear' | 'binary';
 
 export const MAX_CAPACITY = 16;
@@ -29,7 +29,7 @@ export interface Frame {
 }
 
 // --- Complexity Data ---
-export const COMPLEXITY = {
+export const COMPLEXITY: Record<string, { best: string; avg: string; worst: string; space: string }> = {
     insert: { best: 'O(1)', avg: 'O(N)', worst: 'O(N)', space: 'O(1)' },
     linear: { best: 'O(1)', avg: 'O(N)', worst: 'O(N)', space: 'O(1)' },
     binary: { best: 'O(1)', avg: 'O(log N)', worst: 'O(log N)', space: 'O(1)' },
@@ -103,6 +103,7 @@ export const useArraysVisualizer = () => {
     const [removeIndex, setRemoveIndex] = useState('');
     const [updateIndex, setUpdateIndex] = useState('');
     const [updateValue, setUpdateValue] = useState('');
+    const [twoSumTarget, setTwoSumTarget] = useState('50');
 
     const timerRef = useRef<number | null>(null);
 
@@ -271,6 +272,94 @@ export const useArraysVisualizer = () => {
         return { startArr: arr, endArr: currentArr, timeline: frames };
     }
 
+    const generateReverseFrames = (arr: (number | null)[]) => {
+        const frames: Frame[] = [];
+        const opName = 'reverse';
+        let currentArr = [...arr];
+        const size = currentArr.filter(x => x !== null).length;
+        let left = 0;
+        let right = size - 1;
+
+        while (left < right) {
+            frames.push(createFrame(currentArr, [left, right], [{ index: left, label: 'L', color: 'primary' }, { index: right, label: 'R', color: 'primary' }], 1, `Check pointers L=${left}, R=${right}`, opName));
+
+            // Swap
+            const temp = currentArr[left];
+            currentArr[left] = currentArr[right];
+            currentArr[right] = temp;
+
+            frames.push(createFrame(currentArr, [left, right], [{ index: left, label: 'L', color: 'green' }, { index: right, label: 'R', color: 'green' }], 2, `Swap elements`, opName));
+
+            left++;
+            right--;
+        }
+
+        frames.push(createFrame(currentArr, [], [], 3, "Reversal complete", opName));
+        return { startArr: arr, endArr: currentArr, timeline: frames };
+    };
+
+    const generateTwoSumFrames = (arr: (number | null)[], target: number) => {
+        const frames: Frame[] = [];
+        const opName = '2sum';
+        const sortedArr = [...arr].filter(x => x !== null).sort((a, b) => (a as number) - (b as number));
+        let left = 0;
+        let right = sortedArr.length - 1;
+
+        frames.push(createFrame(sortedArr, [], [], 0, "Sorted array for two-pointer approach", opName, { target }));
+
+        while (left < right) {
+            const sum = (sortedArr[left] as number) + (sortedArr[right] as number);
+            frames.push(createFrame(sortedArr, [left, right], [{ index: left, label: 'L', color: 'primary' }, { index: right, label: 'R', color: 'primary' }], 1, `Check L=${sortedArr[left]}, R=${sortedArr[right]} (Sum=${sum})`, opName, { target, sum }));
+
+            if (sum === target) {
+                frames.push(createFrame(sortedArr, [left, right], [{ index: left, label: 'L', color: 'green' }, { index: right, label: 'R', color: 'green' }], 2, `Found pair! ${sortedArr[left]} + ${sortedArr[right]} = ${target}`, opName, { target, sum }));
+                return { startArr: arr, endArr: sortedArr, timeline: frames };
+            } else if (sum < target) {
+                frames.push(createFrame(sortedArr, [left], [], 3, `Sum ${sum} < ${target}, move Left pointer`, opName, { target, sum }));
+                left++;
+            } else {
+                frames.push(createFrame(sortedArr, [right], [], 4, `Sum ${sum} > ${target}, move Right pointer`, opName, { target, sum }));
+                right--;
+            }
+        }
+
+        frames.push(createFrame(sortedArr, [], [], 5, "No pair found", opName, { target }));
+        return { startArr: arr, endArr: sortedArr, timeline: frames };
+    };
+
+    const generateCycleDetectionFrames = (arr: (number | null)[]) => {
+        const frames: Frame[] = [];
+        const opName = 'cycle_detection';
+        const currentArr = [...arr];
+        const size = currentArr.length;
+
+        // Floyd's Cycle Detection (Hare & Tortoise)
+        let slow = 0;
+        let fast = 0;
+
+        frames.push(createFrame(currentArr, [0], [{ index: 0, label: 'S,F', color: 'primary' }], 0, "Init slow, fast pointers at index 0", opName));
+
+        while (true) {
+            // Move Slow
+            slow = (currentArr[slow] as number) % size;
+            // Move Fast
+            fast = (currentArr[fast] as number) % size;
+            fast = (currentArr[fast] as number) % size;
+
+            frames.push(createFrame(currentArr, [slow, fast], [{ index: slow, label: 'S', color: 'primary' }, { index: fast, label: 'F', color: 'red' }], 1, `Slow moves 1 step to ${slow}, Fast moves 2 steps to ${fast}`, opName));
+
+            if (slow === fast) {
+                frames.push(createFrame(currentArr, [slow], [{ index: slow, label: 'MEET', color: 'green' }], 2, `Wait! slow == fast at index ${slow}. Cycle Detected!`, opName));
+                break;
+            }
+
+            // Limit iterations to prevent infinite loop if no cycle (though in array as graph it eventually meets or stops if null, but here we assume valid indices)
+            if (frames.length > 50) break;
+        }
+
+        return { startArr: arr, endArr: arr, timeline: frames };
+    };
+
     // --- Execution ---
     const runSimulation = (generatorResult: { endArr: (number | null)[], timeline: Frame[] }) => {
         setFrames(generatorResult.timeline);
@@ -318,6 +407,23 @@ export const useArraysVisualizer = () => {
         runSimulation(result);
     };
 
+    const handleReverse = () => {
+        setError(null);
+        runSimulation(generateReverseFrames(initialArray));
+    };
+
+    const handleTwoSum = () => {
+        const target = parseInt(twoSumTarget);
+        if (isNaN(target)) { setError("Invalid Target"); return; }
+        setError(null);
+        runSimulation(generateTwoSumFrames(initialArray, target));
+    };
+
+    const handleCycleDetection = () => {
+        setError(null);
+        runSimulation(generateCycleDetectionFrames(initialArray));
+    };
+
     const handleCreateCustom = () => {
         const size = parseInt(createSize);
         if (isNaN(size) || size <= 0 || size > MAX_CAPACITY) { setError(`Max ${MAX_CAPACITY}`); return; }
@@ -342,6 +448,53 @@ export const useArraysVisualizer = () => {
         setCreateInput(vals.join(', '));
         setFrames([createFrame(vals, [], [], 2, `Randomized`, "create")]);
         setCurrentStep(0); setCreateStep('size');
+    };
+
+    const handleExample = () => {
+        const currentSize = initialArray.filter(x => x !== null).length;
+        const validSize = currentSize > 0 ? currentSize : 8;
+        const vals = Array.from({ length: validSize }, () => Math.floor(Math.random() * 99) + 1).sort((a, b) => a - b);
+        setError(null);
+        setInitialArray(vals);
+        setCreateInput(vals.join(', '));
+        setCreateSize(validSize.toString());
+        setFrames([createFrame(vals, [], [], 2, "Example Loaded (Randomized)", "create")]);
+        setCurrentStep(0);
+        setCreateStep('size');
+    };
+
+    const handleCanvasAdd = () => {
+        const size = initialArray.filter(x => x !== null).length;
+        if (size >= MAX_CAPACITY) { setError(`Max capacity ${MAX_CAPACITY} reached`); return; }
+        const vals = [...initialArray.filter(x => x !== null), Math.floor(Math.random() * 99) + 1];
+        setInitialArray(vals);
+        setFrames([createFrame(vals, [], [], 0, "Element Added", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasDelete = (index: number) => {
+        const vals = initialArray.filter((_, i) => i !== index);
+        setInitialArray(vals);
+        setFrames([createFrame(vals, [], [], 0, "Element Removed", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasUpdate = (index: number, val: number) => {
+        const vals = [...initialArray];
+        vals[index] = val;
+        setInitialArray(vals);
+        setFrames([createFrame(vals, [], [], 0, "Element Updated", "None")]);
+        setCurrentStep(0);
+        setError(null);
+    };
+
+    const handleCanvasClear = () => {
+        setInitialArray([]);
+        setFrames([createFrame([], [], [], 0, "Array Cleared", "None")]);
+        setCurrentStep(0);
+        setError(null);
     };
 
     // --- Playback Effect ---
@@ -383,6 +536,7 @@ export const useArraysVisualizer = () => {
         removeIndex,
         updateIndex,
         updateValue,
+        twoSumTarget,
         currentFrame,
 
         // Setters
@@ -401,13 +555,21 @@ export const useArraysVisualizer = () => {
         setRemoveIndex,
         setUpdateIndex,
         setUpdateValue,
+        setTwoSumTarget,
 
-        // Handlers
         handleCreateCustom,
         handleCreateRandom,
+        handleExample,
         handleSearch,
         handleInsert,
         handleRemove,
-        handleUpdate
+        handleUpdate,
+        handleReverse,
+        handleTwoSum,
+        handleCycleDetection,
+        handleCanvasAdd,
+        handleCanvasDelete,
+        handleCanvasUpdate,
+        handleCanvasClear
     };
 };
