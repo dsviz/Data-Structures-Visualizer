@@ -302,9 +302,9 @@ const Arrays = () => {
                 </div>
             </div>
 
-            {/* Floating Description (Bottom Right) */}
-            <div className="absolute bottom-20 right-4 z-40 flex flex-col items-end gap-3 max-w-md w-full pointer-events-none">
-                <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 w-full">
+            {/* Floating Description (Bottom Left) */}
+            <div className="absolute bottom-4 right-4 z-40 flex flex-col items-start gap-3 max-w-md w-full pointer-events-none">
+                <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-md p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 w-full animate-in slide-in-from-left-5 duration-500">
                     <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 tracking-wider">Current Operation</h4>
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
                         {currentFrame.description || "Ready to visualize..."}

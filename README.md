@@ -69,7 +69,7 @@ Follow these steps to set up the project locally on your machine.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/dsa-visualizer.git
+   git clone https://github.com/your-username/Data-Structures-Visualizer.git
    cd dsa-visualizer
    ```
 
@@ -84,7 +84,7 @@ Follow these steps to set up the project locally on your machine.
    ```
 
 4. **Open in browser:**
-   Open [http://localhost:5173](http://localhost:5173) in your web browser.
+   Open [http://localhost:5173](http://localhost:3000) in your web browser.
 
 ### Building for Production
 
