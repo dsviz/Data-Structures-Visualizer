@@ -11,21 +11,7 @@ An interactive educational web application designed to help students and develop
 ## 🎯 Key Features
 
 - ✅ **Step-by-step visual animations** of algorithms
-- ✅ **Advanced Tree Visualization**:
-  - Binary Search Tree (BST) & AVL Tree operations.
-  - Traversals (Inorder, Preorder, Postorder, BFS, Zigzag).
-  - Special views (Left, Right, Top, Bottom, Boundary).
-  - property checks (Height, Diameter, Balanced, Full, Complete).
-  - LCA, Mirror, and more.
-- ✅ **Advanced Sorting Visualizations**:
-  - Tree-based recursion breakdown for Merge Sort & Quick Sort.
-  - Classic bar animations for Bubble, Selection, and Insertion Sort.
-- ✅ **Educational Context**:
-  - Real-time **Code Analysis** with dynamic value injection.
-  - **Complexity Analysis** (Time/Space) for each algorithm.
-  - **Color Legends** to explain visual states.
-  - **Step-by-step Description Overlay** for clear understanding.
-- ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment, sound effects)
+- ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment)
 - ✅ **Clean separation** of algorithm logic from visualization
 - ✅ **Modular and extensible** architecture
 - ✅ Support for **sorting, searching, trees, graphs, stacks, and queues**
@@ -38,6 +24,12 @@ An interactive educational web application designed to help students and develop
 - **Vite** - Ultra-fast development and build tool
 - **Tailwind CSS** - Utility-first styling
 
+### Backend
+- **Node.js + Express** - HTTP API layer
+- **TypeScript** - Shared types across the stack
+- **Prisma ORM** - Type-safe access to PostgreSQL
+- **PostgreSQL** - Durable relational datastore
+
 ### Visualization
 - **SVG** - For trees, graphs, linked lists
 - **HTML Canvas** - For sorting and array animations
@@ -49,66 +41,106 @@ An interactive educational web application designed to help students and develop
 
 ```
 dsa-visualizer/
+├── docs/                 # Technical documentation, diagrams, screenshots
 ├── src/                  # Frontend application (React + Vite)
 │   ├── components/       # Reusable UI components
-│   ├── hooks/            # Custom hooks (logic)
-│   ├── pages/            # Page definitions
-│   ├── data/             # Algorithm code & metadata
-│   └── context/          # React Context (Layout, etc.)
+│   ├── context/          # React context & state wrappers
+│   ├── data/             # Algorithm data constants
+│   ├── hooks/            # Custom React hooks
+│   ├── pages/            # Main application screens & visualizers
+│   └── utils/            # Helper functions
+└── server/               # Backend service (Express + Prisma)
+        ├── src/              # Application source
+        ├── prisma/           # Database schema & migrations
+        └── .env.example      # Backend environment template
 ```
 
 ## 🚀 Getting Started
 
-Follow these steps to set up the project locally on your machine.
-
 ### Prerequisites
-- **Node.js** (v18 or higher) - [Download Here](https://nodejs.org/)
-- **npm** (comes with Node.js) or **yarn**
+- Node.js (v18 or higher)
+- npm or yarn
+- PostgreSQL 14+ (Docker or local install)
 
-### Installation & Running
+### Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/dsa-visualizer.git
-   cd dsa-visualizer
-   ```
+1. **Install frontend dependencies:**
+        ```bash
+        npm install
+        ```
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+2. **Copy frontend environment template:**
+        ```bash
+        cp .env.example .env # use: copy .env.example .env (Windows)
+        ```
+        The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
 
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
+3. **Install backend dependencies:**
+        ```bash
+        cd server
+        npm install
+        ```
 
-4. **Open in browser:**
-   Open [http://localhost:5173](http://localhost:5173) in your web browser.
+4. **Configure backend environment:**
+        ```bash
+        cp .env.example .env # use: copy .env.example .env (Windows)
+        ```
+        Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
 
-### Building for Production
+5. **Run database migrations:**
+        ```bash
+        npx prisma migrate dev
+        ```
 
-To create a production-ready build:
+6. **Seed algorithm metadata:**
+        ```bash
+        npm run prisma:seed
+        ```
+
+7. **Start backend API:**
+        ```bash
+        npm run dev
+        ```
+
+8. **Start frontend dev server (new terminal):**
+        ```bash
+        cd ..
+        npm run dev
+        ```
+
+9. **Open your browser:**
+        Navigate to `http://localhost:3000`
+
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-The output files will be in the `dist/` directory, ready to be deployed to static hosting services like Vercel, Netlify, or GitHub Pages.
+The production-ready files will be in the `dist/` directory.
+
+### Backend Testing
+
+```bash
+cd server
+npm run test
+```
+
+The Jest suite covers health checks, catalog queries, and authentication flows using mocked Prisma interactions.
 
 ## 🎨 Architecture
 
-```
-Algorithm Logic (Pure TypeScript)
-        ↓
-Step Generator
-        ↓
-Animation Engine
-        ↓
-Visualizer (SVG / Canvas)
-        ↓
-User Controls
-```
+![System Architecture](docs/architecture/high-level-architecture.png)
+
+For a comprehensive breakdown of our system design, please see our detailed [Architecture Documentation](./docs/README_DOCS.md), which includes:
+
+1. **High-Level System Architecture Diagram**
+2. **Component Interaction Diagram**
+3. **Data Flow Diagram (DFD)**
+4. **Sequence Diagram for Visualizations**
+5. **Module Dependency Diagram**
+6. **Deployment Architecture**
+7. **UML Diagrams (Class & State)**
 
 ### Key Principles
 
@@ -120,47 +152,55 @@ User Controls
 ## 📚 Algorithm & Data Structure Categories
 
 ### Data Structures
-- **Arrays** (Insert, Remove, Update, Linear Search, Binary Search)
-- **Linked Lists** (Singly, Doubly, Circular - Insert, Remove, Search)
+
+#### **Arrays**
+- **Standard Operations:** Search (Linear/Binary), Insert, Remove, Update
+- **Applications:** Array Reversal, Two Sum (Sorted), Cycle Detection (Array as Graph)
+
+#### **Linked Lists** (Singly, Doubly, Circular)
+- **Standard Operations:** Traversal (Iterative/Recursive), Insertion, Deletion, Searching, Reverse
+- **Applications:** Cycle Detection (Floyd), Merge Two Lists, Check Palindrome, Intersection Point, Odd Even Rearrange
+
+#### **Stacks**
+- **Standard Operations:** Push, Pop, Peek
+- **Applications:** Reverse String, Balanced Parentheses, Postfix Evaluator, Browser History Simulator
+
+#### **Queues**
+- **Standard Operations:** Enqueue, Dequeue, Peek
+- **Applications:** Binary Number Generator, Hot Potato Simulator
+
+#### **Trees** (General & BST & AVL)
+- **Standard Operations:** Insert, Delete, Search, Traversals (In-order, Pre-order, Post-order, BFS, Zig-Zag), Find Min/Max
+- **Applications:** Validate BST, Calculate Height/Diameter, Lowest Common Ancestor (LCA), Various Views (Left, Right, Top, Bottom)
+
+#### **Graphs** (Directed, Undirected, Weighted)
+- **Standard Operations:** BFS, DFS, Check Connectivity, Detect Cycle, Highlight Neighbors
+- **Applications:** Shortest Path (Dijkstra, A*), Minimum Spanning Tree (Prim, Kruskal), Topological Sort, Network Flow (Ford-Fulkerson)
 
 ### Sorting Algorithms
-- Bubble Sort
-- Selection Sort
-- Insertion Sort
-- Merge Sort
-- Quick Sort
-- Heap Sort
+- **Standard Sorts:** Bubble Sort, Selection Sort, Insertion Sort
+- **Advanced Sorts:** Merge Sort, Quick Sort
 
-### Searching Algorithms
-- Linear Search
-- Binary Search
-
-### Tree Operations
-- **Traversals**: Inorder, Preorder, Postorder, BFS, Zigzag
-- **BST Operations**: Insert, Delete, Search, Min, Max, Successor, Predecessor, Validate
-- **Properties**: Height, Size, Leaf Count, Diameter, Balanced Check, Full/Complete Check
-- **Views**: Left, Right, Top, Bottom, Boundary
-- **Special**: LCA, Mirror Tree, AVL Rotation & Balancing
-
-### Graph Algorithms
-- Breadth-First Search (BFS)
-- Depth-First Search (DFS)
-- Dijkstra's Algorithm
-- A* Pathfinding
+### Advanced Algorithms
+#### **Recursion**
+- **Standard Operations:** Fibonacci Sequence Computation
+- **Upcoming Applications:** Factorial Calculation
 
 ## 🎯 Development Roadmap
 
 - [x] Project initialization
 - [x] Array Operations visualizer
 - [x] Linked List visualizer
-- [x] Sorting visualizer (Advanced Tree Views, Sound, Complexity)
-- [x] Tree visualizer (BST, AVL, Traversals, Views)
-- [ ] Graph visualizer
-- [ ] Stack & Queue visualizer
-- [x] Code editor integration (Real-time Value Injection)
+- [x] Sorting visualizer
+- [x] Tree visualizer
+- [x] Graph visualizer
+- [x] Stack & Queue visualizer
+- [x] Recursion visualizer
 - [x] Complexity analysis display
-- [x] Custom input support
+- [ ] Code editor integration
+- [ ] Custom input support
 - [ ] Algorithm comparison mode
+- [ ] User accounts (optional backend)
 
 ## 🤝 Contributing
 
