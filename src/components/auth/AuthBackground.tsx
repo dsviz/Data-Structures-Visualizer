@@ -1,125 +1,176 @@
 
 import React, { useEffect, useRef } from 'react';
 
-const AuthBackground: React.FC = () => {
+interface AuthBackgroundProps {
+    isFixed?: boolean;
+}
+
+const AuthBackground: React.FC<AuthBackgroundProps> = ({ isFixed = true }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         let animationFrameId: number;
         let particles: Particle[] = [];
-        const particleCount = 150; // Increased count
-        const connectionDistance = 150;
+        const mouse = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
+        const particleCount = 200; // Increased for a rich node cloud
+        const focalLength = 300;
+        const resolutionScale = window.devicePixelRatio || 1;
+        const colors = [
+            '#4285F4', // Blue
+            '#EA4335', // Red
+            '#FBBC05', // Yellow
+            '#34A853', // Green
+            '#818CF8', // Indigo
+            '#A78BFA'  // Violet
+        ];
 
         class Particle {
             x: number;
             y: number;
+            z: number;
+            baseX: number;
+            baseY: number;
+            baseZ: number;
+            color: string;
             size: number;
-            vx: number;
-            vy: number;
             opacity: number;
 
-            constructor(width: number, height: number) {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.size = Math.random() * 3 + 1; // Larger dots
-                this.vx = (Math.random() - 0.5) * 1.2; // Faster speed
-                this.vy = (Math.random() - 0.5) * 1.2; // Faster speed
-                this.opacity = Math.random() * 0.6 + 0.3; // More opaque
+            constructor() {
+                // Initial 3D position in a cube
+                this.baseX = (Math.random() - 0.5) * 800;
+                this.baseY = (Math.random() - 0.5) * 800;
+                this.baseZ = (Math.random() - 0.5) * 800;
+                this.x = this.baseX;
+                this.y = this.baseY;
+                this.z = this.baseZ;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.size = Math.random() * 2 + 1;
+                this.opacity = Math.random() * 0.5 + 0.3;
             }
 
-            update(width: number, height: number) {
-                this.x += this.vx;
-                this.y += this.vy;
+            rotate(angleX: number, angleY: number) {
+                // Y-axis rotation (horizontal movement)
+                const cosY = Math.cos(angleY);
+                const sinY = Math.sin(angleY);
+                const x1 = this.baseX * cosY - this.baseZ * sinY;
+                const z1 = this.baseZ * cosY + this.baseX * sinY;
 
-                if (this.x < 0) this.x = width;
-                if (this.x > width) this.x = 0;
-                if (this.y < 0) this.y = height;
-                if (this.y > height) this.y = 0;
+                // X-axis rotation (vertical movement)
+                const cosX = Math.cos(angleX);
+                const sinX = Math.sin(angleX);
+                const y2 = this.baseY * cosX - z1 * sinX;
+                const z2 = z1 * cosX + this.baseY * sinX;
+
+                this.x = x1;
+                this.y = y2;
+                this.z = z2;
             }
 
-            draw(ctx: CanvasRenderingContext2D, isDark: boolean) {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = isDark
-                    ? `rgba(129, 140, 248, ${this.opacity})` // indigo-400 (brighter)
-                    : `rgba(79, 70, 229, ${this.opacity})`;  // primary
-                ctx.fill();
+            draw(ctx: CanvasRenderingContext2D, width: number, height: number, isDark: boolean) {
+                // Perspective projection
+                const scale = focalLength / (focalLength + this.z);
+                const canvasX = this.x * scale + width / 2;
+                const canvasY = this.y * scale + height / 2;
+
+                // Only draw if within bounds and in front of camera
+                if (this.z > -focalLength) {
+                    const finalSize = this.size * scale;
+                    const finalOpacity = this.opacity * scale * (isDark ? 0.7 : 0.9);
+
+                    ctx.beginPath();
+                    ctx.arc(canvasX, canvasY, finalSize, 0, Math.PI * 2);
+
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = finalOpacity;
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
             }
         }
 
         const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            init();
+            const width = isFixed ? window.innerWidth : canvas.parentElement?.clientWidth || window.innerWidth;
+            const height = isFixed ? window.innerHeight : canvas.parentElement?.clientHeight || window.innerHeight;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.width = width * resolutionScale;
+            canvas.height = height * resolutionScale;
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scaling
+            ctx.scale(resolutionScale, resolutionScale);
         };
 
         const init = () => {
             particles = [];
             for (let i = 0; i < particleCount; i++) {
-                particles.push(new Particle(canvas.width, canvas.height));
+                particles.push(new Particle());
             }
         };
 
-        const drawLines = (isDark: boolean) => {
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < connectionDistance) {
-                        ctx.beginPath();
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        const opacity = (1 - distance / connectionDistance) * 0.15;
-                        ctx.strokeStyle = isDark
-                            ? `rgba(255, 255, 255, ${opacity})`
-                            : `rgba(79, 70, 229, ${opacity})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                }
-            }
+        const handleMouseMove = (e: MouseEvent) => {
+            mouse.targetX = e.clientX / window.innerWidth;
+            mouse.targetY = e.clientY / window.innerHeight;
         };
 
         const animate = () => {
+            if (document.hidden) {
+                animationFrameId = requestAnimationFrame(animate);
+                return;
+            }
+
+            // Smooth mouse interpolation
+            mouse.x += (mouse.targetX - mouse.x) * 0.05;
+            mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
             const isDark = document.documentElement.classList.contains('dark');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const logicalWidth = canvas.width / resolutionScale;
+            const logicalHeight = canvas.height / resolutionScale;
+
+            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+            // Calculate rotation angles based on mouse
+            // Mouse X controls Y rotation (yaw), Mouse Y controls X rotation (pitch)
+            const angleY = (mouse.x - 0.5) * 0.5 + (Date.now() * 0.0001); // Autonomous drift + mouse influence
+            const angleX = (mouse.y - 0.5) * 0.5;
+
+            // Sort particles by Z-depth for correct rendering (Painter's algorithm)
+            particles.sort((a, b) => b.z - a.z);
 
             particles.forEach((particle) => {
-                particle.update(canvas.width, canvas.height);
-                particle.draw(ctx, isDark);
+                particle.rotate(angleX, angleY);
+                particle.draw(ctx, logicalWidth, logicalHeight, isDark);
             });
 
-            drawLines(isDark);
             animationFrameId = requestAnimationFrame(animate);
         };
 
         window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', handleMouseMove);
         resize();
+        init();
         animate();
 
         return () => {
             window.removeEventListener('resize', resize);
+            window.removeEventListener('mousemove', handleMouseMove);
             cancelAnimationFrame(animationFrameId);
         };
-    }, []);
+    }, [isFixed]);
 
     return (
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        <div className={`${isFixed ? 'fixed' : 'absolute'} inset-0 z-0 overflow-hidden pointer-events-none select-none`} style={{ willChange: 'transform' }}>
             {/* Ambient Mesh Backgrounds for Depth */}
-            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/5 dark:bg-primary/10 rounded-full blur-[120px] animate-pulse"></div>
-            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/5 dark:bg-indigo-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary/10 dark:bg-primary/15 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 dark:bg-indigo-600/15 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
             <canvas
                 ref={canvasRef}
-                className="absolute inset-0 opacity-70 dark:opacity-50"
+                className="absolute inset-0 opacity-70 dark:opacity-70"
+                style={{ transform: 'translateZ(0)', willChange: 'opacity' }}
             />
 
             {/* Subtle Mathematical Grid - Static but essential for the "Lab" feel */}
