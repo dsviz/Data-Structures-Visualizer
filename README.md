@@ -64,41 +64,34 @@ dsa-visualizer/
 
 ### Installation
 
-<<<<<<< HEAD
-1. **Install frontend dependencies:**
+1. **Clone the repository:**
+        ```bash
+        git clone https://github.com/shubhamkumarsharma03/Data-Structures-Visualizer.git
+        cd Data-Structures-Visualizer
+        ```
+
+2. **Install frontend dependencies:**
         ```bash
         npm install
         ```
-=======
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/Data-Structures-Visualizer.git
-   cd dsa-visualizer
-   ```
->>>>>>> 5a439c507ace9f4b48a4ec868348b12a19c5620a
 
-2. **Copy frontend environment template:**
+3. **Copy frontend environment template:**
         ```bash
         cp .env.example .env # use: copy .env.example .env (Windows)
         ```
         The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
 
-3. **Install backend dependencies:**
+4. **Install backend dependencies:**
         ```bash
         cd server
         npm install
         ```
 
-<<<<<<< HEAD
-4. **Configure backend environment:**
+5. **Configure backend environment:**
         ```bash
         cp .env.example .env # use: copy .env.example .env (Windows)
         ```
         Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
-=======
-4. **Open in browser:**
-   Open [http://localhost:5173](http://localhost:3000) in your web browser.
->>>>>>> 5a439c507ace9f4b48a4ec868348b12a19c5620a
 
 5. **Run database migrations:**
         ```bash
