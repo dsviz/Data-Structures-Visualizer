@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import Navbar from '../components/layout/Navbar'
 import MobileWarning from '../components/ui/MobileWarning'
 import Home from '../pages/Home'
@@ -20,12 +21,19 @@ import VerifyOtp from '../pages/VerifyOtp'
 import { useLayout } from '../context/LayoutContext'
 
 function AppContent() {
-  const { isNavbarVisible } = useLayout();
+  const { isNavbarVisible, setIsNavbarVisible } = useLayout();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isAuthPage = ['/login', '/signup', '/verify-otp'].includes(location.pathname);
+    setIsNavbarVisible(!isAuthPage);
+  }, [location.pathname, setIsNavbarVisible]);
+
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen overflow-hidden">
       <MobileWarning />
       {isNavbarVisible && <Navbar />}
-      <main className="flex-1 overflow-auto">
+      <main className={`flex-1 ${isNavbarVisible ? 'overflow-auto' : 'overflow-hidden h-full'}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/arrays" element={<Arrays />} />

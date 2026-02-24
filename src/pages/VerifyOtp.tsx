@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AuthBackground from '../components/auth/AuthBackground';
 
 const VerifyOtp = () => {
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -65,19 +65,27 @@ const VerifyOtp = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark px-4 py-12 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white dark:bg-[#1e1d32] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-[#272546]">
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Verify your email
+        <div className="h-screen w-full flex items-center justify-center relative overflow-hidden bg-background-light dark:bg-[#0a0914] transition-colors duration-500">
+            <AuthBackground />
+
+            <div className="max-w-md w-full relative z-10 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-4 transition-all">
+                <div className="text-center">
+                    <div className="flex justify-center mb-4">
+                        <div className="w-14 h-14 bg-gradient-to-tr from-primary to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">
+                            <span className="material-symbols-outlined text-white text-3xl">mark_email_read</span>
+                        </div>
+                    </div>
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+                        Verify Identity
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-                        We've sent a 6-digit code to <span className="font-semibold text-primary">{email}</span>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        Enter the 6-digit code sent to <br />
+                        <span className="font-bold text-primary">{email}</span>
                     </p>
                 </div>
 
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="flex justify-between gap-2">
+                <form className="mt-8 flex flex-col gap-6" onSubmit={handleSubmit}>
+                    <div className="flex justify-between gap-1.5 sm:gap-2">
                         {otp.map((digit, index) => (
                             <input
                                 key={index}
@@ -87,13 +95,13 @@ const VerifyOtp = () => {
                                 value={digit}
                                 onChange={(e) => handleChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
-                                className="w-12 h-14 text-center text-2xl font-bold rounded-xl border border-gray-300 dark:border-[#272546] bg-gray-50 dark:bg-[#131221] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                className="w-10 h-14 sm:w-11 sm:h-16 text-center text-2xl font-black rounded-xl border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-white/5 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all backdrop-blur-sm shadow-sm"
                             />
                         ))}
                     </div>
 
                     {error && (
-                        <div className="text-red-500 text-sm text-center font-medium">
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-[10px] py-2 px-4 rounded-xl text-center font-medium animate-shake">
                             {error}
                         </div>
                     )}
@@ -102,19 +110,19 @@ const VerifyOtp = () => {
                         <button
                             type="submit"
                             disabled={loading || otp.join('').length !== 6}
-                            className={`w-full py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-primary hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all ${loading || otp.join('').length !== 6 ? 'opacity-50 cursor-not-allowed' : ''
+                            className={`w-full py-4 px-6 rounded-2xl text-white font-bold bg-gradient-to-r from-primary to-indigo-600 hover:from-indigo-600 hover:to-primary shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-0.5 active:scale-[0.98] ${loading || otp.join('').length !== 6 ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                         >
-                            {loading ? 'Verifying...' : 'Verify Email'}
+                            {loading ? 'Verifying...' : 'Finish Signup'}
                         </button>
 
                         <div className="text-center">
                             <button
                                 type="button"
                                 onClick={() => navigate('/signup')}
-                                className="text-sm font-medium text-gray-500 hover:text-primary transition-colors"
+                                className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-white transition-all uppercase tracking-widest"
                             >
-                                Back to Sign up
+                                Use a different email
                             </button>
                         </div>
                     </div>

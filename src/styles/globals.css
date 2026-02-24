@@ -7,7 +7,9 @@
     @apply bg-background-light text-gray-900 antialiased dark:bg-background-dark dark:text-white transition-colors duration-300;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     @apply h-full w-full m-0 p-0;
   }
 }
@@ -27,6 +29,54 @@
 
   .visualizer-container {
     @apply w-full h-full flex items-center justify-center bg-white rounded-lg border-2 border-gray-200 p-4;
+  }
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+
+  33% {
+    transform: translateY(-20px) translateX(10px) rotate(2deg);
+  }
+
+  66% {
+    transform: translateY(10px) translateX(-15px) rotate(-1deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow linear infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+@keyframes shake {
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
   }
 }
 
