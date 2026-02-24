@@ -6,7 +6,43 @@ This document outlines the architectural diagrams and data flow for the Data Str
 
 This diagram shows how major components of your application are structured and interact with each other.
 
-![high level architecture](architecture/high-level-architecture.png)
+```mermaid
+flowchart TB
+    User["User (Browser)"]
+    
+    subgraph Frontend
+        UI["UI Components"]
+        Controls["Control Panel"]
+        Visual["Visualization Components"]
+    end
+
+    subgraph State_Management
+        Store["Zustand Store"]
+    end
+
+    subgraph Core_Logic
+        Algo["Algorithm Engine"]
+        Steps["Step Generator"]
+        Animation["Animation Engine"]
+    end
+
+    subgraph Rendering
+        Canvas["Canvas Renderer"]
+        SVG["SVG Renderer"]
+    end
+
+    User --> UI
+    UI --> Controls
+    Controls --> Store
+    Store --> Algo
+    Algo --> Steps
+    Steps --> Animation
+    Animation --> Canvas
+    Animation --> SVG
+    Canvas --> Visual
+    SVG --> Visual
+    Visual --> UI
+```
 
 **Explanation:**
 - **React Components** manage the UI and interact with user controls.
@@ -19,7 +55,16 @@ This diagram shows how major components of your application are structured and i
 
 This shows how data moves through the system.
 
-![data flow diagram](architecture/data-flow-diagram.png)
+```mermaid
+flowchart LR
+    User -->|Select Algorithm| UI
+    UI -->|Dispatch Action| Store
+    Store -->|Trigger| Algorithm
+    Algorithm -->|Generate Steps| StepQueue
+    StepQueue -->|Feed| AnimationEngine
+    AnimationEngine --> Renderer
+    Renderer --> Display
+```
 
 **Highlights:**
 - Algorithm logic generates step sequences instead of immediate UI changes — a clean separation.
@@ -29,7 +74,23 @@ This shows how data moves through the system.
 
 Shows the timing when an algorithm is started:
 
-![sequence diagram](architecture/sequence-diagram.png)
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as UI Controls
+    participant S as Zustand Store
+    participant A as Algorithm Engine
+    participant AN as Animation Engine
+    participant R as Renderer
+
+    U->>UI: Click Start
+    UI->>S: Update State (running=true)
+    S->>A: Trigger Algorithm
+    A->>A: Generate Step List
+    A->>AN: Send Steps
+    AN->>R: Animate Step
+    R->>UI: Update Visualization
+```
 
 **Shows timing:**
 - UI control triggers state update.
@@ -40,7 +101,24 @@ Shows the timing when an algorithm is started:
 
 Code organization view:
 
-![component dependency](architecture/component-dependency.png)
+```mermaid
+graph TD
+    App --> Layout
+    Layout --> Sidebar
+    Layout --> VisualArea
+
+    VisualArea --> SortingModule
+    VisualArea --> TreeModule
+    VisualArea --> GraphModule
+    VisualArea --> LinkedListModule
+
+    SortingModule --> AlgorithmLibrary
+    TreeModule --> AlgorithmLibrary
+    GraphModule --> AlgorithmLibrary
+
+    AlgorithmLibrary --> AnimationEngine
+    AnimationEngine --> Renderer
+```
 
 **Note:** Separation ensures testability & modular updates; e.g., new DSA logic can be plugged in without touching UI code.
 
@@ -48,17 +126,65 @@ Code organization view:
 
 Visualizes the different states during execution:
 
-![state diagram](architecture/state-diagram.png)
+```mermaid
+stateDiagram-v2
+    [*] --> Stopped
+    Stopped --> Running : Start
+    Running --> Paused : Pause
+    Paused --> Running : Resume
+    Running --> Stopped : Stop
+    Paused --> Stopped : Reset
+```
 
 ## 6. Deployment Architecture (Vercel)
 
 Vercel builds React + Vite front-end as static assets and serves globally as a high-performance SPA.
 
-![deployment architecture](architecture/deployment-architecture.png)
+```mermaid
+flowchart TB
+    Developer[Developer]
+    GitHub[GitHub Repository]
+    Vercel[Vercel CI/CD]
+    CDN[Global CDN]
+    Users[End Users]
+
+    Developer -->|Push Code| GitHub
+    GitHub -->|Auto Deploy| Vercel
+    Vercel -->|Build Static Assets| CDN
+    CDN -->|Serve| Users
+```
 
 ## 7. Clean UML Class Diagram (Conceptual)
 
 Logic & state relationships:
 
-![class diagram](architecture/class-diagram.png)
+```mermaid
+classDiagram
+    class AlgorithmGenerator {
+        +generateSteps()
+    }
+
+    class SortingAlgorithm {
+        +bubbleSort()
+        +quickSort()
+        +mergeSort()
+    }
+
+    class AnimationEngine {
+        +play()
+        +pause()
+        +stepForward()
+        +stepBackward()
+    }
+
+    class Renderer {
+        +drawArray()
+        +drawTree()
+        +drawGraph()
+    }
+
+    AlgorithmGenerator <|-- SortingAlgorithm
+    SortingAlgorithm --> AnimationEngine
+    AnimationEngine --> Renderer
+```
 

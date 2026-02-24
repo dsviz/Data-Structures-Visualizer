@@ -139,7 +139,43 @@ The Jest suite covers health checks, catalog queries, and authentication flows u
 
 ## 🎨 Architecture
 
-![System Architecture](docs/architecture/high-level-architecture.png)
+```mermaid
+flowchart TB
+    User["User (Browser)"]
+    
+    subgraph Frontend
+        UI["UI Components"]
+        Controls["Control Panel"]
+        Visual["Visualization Components"]
+    end
+
+    subgraph State_Management
+        Store["Zustand Store"]
+    end
+
+    subgraph Core_Logic
+        Algo["Algorithm Engine"]
+        Steps["Step Generator"]
+        Animation["Animation Engine"]
+    end
+
+    subgraph Rendering
+        Canvas["Canvas Renderer"]
+        SVG["SVG Renderer"]
+    end
+
+    User --> UI
+    UI --> Controls
+    Controls --> Store
+    Store --> Algo
+    Algo --> Steps
+    Steps --> Animation
+    Animation --> Canvas
+    Animation --> SVG
+    Canvas --> Visual
+    SVG --> Visual
+    Visual --> UI
+```
 
 For a comprehensive breakdown of our system design, please see our detailed [Architecture Documentation](./docs/README_DOCS.md), which includes:
 
