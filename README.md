@@ -64,57 +64,60 @@ dsa-visualizer/
 
 ### Installation
 
-1. **Clone the repository:**
-        ```bash
-        git clone https://github.com/shubhamkumarsharma03/Data-Structures-Visualizer.git
-        cd Data-Structures-Visualizer
-        ```
+1. **Fork the repository:**
+   Click the "Fork" button at the top right of this repository's GitHub page to create a copy under your own account.
 
-2. **Install frontend dependencies:**
-        ```bash
-        npm install
-        ```
+2. **Clone the repository:**
+```bash
+git clone https://github.com/<your-username>/Data-Structures-Visualizer.git
+cd Data-Structures-Visualizer
+```
 
-3. **Copy frontend environment template:**
-        ```bash
-        cp .env.example .env # use: copy .env.example .env (Windows)
-        ```
-        The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
+3. **Install frontend dependencies:**
+```bash
+npm install
+```
 
-4. **Install backend dependencies:**
-        ```bash
-        cd server
-        npm install
-        ```
+4. **Copy frontend environment template:**
+```bash
+cp .env.example .env # use: copy .env.example .env (Windows)
+```
+The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
 
-5. **Configure backend environment:**
-        ```bash
-        cp .env.example .env # use: copy .env.example .env (Windows)
-        ```
-        Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
+5. **Install backend dependencies:**
+```bash
+cd server
+npm install
+```
 
-5. **Run database migrations:**
-        ```bash
-        npx prisma migrate dev
-        ```
+6. **Configure backend environment:**
+```bash
+cp .env.example .env # use: copy .env.example .env (Windows)
+```
+Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
 
-6. **Seed algorithm metadata:**
-        ```bash
-        npm run prisma:seed
-        ```
+7. **Run database migrations:**
+```bash
+npx prisma migrate dev
+```
 
-7. **Start backend API:**
-        ```bash
-        npm run dev
-        ```
+8. **Seed algorithm metadata:**
+```bash
+npm run prisma:seed
+```
 
-8. **Start frontend dev server (new terminal):**
-        ```bash
-        cd ..
-        npm run dev
-        ```
+9. **Start backend API:**
+```bash
+npm run dev
+```
 
-9. **Open your browser:**
+10. **Start frontend dev server (new terminal):**
+```bash
+cd ..
+npm run dev
+```
+
+11. **Open your browser:**
         Navigate to `http://localhost:3000`
 
 ### Build for Production
