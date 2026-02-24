@@ -13,7 +13,8 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string) => Promise<void>;
+    signup: (name: string, email: string, password: string) => Promise<{ verifyNeeded?: boolean }>;
+    verifyOtp: (email: string, token: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -34,42 +35,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const persistSession = (response: AuthResponse) => {
         const sessionUser = enhanceUser(response.user);
         setUser(sessionUser);
-        apiClient.setAuthToken(response.token);
-        localStorage.setItem(TOKEN_KEY, response.token);
+        apiClient.setAuthToken();
+        if (response.token) {
+            localStorage.setItem(TOKEN_KEY, response.token);
+        }
         localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
     };
 
     useEffect(() => {
-        const storedToken = localStorage.getItem(TOKEN_KEY);
         const storedUser = localStorage.getItem(USER_KEY);
-
-        if (storedToken) {
-            apiClient.setAuthToken(storedToken);
-        }
-
         if (storedUser) {
             try {
-                const parsed: User = JSON.parse(storedUser);
-                setUser(parsed);
-            } catch (error) {
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
                 localStorage.removeItem(USER_KEY);
             }
         }
 
-        if (storedToken) {
-            apiClient.fetchCurrentUser()
-                .then((current) => {
-                    const sessionUser = enhanceUser(current);
-                    setUser(sessionUser);
-                    localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
-                })
-                .catch(() => {
-                    apiClient.clearAuthToken();
-                    localStorage.removeItem(TOKEN_KEY);
-                    localStorage.removeItem(USER_KEY);
+        // Always verify with Supabase on mount
+        apiClient.fetchCurrentUser()
+            .then((current) => {
+                const sessionUser = enhanceUser(current);
+                setUser(sessionUser);
+                localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
+                // We don't save token manually anymore as Supabase handles it in cookies/storage
+            })
+            .catch(() => {
+                // Only clear if we were previously "logged in" in UI
+                if (storedUser) {
                     setUser(null);
-                });
-        }
+                    localStorage.removeItem(USER_KEY);
+                    localStorage.removeItem(TOKEN_KEY);
+                }
+            });
     }, []);
 
     const login = async (email: string, password: string) => {
@@ -78,7 +76,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const signup = async (name: string, email: string, password: string) => {
-        const response = await apiClient.signup({ name, email, password });
+        try {
+            const response = await apiClient.signup({ name, email, password });
+            if (!response.verifyNeeded) {
+                persistSession(response);
+            }
+            return { verifyNeeded: response.verifyNeeded };
+        } catch (error) {
+            console.error('AuthContext Signup Error:', error);
+            throw error;
+        }
+    };
+
+    const verifyOtp = async (email: string, token: string) => {
+        const response = await apiClient.verifyOtp(email, token);
         persistSession(response);
     };
 
@@ -90,7 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, verifyOtp, logout }}>
             {children}
         </AuthContext.Provider>
     );

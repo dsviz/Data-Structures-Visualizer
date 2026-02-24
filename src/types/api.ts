@@ -7,7 +7,9 @@ export interface User {
 
 export interface AuthResponse {
     user: User;
-    token: string;
+    token?: string;
+    verifyNeeded?: boolean;
+    email?: string;
 }
 
 export interface LoginCredentials {

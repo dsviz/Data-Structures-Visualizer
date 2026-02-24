@@ -16,6 +16,7 @@ import Terms from '../pages/Terms'
 import Privacy from '../pages/Privacy'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
+import VerifyOtp from '../pages/VerifyOtp'
 import { useLayout } from '../context/LayoutContext'
 
 function AppContent() {
@@ -41,6 +42,7 @@ function AppContent() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
         </Routes>
       </main>
     </div>

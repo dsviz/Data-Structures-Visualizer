@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,16 +9,26 @@ const Signup = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { signup } = useAuth();
+    const { signup, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            await signup(name, email, password);
-            navigate('/');
+            const { verifyNeeded } = await signup(name, email, password);
+            if (verifyNeeded) {
+                navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+            } else {
+                navigate('/');
+            }
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to create account';
             setError(message);
@@ -37,9 +47,15 @@ const Signup = () => {
                     <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
                         Or{' '}
                         <Link to="/login" className="font-medium text-primary hover:text-indigo-500 transition-colors">
-                            sign in to existing account
+                            login to existing account
                         </Link>
                     </p>
+                    <div className="mt-2 text-center">
+                        <Link to="/" className="text-sm font-medium text-gray-500 hover:text-primary flex items-center justify-center gap-1 transition-colors">
+                            <span className="material-symbols-outlined text-[18px]">home</span>
+                            Back to Home
+                        </Link>
+                    </div>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="rounded-md shadow-sm -space-y-px">

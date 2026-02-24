@@ -1,50 +1,134 @@
 import { AuthResponse, LoginCredentials, SignupCredentials, User } from '../types/api';
-
-const MOCK_USER: User = {
-    id: '1',
-    name: 'Demo User',
-    email: 'demo@example.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Demo'
-};
-
-const MOCK_AUTH_RESPONSE: AuthResponse = {
-    user: MOCK_USER,
-    token: 'mock-jwt-token'
-};
+import { supabase } from './supabase';
 
 class ApiClient {
-    private token: string | null = null;
-
-    setAuthToken(token: string) {
-        this.token = token;
+    setAuthToken() {
+        // Supabase handles session automatically, 
+        // but we keep this for consistency with existing AuthContext
     }
 
     clearAuthToken() {
-        this.token = null;
-    }
-
-    async login(credentials: LoginCredentials): Promise<AuthResponse> {
-        console.log('Logging in with', credentials);
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(MOCK_AUTH_RESPONSE), 500);
-        });
+        // Supabase handles session automatically
     }
 
     async signup(credentials: SignupCredentials): Promise<AuthResponse> {
-        console.log('Signing up with', credentials);
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(MOCK_AUTH_RESPONSE), 500);
+        const { data, error } = await supabase.auth.signUp({
+            email: credentials.email,
+            password: credentials.password,
+            options: {
+                data: {
+                    full_name: credentials.name
+                }
+            }
         });
+
+        if (error) throw error;
+        if (!data.user) throw new Error('Signup failed: No user returned');
+
+        // If session is null, it means Email Confirmation is enabled
+        if (!data.session) {
+            return {
+                user: {
+                    id: data.user.id,
+                    email: data.user.email || '',
+                    name: credentials.name,
+                },
+                verifyNeeded: true,
+                email: credentials.email
+            };
+        }
+
+        // Session exists (auto-confirm is ON), create profile
+        await this.createProfile(data.user.id, credentials.name, credentials.email);
+
+        return {
+            user: {
+                id: data.user.id,
+                email: data.user.email || '',
+                name: credentials.name,
+                avatar: undefined
+            },
+            token: data.session.access_token
+        };
+    }
+
+    async verifyOtp(email: string, token: string): Promise<AuthResponse> {
+        const { data, error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'signup'
+        });
+
+        if (error) throw error;
+        if (!data.user || !data.session) throw new Error('Verification failed');
+
+        // Fetch name from user metadata if possible
+        const name = data.user.user_metadata?.full_name || 'User';
+
+        // Ensure profile exists after verification
+        await this.createProfile(data.user.id, name, email);
+
+        return {
+            user: {
+                id: data.user.id,
+                email: data.user.email || '',
+                name: name,
+            },
+            token: data.session.access_token
+        };
+    }
+
+    private async createProfile(id: string, name: string, email: string) {
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert([{ id, name, email }]);
+
+        if (profileError) console.error('Error creating profile:', profileError);
+    }
+
+    async login(credentials: LoginCredentials): Promise<AuthResponse> {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+        });
+
+        if (error) throw error;
+        if (!data.user || !data.session) throw new Error('Authentication failed');
+
+        // Fetch profile
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+        return {
+            user: {
+                id: data.user.id,
+                email: data.user.email || '',
+                name: profile?.name || 'User',
+                avatar: profile?.avatar_url
+            },
+            token: data.session.access_token
+        };
     }
 
     async fetchCurrentUser(): Promise<User> {
-        return new Promise((resolve, reject) => {
-            if (this.token) {
-                setTimeout(() => resolve(MOCK_USER), 500);
-            } else {
-                setTimeout(() => reject(new Error('Unauthorized')), 500);
-            }
-        });
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) throw new Error('Unauthorized');
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        return {
+            id: user.id,
+            email: user.email || '',
+            name: profile?.name || 'User',
+            avatar: profile?.avatar_url
+        };
     }
 }
 

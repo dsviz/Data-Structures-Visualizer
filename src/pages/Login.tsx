@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,8 +8,14 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -19,7 +25,7 @@ const Login = () => {
             await login(email, password);
             navigate('/');
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to sign in';
+            const message = err instanceof Error ? err.message : 'Failed to login';
             setError(message);
         } finally {
             setLoading(false);
@@ -31,7 +37,7 @@ const Login = () => {
             <div className="max-w-md w-full space-y-8 bg-white dark:bg-[#1e1d32] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-[#272546]">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-                        Sign in to your account
+                        Login to your account
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
                         Or{' '}
@@ -39,6 +45,12 @@ const Login = () => {
                             create a new account
                         </Link>
                     </p>
+                    <div className="mt-2 text-center">
+                        <Link to="/" className="text-sm font-medium text-gray-500 hover:text-primary flex items-center justify-center gap-1 transition-colors">
+                            <span className="material-symbols-outlined text-[18px]">home</span>
+                            Back to Home
+                        </Link>
+                    </div>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="rounded-md shadow-sm -space-y-px">
@@ -87,7 +99,7 @@ const Login = () => {
                             className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-primary hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors ${loading ? 'opacity-75 cursor-not-allowed' : ''
                                 }`}
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
+                            {loading ? 'Logging in...' : 'Login'}
                         </button>
                     </div>
                 </form>
