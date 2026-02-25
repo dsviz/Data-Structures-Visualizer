@@ -12,6 +12,7 @@ const Navbar = () => {
   const [query, setQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
   const searchRef = useRef<HTMLDivElement>(null)
   const userDropdownRef = useRef<HTMLDivElement>(null)
@@ -181,14 +182,26 @@ const Navbar = () => {
                     Profile
                   </Link>
                   <button
-                    onClick={() => {
-                      setShowUserDropdown(false);
-                      logout();
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsLoggingOut(true);
+                      try {
+                        await logout();
+                        setShowUserDropdown(false);
+                      } catch (err) {
+                        console.error('Logout failed:', err);
+                      } finally {
+                        setIsLoggingOut(false);
+                      }
                     }}
-                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
+                    disabled={isLoggingOut}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left disabled:opacity-50"
                   >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign out
+                    <span className="material-symbols-outlined text-[18px]">
+                      {isLoggingOut ? 'hourglass_empty' : 'logout'}
+                    </span>
+                    {isLoggingOut ? 'Signing out...' : 'Sign out'}
                   </button>
                 </div>
               )}

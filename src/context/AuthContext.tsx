@@ -106,8 +106,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
-        // onAuthStateChange handles SIGNED_OUT event and clears local state
+        console.log("AuthContext: Starting logout process...");
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error("AuthContext: Error during sign out:", error);
+        } else {
+            console.log("AuthContext: Successfully signed out from Supabase client");
+        }
     };
 
     return (
