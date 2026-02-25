@@ -2,15 +2,6 @@ import { AuthResponse, LoginCredentials, SignupCredentials, User } from '../type
 import { supabase } from './supabase';
 
 class ApiClient {
-    setAuthToken() {
-        // Supabase handles session automatically, 
-        // but we keep this for consistency with existing AuthContext
-    }
-
-    clearAuthToken() {
-        // Supabase handles session automatically
-    }
-
     async signup(credentials: SignupCredentials): Promise<AuthResponse> {
         const { data, error } = await supabase.auth.signUp({
             email: credentials.email,
@@ -129,6 +120,43 @@ class ApiClient {
             name: profile?.name || 'User',
             avatar: profile?.avatar_url
         };
+    }
+
+    async updateProfile(id: string, name: string, avatarUrl?: string): Promise<void> {
+        const { error } = await supabase
+            .from('profiles')
+            .update({
+                name,
+                avatar_url: avatarUrl
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+    }
+
+    async uploadAvatar(file: File, userId: string): Promise<string> {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${userId}-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        console.log("Attempting upload to bucket: AVATAR with file path:", filePath);
+
+        const { error: uploadError } = await supabase.storage
+            .from('avatar')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) {
+            console.error("Supabase Storage Upload Error Full Object:", uploadError);
+            throw new Error(`Upload failed: ${uploadError.message}`);
+        }
+
+        console.log("Upload successful, getting public URL...");
+
+        const { data } = supabase.storage
+            .from('avatar')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
     }
 }
 

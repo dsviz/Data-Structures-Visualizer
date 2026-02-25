@@ -11,8 +11,10 @@ const Navbar = () => {
   const { headerContent } = useHeader()
   const [query, setQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
   const navigate = useNavigate()
   const searchRef = useRef<HTMLDivElement>(null)
+  const userDropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Filter logic
@@ -54,11 +56,15 @@ const Navbar = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Click outside to close
+  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (searchRef.current && !searchRef.current.contains(target)) {
         setShowResults(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(target)) {
+        setShowUserDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -149,19 +155,43 @@ const Navbar = () => {
           <div className="h-6 w-px bg-gray-200 dark:bg-[#272546] mx-1"></div>
 
           {user ? (
-            <div className="flex items-center gap-3 animate-in fade-in duration-300">
+            <div className="relative animate-in fade-in duration-300" ref={userDropdownRef}>
               <button
-                onClick={logout}
-                className="p-2 text-gray-500 dark:text-[#9794c7] hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
-                title="Sign Out"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="size-9 rounded-full bg-gradient-to-tr from-primary to-purple-500 p-0.5 cursor-pointer hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-[#131221]"
+                title="Account Menu"
               >
-                <span className="material-symbols-outlined">logout</span>
-              </button>
-              <div className="size-9 rounded-full bg-gradient-to-tr from-primary to-purple-500 p-0.5 cursor-pointer hover:scale-105 transition-transform">
                 <div className="size-full rounded-full bg-white dark:bg-[#131221] flex items-center justify-center overflow-hidden">
                   <img className="size-full object-cover" alt={user.name} src={user.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=fallback"} />
                 </div>
-              </div>
+              </button>
+
+              {showUserDropdown && (
+                <div className="absolute top-full right-0 mt-3 w-48 bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 py-1">
+                  <div className="px-4 py-2 text-sm border-b border-gray-100 dark:border-[#272546]/50">
+                    <p className="font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-[#9794c7] font-medium truncate">{user.email}</p>
+                  </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => setShowUserDropdown(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">person</span>
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">logout</span>
+                    Sign out
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-3">

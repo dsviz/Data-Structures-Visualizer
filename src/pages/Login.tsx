@@ -125,7 +125,7 @@ const Login = () => {
                                     </svg>
                                     Please wait...
                                 </span>
-                            ) : 'Sign In'}
+                            ) : 'Log In'}
                         </button>
                     </div>
                 </form>
