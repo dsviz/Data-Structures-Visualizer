@@ -10,6 +10,7 @@ const Profile = () => {
 
     const [name, setName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -32,6 +33,10 @@ const Profile = () => {
 
         try {
             await updateUserProfile(name, avatarUrl || undefined);
+            if (password) {
+                await apiClient.updatePassword(password);
+                setPassword('');
+            }
             setSuccess('Profile updated successfully!');
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to update profile';
@@ -137,16 +142,30 @@ const Profile = () => {
 
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
-                                Avatar URL (Optional)
+                                Email Address
                             </label>
                             <input
-                                id="avatar"
-                                name="avatar"
-                                type="url"
+                                id="email"
+                                name="email"
+                                type="email"
+                                readOnly
+                                className="block w-full px-5 py-3 rounded-2xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 focus:outline-none transition-all text-sm backdrop-blur-sm shadow-sm cursor-not-allowed"
+                                value={user.email}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
+                                New Password (Optional)
+                            </label>
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
                                 className="block w-full px-5 py-3 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm backdrop-blur-sm shadow-sm"
-                                placeholder="https://example.com/image.jpg"
-                                value={avatarUrl}
-                                onChange={(e) => setAvatarUrl(e.target.value)}
+                                placeholder="Leave blank to keep current"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
                     </div>

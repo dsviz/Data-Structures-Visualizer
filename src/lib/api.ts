@@ -16,6 +16,11 @@ class ApiClient {
         if (error) throw error;
         if (!data.user) throw new Error('Signup failed: No user returned');
 
+        // Check if user already exists (Supabase returns a fake user with empty identities when "prevent email enumeration" is on)
+        if (data.user?.identities?.length === 0) {
+            throw new Error('Email address is already registered');
+        }
+
         // If session is null, it means Email Confirmation is enabled
         if (!data.session) {
             return {
@@ -157,6 +162,13 @@ class ApiClient {
             .getPublicUrl(filePath);
 
         return data.publicUrl;
+    }
+    async updatePassword(newPassword: string): Promise<void> {
+        const { error } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+
+        if (error) throw error;
     }
 }
 
