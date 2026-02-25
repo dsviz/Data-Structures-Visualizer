@@ -22,11 +22,12 @@ const cookieStorage = {
         return Cookies.get(key) || null;
     },
     setItem: (key: string, value: string): void => {
-        // Secure settings: expires in 30 days, SameSite strict
-        Cookies.set(key, value, { expires: 30, sameSite: 'strict', path: '/' });
+        // Secure settings: expires in 30 days, SameSite lax for better Vercel/OAuth compatibility
+        Cookies.set(key, value, { expires: 30, sameSite: 'lax', path: '/' });
     },
     removeItem: (key: string): void => {
-        Cookies.remove(key, { path: '/' });
+        // Must use the exact same path/domain attributes to successfully delete a cookie
+        Cookies.remove(key, { path: '/', sameSite: 'lax' });
     },
 };
 

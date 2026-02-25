@@ -37,11 +37,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 1. Fetch initial session on mount
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
-                // Fetch full profile from API
+                // Immediately set user from JWT metadata for instant UI rendering
+                setUser(enhanceUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: session.user.user_metadata?.full_name || 'User',
+                    // Default avatar logic is handled by enhanceUser
+                }));
+                setIsInitializing(false);
+
+                // Fetch full profile from DB in the background
                 apiClient.fetchCurrentUser()
                     .then(current => setUser(enhanceUser(current)))
-                    .catch(() => setUser(null))
-                    .finally(() => setIsInitializing(false));
+                    .catch(e => console.error("Initial profile fetch failed:", e));
             } else {
                 setUser(null);
                 setIsInitializing(false);
@@ -53,6 +61,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log("Supabase Auth Event:", event);
 
             if (event === 'SIGNED_IN' && session?.user) {
+                // Immediately set user for instant UI response
+                setUser(enhanceUser({
+                    id: session.user.id,
+                    email: session.user.email || '',
+                    name: session.user.user_metadata?.full_name || 'User',
+                }));
+
+                // Fetch full profile in background
                 try {
                     const current = await apiClient.fetchCurrentUser();
                     setUser(enhanceUser(current));
