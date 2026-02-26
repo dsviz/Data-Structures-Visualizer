@@ -163,12 +163,25 @@ class ApiClient {
 
         return data.publicUrl;
     }
-    async updatePassword(newPassword: string): Promise<void> {
+    async updatePassword(currentPassword: string, newPassword: string, email: string): Promise<void> {
+        // Verify current password
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password: currentPassword,
+        });
+
+        if (signInError) {
+            throw new Error('Current password is incorrect');
+        }
+
         const { error } = await supabase.auth.updateUser({
             password: newPassword
         });
 
         if (error) throw error;
+
+        // Force logout after password change
+        await supabase.auth.signOut();
     }
 }
 

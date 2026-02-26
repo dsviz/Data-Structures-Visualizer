@@ -5,12 +5,14 @@ import { apiClient } from '../lib/api';
 import AuthBackground from '../components/auth/AuthBackground';
 
 const Profile = () => {
-    const { user, updateUserProfile, isAuthenticated } = useAuth();
+    const { user, updateUserProfile, isAuthenticated, logout } = useAuth();
     const navigate = useNavigate();
 
     const [name, setName] = useState('');
     const [avatarUrl, setAvatarUrl] = useState('');
-    const [password, setPassword] = useState('');
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,11 +35,32 @@ const Profile = () => {
 
         try {
             await updateUserProfile(name, avatarUrl || undefined);
-            if (password) {
-                await apiClient.updatePassword(password);
-                setPassword('');
+
+            if (currentPassword || newPassword || confirmPassword) {
+                if (!currentPassword) {
+                    throw new Error("Current password is required to change password");
+                }
+                if (newPassword !== confirmPassword) {
+                    throw new Error("New passwords do not match");
+                }
+                if (newPassword.length < 6) {
+                    throw new Error("New password must be at least 6 characters");
+                }
+
+                await apiClient.updatePassword(currentPassword, newPassword, user?.email || "");
+
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+
+                setSuccess('Profile and password updated successfully! Redirecting to login...');
+                setTimeout(() => {
+                    logout();
+                    navigate('/login');
+                }, 2000);
+            } else {
+                setSuccess('Profile updated successfully!');
             }
-            setSuccess('Profile updated successfully!');
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to update profile';
             setError(message);
@@ -154,19 +177,51 @@ const Profile = () => {
                             />
                         </div>
 
-                        <div>
-                            <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
-                                New Password (Optional)
-                            </label>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                className="block w-full px-5 py-3 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm backdrop-blur-sm shadow-sm"
-                                placeholder="Leave blank to keep current"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
+                        <div className="pt-4 border-t border-gray-200 dark:border-white/10 mt-6">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Change Password (Optional)</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
+                                        Current Password
+                                    </label>
+                                    <input
+                                        id="currentPassword"
+                                        type="password"
+                                        className="block w-full px-5 py-3 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm backdrop-blur-sm shadow-sm"
+                                        placeholder="Required if changing password"
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
+                                            New Password
+                                        </label>
+                                        <input
+                                            id="newPassword"
+                                            type="password"
+                                            className="block w-full px-5 py-3 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm backdrop-blur-sm shadow-sm"
+                                            placeholder="Min 6 characters"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest ml-1 mb-1 block">
+                                            Confirm Password
+                                        </label>
+                                        <input
+                                            id="confirmPassword"
+                                            type="password"
+                                            className="block w-full px-5 py-3 rounded-2xl bg-white/50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-sm backdrop-blur-sm shadow-sm"
+                                            placeholder="Match new password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
