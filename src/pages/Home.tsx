@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
-import AuthBackground from '../components/auth/AuthBackground';
 
 type DashboardCardView = {
   title: string
@@ -73,9 +72,9 @@ const Home = () => {
   };
 
   return (
-    <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen relative">
+    <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
       <section className="relative py-16 px-6 overflow-hidden">
-        <AuthBackground isFixed={false} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="relative max-w-4xl mx-auto text-center space-y-8">
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-900/70 dark:from-white dark:to-white/70">
@@ -94,7 +93,7 @@ const Home = () => {
                 checked={mode === 'visualizer'}
                 onChange={() => setMode('visualizer')}
               />
-              <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-primary dark:peer-checked:bg-primary peer-checked:text-white dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2 bg-white dark:bg-[#1e1d32]">
+              <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">visibility</span>
                 Visualizer Mode
               </div>
@@ -107,7 +106,7 @@ const Home = () => {
                 checked={mode === 'training'}
                 onChange={() => setMode('training')}
               />
-              <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-primary dark:peer-checked:bg-primary peer-checked:text-white dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2 bg-white dark:bg-[#1e1d32]">
+              <div className="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white peer-checked:bg-white dark:peer-checked:bg-primary peer-checked:text-primary dark:peer-checked:text-white peer-checked:shadow-md transition-all flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">school</span>
                 Training Mode
               </div>

@@ -9,12 +9,24 @@ interface User {
     avatar?: string;
 }
 
+// Define AuthResponse type for API client responses
+interface AuthResponse {
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        avatar?: string | null;
+    };
+    token?: string;
+    verifyNeeded?: boolean;
+}
+
 interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string) => Promise<{ verifyNeeded?: boolean }>;
-    verifyOtp: (email: string, token: string) => Promise<void>;
+    signup: (name: string, email: string, password: string) => Promise<void>;
+    verifyOtp: (email: string, code: string) => Promise<void>;
     updateUserProfile: (name: string, avatarUrl?: string) => Promise<void>;
     logout: () => void;
 }
@@ -46,12 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // Helper to save session data safely to localStorage
-    const persistSession = (userData: User, token?: string) => {
-        if (token) {
-            localStorage.setItem(TOKEN_KEY, token);
+    const persistSession = (response: AuthResponse) => {
+        const sessionUser = enhanceUser(response.user);
+        setUser(sessionUser);
+        if (response.token) {
+            localStorage.setItem(TOKEN_KEY, response.token);
         }
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
-        setUser(userData);
+        localStorage.setItem(USER_KEY, JSON.stringify(sessionUser));
     };
 
     // Keep token refreshed using basic autoRefresh, but rely on localStorage for the UI state
@@ -68,47 +81,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = async (email: string, password: string) => {
         const response = await apiClient.login({ email, password });
-
-        // Manual persist after successful API call
-        if (response.user) {
-            persistSession(enhanceUser(response.user), response.token);
-        }
+        persistSession(response);
     };
 
     const signup = async (name: string, email: string, password: string) => {
         try {
             const response = await apiClient.signup({ name, email, password });
-            if (response.user && !response.verifyNeeded) {
-                persistSession(enhanceUser(response.user), response.token);
+            if (!response.verifyNeeded) {
+                persistSession(response);
             }
-            return { verifyNeeded: response.verifyNeeded };
         } catch (error) {
             console.error('AuthContext Signup Error:', error);
             throw error;
         }
     };
 
-    const verifyOtp = async (email: string, token: string) => {
-        const response = await apiClient.verifyOtp(email, token);
-        if (response.user) {
-            persistSession(enhanceUser(response.user), response.token);
-        }
+    const verifyOtp = async (email: string, code: string) => {
+        const response = await apiClient.verifyOtp(email, code);
+        persistSession(response);
     };
 
     const updateUserProfile = async (name: string, avatarUrl?: string) => {
-        if (!user) throw new Error('Not logged in');
-
-        // Update in database first
+        if (!user) throw new Error('Not authenticated');
         await apiClient.updateProfile(user.id, name, avatarUrl);
-
-        // Update local state and localStorage
-        const updatedUser = enhanceUser({
-            ...user,
-            name,
-            avatar: avatarUrl
-        });
-
-        persistSession(updatedUser);
+        const updatedUser = enhanceUser({ ...user, name, avatar: avatarUrl });
+        setUser(updatedUser);
+        localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
     };
 
     const logout = async () => {
