@@ -25,7 +25,7 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string) => Promise<void>;
+    signup: (name: string, email: string, password: string) => Promise<{ verifyNeeded?: boolean } | void>;
     verifyOtp: (email: string, code: string) => Promise<void>;
     updateUserProfile: (name: string, avatarUrl?: string) => Promise<void>;
     logout: () => void;
@@ -90,6 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (!response.verifyNeeded) {
                 persistSession(response);
             }
+            return response;
         } catch (error) {
             console.error('AuthContext Signup Error:', error);
             throw error;

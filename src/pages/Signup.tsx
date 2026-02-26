@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AuthBackground from '../components/auth/AuthBackground';
 
 const Signup = () => {
     const [name, setName] = useState('');
@@ -17,8 +18,12 @@ const Signup = () => {
         setError('');
         setLoading(true);
         try {
-            await signup(name, email, password);
-            navigate('/');
+            const response = await signup(name, email, password);
+            if (response && response.verifyNeeded) {
+                navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+            } else {
+                navigate('/');
+            }
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to create account';
             setError(message);
@@ -29,7 +34,8 @@ const Signup = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-background-dark px-4 py-12 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full space-y-8 bg-white dark:bg-[#1e1d32] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-[#272546]">
+            <AuthBackground />
+            <div className="relative z-10 max-w-md w-full space-y-8 bg-white dark:bg-[#1e1d32] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-[#272546]">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
                         Create your account

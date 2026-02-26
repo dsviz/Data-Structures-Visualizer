@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
+import AuthBackground from '../components/auth/AuthBackground'
 
 type DashboardCardView = {
   title: string
@@ -74,6 +75,7 @@ const Home = () => {
   return (
     <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
       <section className="relative py-16 px-6 overflow-hidden">
+        <AuthBackground isFixed={false} />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
         <div className="relative max-w-4xl mx-auto text-center space-y-8">
           <div className="space-y-4">
