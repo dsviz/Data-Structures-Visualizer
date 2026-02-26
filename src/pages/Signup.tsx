@@ -26,7 +26,10 @@ const Signup = () => {
                 navigate('/');
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Failed to create account';
+            let message = err instanceof Error ? err.message : 'Failed to create account';
+            if (message.toLowerCase().includes('failed to fetch')) {
+                message = 'Network error: Please disable your ad-blocker or Brave Shields for this site and try again.';
+            }
             setError(message);
         } finally {
             setLoading(false);
