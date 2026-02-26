@@ -102,7 +102,7 @@ const Profile = () => {
         <div className="h-screen w-full flex items-center justify-center relative overflow-hidden bg-background-light dark:bg-[#0a0914] transition-colors duration-500">
             <AuthBackground />
 
-            <div className="max-w-md w-full relative z-10 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-4 transition-all overflow-hidden flex flex-col justify-center">
+            <div className="max-w-md w-full relative z-10 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-auto transition-all overflow-hidden flex flex-col justify-center">
                 <div className="text-center">
                     <div className="flex justify-center mb-6 relative group">
                         <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-primary to-indigo-500 shadow-xl relative cursor-pointer overflow-hidden transition-transform hover:scale-105">

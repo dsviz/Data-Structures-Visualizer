@@ -68,7 +68,7 @@ const VerifyOtp = () => {
         <div className="h-screen w-full flex items-center justify-center relative overflow-hidden bg-background-light dark:bg-[#0a0914] transition-colors duration-500">
             <AuthBackground />
 
-            <div className="max-w-md w-full relative z-10 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-4 transition-all">
+            <div className="max-w-md w-full relative z-10 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-auto transition-all">
                 <div className="text-center">
                     <div className="flex justify-center mb-4">
                         <div className="w-14 h-14 bg-gradient-to-tr from-primary to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-6">

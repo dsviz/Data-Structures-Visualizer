@@ -37,9 +37,9 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-[#0a0914] px-4 py-12 sm:px-6 lg:px-8 transition-colors duration-500">
+        <div className="min-h-screen flex items-center justify-center bg-background-light dark:bg-[#0a0914] px-4 py-8 sm:px-6 lg:px-8 transition-colors duration-500">
             <AuthBackground />
-            <div className="relative z-10 max-w-md w-full space-y-8 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-4 transition-all">
+            <div className="relative z-10 max-w-md w-full space-y-8 bg-white/70 dark:bg-white/5 backdrop-blur-2xl p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/20 dark:border-white/10 mx-auto transition-all">
                 <div className="text-center">
                     <div className="flex justify-center mb-4">
                         <div className="relative group w-16 h-16 flex items-center justify-center">

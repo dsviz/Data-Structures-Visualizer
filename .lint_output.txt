@@ -1,0 +1,8 @@
+﻿
+C:\Users\Lenovo\Desktop\Data-Structures-Visualizer\src\pages\Recursion.tsx
+  50:13  error  'nodes' is never reassigned. Use 'const' instead  prefer-const
+  51:13  error  'stack' is never reassigned. Use 'const' instead  prefer-const
+
+Γ£û 2 problems (2 errors, 0 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+
