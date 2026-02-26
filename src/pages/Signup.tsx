@@ -41,7 +41,7 @@ const Signup = () => {
                     <div className="flex justify-center mb-4">
                         <div className="relative group w-16 h-16 flex items-center justify-center">
                             <div className="absolute inset-0 bg-gradient-to-tr from-primary to-indigo-500 rounded-2xl transform rotate-3 group-hover:rotate-12 shadow-[0_0_30px_rgba(99,102,241,0.4)] transition-all duration-300"></div>
-                            <span className="material-symbols-outlined text-white text-4xl relative z-10">science</span>
+                            <span className="material-symbols-outlined text-white text-4xl relative z-10" aria-label="Lab Icon">science</span>
                         </div>
                     </div>
                     <h2 className="mt-2 text-center text-3xl font-black tracking-tight text-gray-900 dark:text-white">
@@ -55,8 +55,8 @@ const Signup = () => {
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div className="mb-4">
+                    <div className="rounded-md shadow-sm space-y-4">
+                        <div className="relative">
                             <label htmlFor="name" className="sr-only">
                                 Full Name
                             </label>
@@ -72,7 +72,7 @@ const Signup = () => {
                                 onChange={(e) => setName(e.target.value)}
                             />
                         </div>
-                        <div className="mb-4">
+                        <div className="relative">
                             <label htmlFor="email-address" className="sr-only">
                                 Email address
                             </label>

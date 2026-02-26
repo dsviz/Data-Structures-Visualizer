@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useLayout } from '../context/LayoutContext';
 import { SORTING_CODE, Language } from '../data/SortingCode';
@@ -603,142 +604,148 @@ const Sorting = () => {
 
 
   return (
-    <VisualizationLayout
-      title="Sorting"
-      sidebar={null} // Left sidebar is consolidated into right tab
-      sidebarPosition="right"
-      rightSidebar={unifiedRightSidebar}
-      rightSidebarWidth={350}
-      controls={bottomControls}
-    >
-      {/* Stats Header (Updated Position since top bar is gone) */}
-      <div className="absolute top-2 left-0 w-full z-10 px-6 py-2 flex flex-wrap items-center justify-between gap-4 pointer-events-none">
-        {/* Left: Title or Breadcrumbs could go here if needed, but VisualLayout handles it */}
-        <div></div>
+    <>
+      <Helmet>
+        <title>Interactive Sorting Algorithms Visualizer | Data Structures & Algorithms</title>
+        <meta name="description" content="Visualize sorting algorithms like Quick Sort, Merge Sort, Bubble Sort, and more. Interactive step-by-step animations with execution trace." />
+      </Helmet>
+      <VisualizationLayout
+        title="Sorting"
+        sidebar={null} // Left sidebar is consolidated into right tab
+        sidebarPosition="right"
+        rightSidebar={unifiedRightSidebar}
+        rightSidebarWidth={350}
+        controls={bottomControls}
+      >
+        {/* Stats Header (Updated Position since top bar is gone) */}
+        <div className="absolute top-2 left-0 w-full z-10 px-6 py-2 flex flex-wrap items-center justify-between gap-4 pointer-events-none">
+          {/* Left: Title or Breadcrumbs could go here if needed, but VisualLayout handles it */}
+          <div></div>
 
-        {/* Right: Stats */}
-        <div className="flex gap-2 pointer-events-auto">
-          <div className="bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] rounded-xl px-3 py-2 flex flex-col min-w-[70px] shadow-sm backdrop-blur-md">
-            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Array Size</span>
-            <span className="text-lg font-mono font-bold text-slate-900 dark:text-white leading-none mt-0.5">{displayArray.length}</span>
-          </div>
-          <div className="bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] rounded-xl px-3 py-2 flex flex-col min-w-[70px] shadow-sm backdrop-blur-md">
-            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Step</span>
-            <span className="text-lg font-mono font-bold text-slate-900 dark:text-white leading-none mt-0.5">{currentStep}/{frames.length > 0 ? frames.length - 1 : 0}</span>
-          </div>
-        </div>
-      </div>
-
-
-
-      {/* Visualization Canvas */}
-      {
-        (activeAlgorithm === 'Merge Sort' || activeAlgorithm === 'Quick Sort') && currentFrame.mergeLevels ? (
-          <div className="absolute inset-0 top-0 bottom-0 px-4 py-12 pt-24 overflow-y-auto flex flex-col items-center">
-            <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
-              {currentFrame.mergeLevels.map((level, levelIdx) => (
-                <div key={levelIdx} className="flex justify-center relative h-16 w-full">
-                  {/* Render groups for this level */}
-                  {level.map((group) => {
-                    // Calculate relative position based on startIdx and total array length
-                    // We use percentages to position groups to align them with their "original" indices
-                    const totalLen = Math.max(displayArray.length, 1);
-                    const leftPct = (group.startIdx / totalLen) * 100;
-                    const widthPct = (group.values.length / totalLen) * 100;
-
-                    let borderColor = 'border-slate-300 dark:border-slate-600';
-                    let bgColor = 'bg-white dark:bg-[#1e1c33]';
-                    let textColor = 'text-slate-700 dark:text-slate-300';
-                    let scale = 'scale-100';
-                    let zIndex = 'z-10';
-
-                    if (group.state === 'left') {
-                      borderColor = 'border-indigo-400 dark:border-indigo-500';
-                      bgColor = 'bg-indigo-50 dark:bg-indigo-900/20';
-                    } else if (group.state === 'right') {
-                      borderColor = 'border-purple-400 dark:border-purple-500';
-                      bgColor = 'bg-purple-50 dark:bg-purple-900/20';
-                    } else if (group.state === 'sorted') {
-                      borderColor = 'border-emerald-400 dark:border-emerald-500';
-                      bgColor = 'bg-emerald-50 dark:bg-emerald-900/20';
-                      textColor = 'text-emerald-700 dark:text-emerald-300';
-                    } else if (group.state === 'merging') {
-                      borderColor = 'border-amber-400 dark:border-amber-500';
-                      bgColor = 'bg-amber-50 dark:bg-amber-900/20';
-                      scale = 'scale-105 shadow-lg';
-                      zIndex = 'z-20';
-                    } else if (group.state === 'pivot') {
-                      borderColor = 'border-rose-500 dark:border-rose-500';
-                      bgColor = 'bg-rose-50 dark:bg-rose-900/20';
-                      textColor = 'text-rose-700 dark:text-rose-300';
-                      scale = 'scale-110 shadow-xl';
-                      zIndex = 'z-30';
-                    }
-
-
-                    return (
-                      <div
-                        key={group.id}
-                        className={`absolute top-0 h-full transition-all duration-300 flex items-center justify-center p-1 ${zIndex}`}
-                        style={{
-                          left: `${leftPct}%`,
-                          width: `${widthPct}%`
-                        }}
-                      >
-                        <div className={`flex items-center justify-center gap-0.5 w-full h-full border-2 rounded-lg ${borderColor} ${bgColor} ${scale} transition-all duration-300`}>
-                          {group.values.map((val, idx) => (
-                            <div key={idx} className={`flex-1 flex items-center justify-center h-full text-[10px] sm:text-xs font-mono font-bold ${textColor}`}>
-                              {val}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+          {/* Right: Stats */}
+          <div className="flex gap-2 pointer-events-auto">
+            <div className="bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] rounded-xl px-3 py-2 flex flex-col min-w-[70px] shadow-sm backdrop-blur-md">
+              <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Array Size</span>
+              <span className="text-lg font-mono font-bold text-slate-900 dark:text-white leading-none mt-0.5">{displayArray.length}</span>
+            </div>
+            <div className="bg-white dark:bg-[#1e1c33] border border-gray-200 dark:border-[#272546] rounded-xl px-3 py-2 flex flex-col min-w-[70px] shadow-sm backdrop-blur-md">
+              <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Step</span>
+              <span className="text-lg font-mono font-bold text-slate-900 dark:text-white leading-none mt-0.5">{currentStep}/{frames.length > 0 ? frames.length - 1 : 0}</span>
             </div>
           </div>
-        ) : (
-          <div className="absolute inset-0 top-0 bottom-0 px-6 lg:px-12 flex items-end justify-center gap-2 lg:gap-4 pb-12 pt-28">
-            {displayArray.map((val, i) => {
-              const isHighlight = currentFrame.highlights.includes(i);
-              const isSorted = currentFrame.sortedIndices.includes(i);
+        </div>
 
-              return (
-                <div
-                  key={i}
-                  className={`flex-1 max-w-[4rem] rounded-t-lg relative group transition-all duration-300
+
+
+        {/* Visualization Canvas */}
+        {
+          (activeAlgorithm === 'Merge Sort' || activeAlgorithm === 'Quick Sort') && currentFrame.mergeLevels ? (
+            <div className="absolute inset-0 top-0 bottom-0 px-4 py-12 pt-24 overflow-y-auto flex flex-col items-center">
+              <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
+                {currentFrame.mergeLevels.map((level, levelIdx) => (
+                  <div key={levelIdx} className="flex justify-center relative h-16 w-full">
+                    {/* Render groups for this level */}
+                    {level.map((group) => {
+                      // Calculate relative position based on startIdx and total array length
+                      // We use percentages to position groups to align them with their "original" indices
+                      const totalLen = Math.max(displayArray.length, 1);
+                      const leftPct = (group.startIdx / totalLen) * 100;
+                      const widthPct = (group.values.length / totalLen) * 100;
+
+                      let borderColor = 'border-slate-300 dark:border-slate-600';
+                      let bgColor = 'bg-white dark:bg-[#1e1c33]';
+                      let textColor = 'text-slate-700 dark:text-slate-300';
+                      let scale = 'scale-100';
+                      let zIndex = 'z-10';
+
+                      if (group.state === 'left') {
+                        borderColor = 'border-indigo-400 dark:border-indigo-500';
+                        bgColor = 'bg-indigo-50 dark:bg-indigo-900/20';
+                      } else if (group.state === 'right') {
+                        borderColor = 'border-purple-400 dark:border-purple-500';
+                        bgColor = 'bg-purple-50 dark:bg-purple-900/20';
+                      } else if (group.state === 'sorted') {
+                        borderColor = 'border-emerald-400 dark:border-emerald-500';
+                        bgColor = 'bg-emerald-50 dark:bg-emerald-900/20';
+                        textColor = 'text-emerald-700 dark:text-emerald-300';
+                      } else if (group.state === 'merging') {
+                        borderColor = 'border-amber-400 dark:border-amber-500';
+                        bgColor = 'bg-amber-50 dark:bg-amber-900/20';
+                        scale = 'scale-105 shadow-lg';
+                        zIndex = 'z-20';
+                      } else if (group.state === 'pivot') {
+                        borderColor = 'border-rose-500 dark:border-rose-500';
+                        bgColor = 'bg-rose-50 dark:bg-rose-900/20';
+                        textColor = 'text-rose-700 dark:text-rose-300';
+                        scale = 'scale-110 shadow-xl';
+                        zIndex = 'z-30';
+                      }
+
+
+                      return (
+                        <div
+                          key={group.id}
+                          className={`absolute top-0 h-full transition-all duration-300 flex items-center justify-center p-1 ${zIndex}`}
+                          style={{
+                            left: `${leftPct}%`,
+                            width: `${widthPct}%`
+                          }}
+                        >
+                          <div className={`flex items-center justify-center gap-0.5 w-full h-full border-2 rounded-lg ${borderColor} ${bgColor} ${scale} transition-all duration-300`}>
+                            {group.values.map((val, idx) => (
+                              <div key={idx} className={`flex-1 flex items-center justify-center h-full text-[10px] sm:text-xs font-mono font-bold ${textColor}`}>
+                                {val}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="absolute inset-0 top-0 bottom-0 px-6 lg:px-12 flex items-end justify-center gap-2 lg:gap-4 pb-12 pt-28">
+              {displayArray.map((val, i) => {
+                const isHighlight = currentFrame.highlights.includes(i);
+                const isSorted = currentFrame.sortedIndices.includes(i);
+
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 max-w-[4rem] rounded-t-lg relative group transition-all duration-300
                                         ${isHighlight
-                      ? 'bg-primary shadow-[0_0_20px_rgba(99,102,241,0.5)] z-20 scale-105'
-                      : isSorted
-                        ? 'bg-emerald-500/80 dark:bg-emerald-500/60'
-                        : 'bg-indigo-300/30 dark:bg-[#2d2b42] border border-indigo-300/50 dark:border-transparent'}`}
-                  style={{ height: `${val}%` }}
-                >
-                  {/* Value Label */}
-                  <span className={`absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold ${isHighlight ? 'text-white' :
-                    isSorted ? 'text-white' :
-                      'text-slate-600 dark:text-slate-400'
-                    }`}>
-                    {val}
-                  </span>
-                  {isHighlight && (
-                    <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 z-50">
-                      <div className="bg-slate-900 text-white text-[10px] font-bold font-mono px-2 py-1 rounded-lg shadow-xl whitespace-nowrap mb-1">
-                        Val: {val}
+                        ? 'bg-primary shadow-[0_0_20px_rgba(99,102,241,0.5)] z-20 scale-105'
+                        : isSorted
+                          ? 'bg-emerald-500/80 dark:bg-emerald-500/60'
+                          : 'bg-indigo-300/30 dark:bg-[#2d2b42] border border-indigo-300/50 dark:border-transparent'}`}
+                    style={{ height: `${val}%` }}
+                  >
+                    {/* Value Label */}
+                    <span className={`absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold ${isHighlight ? 'text-white' :
+                      isSorted ? 'text-white' :
+                        'text-slate-600 dark:text-slate-400'
+                      }`}>
+                      {val}
+                    </span>
+                    {isHighlight && (
+                      <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 z-50">
+                        <div className="bg-slate-900 text-white text-[10px] font-bold font-mono px-2 py-1 rounded-lg shadow-xl whitespace-nowrap mb-1">
+                          Val: {val}
+                        </div>
+                        <div className="bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold font-mono px-2 py-1 rounded-lg shadow-sm whitespace-nowrap">
+                          Idx: {i}
+                        </div>
                       </div>
-                      <div className="bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold font-mono px-2 py-1 rounded-lg shadow-sm whitespace-nowrap">
-                        Idx: {i}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-    </VisualizationLayout >
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+      </VisualizationLayout >
+    </>
   )
 }
 

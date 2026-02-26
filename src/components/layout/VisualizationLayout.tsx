@@ -79,6 +79,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
 
     return (
         <div className={`flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display ${isResizing ? 'cursor-col-resize select-none' : ''}`}>
+            <h1 className="sr-only">Interactive {title} Visualizer</h1>
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 
             <div className="flex flex-1 overflow-hidden relative">

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useTreeVisualizer } from '../hooks/useTreeVisualizer';
 import { TreeControls } from '../components/tree/TreeControls';
@@ -234,131 +235,137 @@ const Trees = () => {
   );
 
   return (
-    <VisualizationLayout
-      title="Binary Tree"
-      sidebarPosition="right"
-      contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
-      sidebarNoPadding={true}
-      sidebarNoScroll={true}
-      sidebar={sidebarContent}
-      rightSidebar={null}
-      leftSidebar={null}
-      controls={playbackControls}
-    >
-      <div
-        ref={containerRef}
-        className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
+    <>
+      <Helmet>
+        <title>Interactive Binary Tree Visualizer | Data Structures & Algorithms</title>
+        <meta name="description" content="Explore binary trees, BSTs, and traversals (inorder, preorder, postorder, BFS, DFS) with our interactive step-by-step visualizer." />
+      </Helmet>
+      <VisualizationLayout
+        title="Binary Tree"
+        sidebarPosition="right"
+        contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
+        sidebarNoPadding={true}
+        sidebarNoScroll={true}
+        sidebar={sidebarContent}
+        rightSidebar={null}
+        leftSidebar={null}
+        controls={playbackControls}
+      >
+        <div
+          ref={containerRef}
+          className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
             ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
             ${activeTool === 'node' ? 'cursor-crosshair' : ''}
             ${activeTool === 'edge' ? 'cursor-alias' : ''}
             ${activeTool === 'delete' ? 'cursor-not-allowed' : ''}
         `}
-        onMouseDown={handleCanvasMouseDown}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleCanvasMouseUp}
-        onMouseLeave={handleCanvasMouseUp}
-        onWheel={handleWheel}
-      >
-        <TreeTools
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          onClear={clear}
-        />
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
+          onWheel={handleWheel}
+        >
+          <TreeTools
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            onClear={clear}
+          />
 
-        {/* Tree Canvas */}
-        <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
+          {/* Tree Canvas */}
+          <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
 
-          <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
-            <defs>
-              {/* Glow Filter */}
-              <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
-                <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
-                <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
-              </filter>
-            </defs>
+            <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
+              <defs>
+                {/* Glow Filter */}
+                <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
+                  <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
+                  <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                </filter>
+              </defs>
 
-            {/* Edges */}
-            {currentFrame.edges.map((edge, i) => {
-              const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
-              const toNode = currentFrame.nodes.find(n => n.id === edge.to);
-              if (!fromNode || !toNode) return null;
+              {/* Edges */}
+              {currentFrame.edges.map((edge, i) => {
+                const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
+                const toNode = currentFrame.nodes.find(n => n.id === edge.to);
+                if (!fromNode || !toNode) return null;
 
-              return (
+                return (
+                  <line
+                    key={`edge-${i}`}
+                    x1={fromNode.x} y1={fromNode.y}
+                    x2={toNode.x} y2={toNode.y}
+                    className="stroke-slate-400 dark:stroke-[#383564] stroke-2 transition-all duration-300"
+                  />
+                );
+              })}
+
+              {/* Temporary Edge (Drag) */}
+              {tempEdge && (
                 <line
-                  key={`edge-${i}`}
-                  x1={fromNode.x} y1={fromNode.y}
-                  x2={toNode.x} y2={toNode.y}
-                  className="stroke-slate-400 dark:stroke-[#383564] stroke-2 transition-all duration-300"
+                  x1={tempEdge.x1} y1={tempEdge.y1}
+                  x2={tempEdge.x2} y2={tempEdge.y2}
+                  className="stroke-primary stroke-2 stroke-dasharray-4"
                 />
-              );
-            })}
+              )}
 
-            {/* Temporary Edge (Drag) */}
-            {tempEdge && (
-              <line
-                x1={tempEdge.x1} y1={tempEdge.y1}
-                x2={tempEdge.x2} y2={tempEdge.y2}
-                className="stroke-primary stroke-2 stroke-dasharray-4"
-              />
-            )}
+              {/* Nodes */}
+              {currentFrame.nodes.map((node) => {
+                const isHighlighted = currentFrame.highlights?.includes(node.id);
+                const isEvaluated = currentFrame.evaluated?.includes(node.id);
+                const isSelected = selectedNode === node.id;
+                const isDragged = draggedNode === node.id;
 
-            {/* Nodes */}
-            {currentFrame.nodes.map((node) => {
-              const isHighlighted = currentFrame.highlights?.includes(node.id);
-              const isEvaluated = currentFrame.evaluated?.includes(node.id);
-              const isSelected = selectedNode === node.id;
-              const isDragged = draggedNode === node.id;
-
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${node.x}, ${node.y})`}
-                  className={`transition-all duration-500 ${isDragged ? 'transition-none' : ''}`}
-                  onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                  onMouseUp={(e) => handleNodeMouseUp(e, node.id)}
-                >
-                  <circle
-                    r="24"
-                    className={`transition-all duration-300 cursor-pointer hover:stroke-primary/50
+                return (
+                  <g
+                    key={node.id}
+                    transform={`translate(${node.x}, ${node.y})`}
+                    className={`transition-all duration-500 ${isDragged ? 'transition-none' : ''}`}
+                    onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                    onMouseUp={(e) => handleNodeMouseUp(e, node.id)}
+                  >
+                    <circle
+                      r="24"
+                      className={`transition-all duration-300 cursor-pointer hover:stroke-primary/50
                         ${isHighlighted
-                        ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
-                        : isEvaluated
-                          ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
-                          : isSelected
-                            ? 'fill-white dark:fill-[#1e1c33] stroke-primary stroke-[3px]'
-                            : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
-                      }
+                          ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
+                          : isEvaluated
+                            ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
+                            : isSelected
+                              ? 'fill-white dark:fill-[#1e1c33] stroke-primary stroke-[3px]'
+                              : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
+                        }
                         stroke-[2.5px]
                     `}
-                  />
-                  <text
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    y="1"
-                    className={`text-sm font-bold font-mono select-none pointer-events-none
+                    />
+                    <text
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      y="1"
+                      className={`text-sm font-bold font-mono select-none pointer-events-none
                         ${isHighlighted ? 'fill-white' : 'fill-slate-900 dark:fill-white'}
                     `}
-                  >
-                    {node.value}
-                  </text>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+                    >
+                      {node.value}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
 
-        {/* Description Overlay */}
-        <div className="absolute bottom-4 right-4 max-w-sm w-full pointer-events-none flex justify-end">
-          <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100">
-            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
-              {currentFrame.description || "Ready to visualize..."}
-            </p>
+          {/* Description Overlay */}
+          <div className="absolute bottom-4 right-4 max-w-sm w-full pointer-events-none flex justify-end">
+            <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100">
+              <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                {currentFrame.description || "Ready to visualize..."}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-    </VisualizationLayout>
+      </VisualizationLayout>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
 import AuthBackground from '../components/auth/AuthBackground'
 
@@ -74,6 +75,11 @@ const Home = () => {
 
   return (
     <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
+      <Helmet>
+        <title>Data Structures & Algorithms Visualizer | Interactive DSA Tool</title>
+        <meta name="description" content="Master Data Structures and Algorithms with our free, interactive visualizer. Step-by-step animations for learning and coding interview prep." />
+      </Helmet>
+
       <section className="relative py-16 px-6 overflow-hidden">
         <AuthBackground isFixed={false} />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useGraphVisualizer } from '../hooks/useGraphVisualizer';
 import { GraphControls } from '../components/graph/GraphControls';
@@ -315,204 +316,210 @@ const Graphs = () => {
     return <div className="p-10 text-red-600 font-bold">Error: Graph data missing. Check console.</div>;
   }
   return (
-    <VisualizationLayout
-      title="Graph"
-      sidebarPosition="right"
-      contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
-      sidebarNoPadding={true}
-      sidebarNoScroll={true}
-      sidebar={sidebarContent}
-      rightSidebar={null}
-      leftSidebar={null}
-      controls={playbackControls}
-    >
-      <div
-        ref={containerRef}
-        className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
+    <>
+      <Helmet>
+        <title>Interactive Graph Algorithms Visualizer | Data Structures & Algorithms</title>
+        <meta name="description" content="Master graph algorithms visually. Interactive Dijkstra's, A*, DFS, BFS, Kruskal's, and Network Flow animations. Build and analyze your own graphs." />
+      </Helmet>
+      <VisualizationLayout
+        title="Graph"
+        sidebarPosition="right"
+        contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
+        sidebarNoPadding={true}
+        sidebarNoScroll={true}
+        sidebar={sidebarContent}
+        rightSidebar={null}
+        leftSidebar={null}
+        controls={playbackControls}
+      >
+        <div
+          ref={containerRef}
+          className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
             ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
             ${activeTool === 'node' ? 'cursor-crosshair' : ''}
             ${activeTool === 'edge' ? 'cursor-cell' : ''}
             ${activeTool === 'delete' ? 'cursor-not-allowed' : ''}
         `}
-        onMouseDown={handleCanvasMouseDown}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseUp={handleCanvasMouseUp}
-        onMouseLeave={handleCanvasMouseUp}
-        onWheel={handleWheel}
-      >
-        <GraphTools
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          onClear={clearCanvas}
-        />
+          onMouseDown={handleCanvasMouseDown}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseUp={handleCanvasMouseUp}
+          onMouseLeave={handleCanvasMouseUp}
+          onWheel={handleWheel}
+        >
+          <GraphTools
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            onClear={clearCanvas}
+          />
 
-        {/* Graph Canvas */}
-        <div ref={graphRef} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[600px] h-[400px] pointer-events-none">
+          {/* Graph Canvas */}
+          <div ref={graphRef} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[600px] h-[400px] pointer-events-none">
 
-          {/* SVG Edges */}
-          <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
-            <defs>
-              <marker id="arrowhead" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
-                <polygon fill="#64748b" points="0 0, 10 3.5, 0 7"></polygon>
-              </marker>
-              <marker id="arrowhead-active" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
-                <polygon fill="#4236e7" points="0 0, 10 3.5, 0 7"></polygon>
-              </marker>
-            </defs>
-            {currentFrame.edges.map((edge, i) => {
-              const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
-              const toNode = currentFrame.nodes.find(n => n.id === edge.to);
-              if (!fromNode || !toNode) return null;
+            {/* SVG Edges */}
+            <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
+              <defs>
+                <marker id="arrowhead" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
+                  <polygon fill="#64748b" points="0 0, 10 3.5, 0 7"></polygon>
+                </marker>
+                <marker id="arrowhead-active" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
+                  <polygon fill="#4236e7" points="0 0, 10 3.5, 0 7"></polygon>
+                </marker>
+              </defs>
+              {currentFrame.edges.map((edge, i) => {
+                const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
+                const toNode = currentFrame.nodes.find(n => n.id === edge.to);
+                if (!fromNode || !toNode) return null;
 
-              const isHighlighted = currentFrame.edgeHighlights?.some(h =>
-                (h.from === edge.from && h.to === edge.to) ||
-                (!isDirected && h.from === edge.to && h.to === edge.from)
-              ) || false;
+                const isHighlighted = currentFrame.edgeHighlights?.some(h =>
+                  (h.from === edge.from && h.to === edge.to) ||
+                  (!isDirected && h.from === edge.to && h.to === edge.from)
+                ) || false;
 
-              // Calculate midpoint
-              const midX = (fromNode.x + toNode.x) / 2;
-              const midY = (fromNode.y + toNode.y) / 2;
+                // Calculate midpoint
+                const midX = (fromNode.x + toNode.x) / 2;
+                const midY = (fromNode.y + toNode.y) / 2;
 
-              // Calculate perpendicular offset
-              const dx = toNode.x - fromNode.x;
-              const dy = toNode.y - fromNode.y;
-              const length = Math.sqrt(dx * dx + dy * dy);
-              // Normalize and rotate 90 degrees (-dy, dx)
-              // Offset by 15px
-              const offsetX = length > 0 ? (-dy / length) * 15 : 0;
-              const offsetY = length > 0 ? (dx / length) * 15 : -15;
+                // Calculate perpendicular offset
+                const dx = toNode.x - fromNode.x;
+                const dy = toNode.y - fromNode.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                // Normalize and rotate 90 degrees (-dy, dx)
+                // Offset by 15px
+                const offsetX = length > 0 ? (-dy / length) * 15 : 0;
+                const offsetY = length > 0 ? (dx / length) * 15 : -15;
 
-              // Dim Logic for Kruskal/Prim/Dijkstra/Bellman-Ford/A* (Only at the end)
-              const isTreeAlgo = activeAlgorithm === 'kruskal' || activeAlgorithm === 'prim' || activeAlgorithm === 'dijkstra' || activeAlgorithm === 'bellmanFord' || activeAlgorithm === 'aStar';
-              const isFinished = frames.length > 0 && currentStep === frames.length - 1;
-              const isDimmed = isTreeAlgo && isFinished && !isHighlighted;
+                // Dim Logic for Kruskal/Prim/Dijkstra/Bellman-Ford/A* (Only at the end)
+                const isTreeAlgo = activeAlgorithm === 'kruskal' || activeAlgorithm === 'prim' || activeAlgorithm === 'dijkstra' || activeAlgorithm === 'bellmanFord' || activeAlgorithm === 'aStar';
+                const isFinished = frames.length > 0 && currentStep === frames.length - 1;
+                const isDimmed = isTreeAlgo && isFinished && !isHighlighted;
+
+                return (
+                  <g key={i} className={`pointer-events-auto cursor-pointer group ${activeTool === 'delete' ? 'hover:opacity-50' : ''}`}
+                    onClick={(e) => handleEdgeClick(e, edge.from, edge.to)}>
+                    {/* Invisible Hit Area (Wider Target) */}
+                    <line
+                      x1={fromNode.x} y1={fromNode.y}
+                      x2={toNode.x} y2={toNode.y}
+                      stroke="transparent"
+                      strokeWidth="20"
+                      className="cursor-pointer"
+                    />
+
+                    {/* Visual Edge */}
+                    <line
+                      x1={fromNode.x} y1={fromNode.y}
+                      x2={toNode.x} y2={toNode.y}
+                      className={`transition-all duration-300 
+                        ${isHighlighted
+                          ? 'stroke-primary stroke-[3px] drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
+                          : isDimmed
+                            ? 'stroke-slate-200 dark:stroke-slate-800 stroke-[1px]'
+                            : 'stroke-slate-500 dark:stroke-slate-400 stroke-2 group-hover:stroke-slate-700 dark:group-hover:stroke-slate-300'
+                        }`}
+                      markerEnd={isDirected ? `url(#${isHighlighted ? 'arrowhead-active' : 'arrowhead'})` : undefined}
+                    />
+                    {isWeighted && (
+                      <g transform={`translate(${midX + offsetX}, ${midY + offsetY})`} className={`transition-opacity duration-300 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
+                        <rect
+                          x="-10" y="-10" width="20" height="20" rx="4"
+                          className={`${isHighlighted ? 'fill-primary stroke-primary' : 'fill-white dark:fill-[#1e1c33] stroke-slate-300 dark:stroke-slate-600'} stroke-[1.5px] shadow-sm`}
+                        />
+                        <text
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className={`text-[10px] font-mono font-bold select-none pointer-events-none ${isHighlighted ? 'fill-white' : 'fill-slate-700 dark:fill-slate-300'}`}
+                        >
+                          {edge.weight}
+                        </text>
+                      </g>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Weight Input Float */}
+            {weightInput && (
+              <div
+                key={`${weightInput.from}-${weightInput.to}`}
+                style={{
+                  left: weightInput.x,
+                  top: weightInput.y,
+                  transform: 'translate(-50%, -50%)'
+                }}
+                className="absolute z-50 animate-in zoom-in-95 duration-200"
+              >
+                <input
+                  autoFocus
+                  type="number"
+                  defaultValue={weightInput.initialWeight ?? "1"}
+                  onKeyDown={handleWeightSubmit}
+                  onBlur={() => setWeightInput(null)}
+                  className="w-16 h-8 text-center text-sm font-bold bg-white dark:bg-[#1e1c33] border-2 border-primary rounded-lg shadow-lg outline-none text-primary"
+                />
+              </div>
+            )}
+
+            {/* Nodes */}
+            {currentFrame.nodes.map((node) => {
+              const isVisited = currentFrame.visited?.includes(node.id);
+              const isQueued = currentFrame.queue?.includes(node.id) || currentFrame.stack?.includes(node.id);
+              const isHighlighted = currentFrame.highlights?.includes(node.id);
+              const isSelected = selectedNode === node.id;
 
               return (
-                <g key={i} className={`pointer-events-auto cursor-pointer group ${activeTool === 'delete' ? 'hover:opacity-50' : ''}`}
-                  onClick={(e) => handleEdgeClick(e, edge.from, edge.to)}>
-                  {/* Invisible Hit Area (Wider Target) */}
-                  <line
-                    x1={fromNode.x} y1={fromNode.y}
-                    x2={toNode.x} y2={toNode.y}
-                    stroke="transparent"
-                    strokeWidth="20"
-                    className="cursor-pointer"
-                  />
-
-                  {/* Visual Edge */}
-                  <line
-                    x1={fromNode.x} y1={fromNode.y}
-                    x2={toNode.x} y2={toNode.y}
-                    className={`transition-all duration-300 
-                        ${isHighlighted
-                        ? 'stroke-primary stroke-[3px] drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
-                        : isDimmed
-                          ? 'stroke-slate-200 dark:stroke-slate-800 stroke-[1px]'
-                          : 'stroke-slate-500 dark:stroke-slate-400 stroke-2 group-hover:stroke-slate-700 dark:group-hover:stroke-slate-300'
-                      }`}
-                    markerEnd={isDirected ? `url(#${isHighlighted ? 'arrowhead-active' : 'arrowhead'})` : undefined}
-                  />
-                  {isWeighted && (
-                    <g transform={`translate(${midX + offsetX}, ${midY + offsetY})`} className={`transition-opacity duration-300 ${isDimmed ? 'opacity-30' : 'opacity-100'}`}>
-                      <rect
-                        x="-10" y="-10" width="20" height="20" rx="4"
-                        className={`${isHighlighted ? 'fill-primary stroke-primary' : 'fill-white dark:fill-[#1e1c33] stroke-slate-300 dark:stroke-slate-600'} stroke-[1.5px] shadow-sm`}
-                      />
-                      <text
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className={`text-[10px] font-mono font-bold select-none pointer-events-none ${isHighlighted ? 'fill-white' : 'fill-slate-700 dark:fill-slate-300'}`}
-                      >
-                        {edge.weight}
-                      </text>
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Weight Input Float */}
-          {weightInput && (
-            <div
-              key={`${weightInput.from}-${weightInput.to}`}
-              style={{
-                left: weightInput.x,
-                top: weightInput.y,
-                transform: 'translate(-50%, -50%)'
-              }}
-              className="absolute z-50 animate-in zoom-in-95 duration-200"
-            >
-              <input
-                autoFocus
-                type="number"
-                defaultValue={weightInput.initialWeight ?? "1"}
-                onKeyDown={handleWeightSubmit}
-                onBlur={() => setWeightInput(null)}
-                className="w-16 h-8 text-center text-sm font-bold bg-white dark:bg-[#1e1c33] border-2 border-primary rounded-lg shadow-lg outline-none text-primary"
-              />
-            </div>
-          )}
-
-          {/* Nodes */}
-          {currentFrame.nodes.map((node) => {
-            const isVisited = currentFrame.visited?.includes(node.id);
-            const isQueued = currentFrame.queue?.includes(node.id) || currentFrame.stack?.includes(node.id);
-            const isHighlighted = currentFrame.highlights?.includes(node.id);
-            const isSelected = selectedNode === node.id;
-
-            return (
-              <div
-                key={node.id}
-                onClick={(e) => handleNodeClick(e, node.id)}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  if (activeTool !== 'delete') {
-                    setDraggingNode(node.id);
-                  }
-                }}
-                className={`absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center font-bold font-mono shadow-lg transition-all ${draggingNode === node.id ? 'duration-0 z-50' : 'duration-300'} pointer-events-auto
+                <div
+                  key={node.id}
+                  onClick={(e) => handleNodeClick(e, node.id)}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    if (activeTool !== 'delete') {
+                      setDraggingNode(node.id);
+                    }
+                  }}
+                  className={`absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center font-bold font-mono shadow-lg transition-all ${draggingNode === node.id ? 'duration-0 z-50' : 'duration-300'} pointer-events-auto
                                     ${isHighlighted || isVisited ? 'bg-primary border-4 border-white dark:border-[#131221] text-white' : 'bg-white dark:bg-[#1e1c33] border-2 text-slate-900 dark:text-white'}
                                     ${isSelected ? 'border-primary ring-2 ring-primary ring-offset-2 dark:ring-offset-[#131221]' : 'border-slate-400 dark:border-slate-500'}
                                     ${isHighlighted ? 'scale-110 shadow-[0_0_20px_rgba(66,54,231,0.6)] z-20' : 'z-10'}
                                     ${activeTool !== 'move' ? 'cursor-pointer hover:border-primary' : ''}
                                 `}
-                style={{ left: node.x, top: node.y }}
-              >
-                {getNodeLabel(node.id)}
+                  style={{ left: node.x, top: node.y }}
+                >
+                  {getNodeLabel(node.id)}
 
-                {/* Distance Overlay */}
-                {currentFrame.distances && currentFrame.distances[node.id] !== undefined && (
-                  <div className={`absolute -bottom-7 px-1.5 py-0.5 rounded shadow-sm text-[10px] font-bold tracking-tight border pointer-events-none whitespace-nowrap z-50 ${currentFrame.distances[node.id] !== Infinity && currentFrame.distances[node.id] !== '∞'
-                    ? 'bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-100'
-                    : 'bg-white dark:bg-[#131221] border-gray-200 dark:border-gray-700 text-gray-400'
-                    }`}>
-                    d: {currentFrame.distances[node.id] === Infinity ? '∞' : currentFrame.distances[node.id]}
-                  </div>
-                )}
+                  {/* Distance Overlay */}
+                  {currentFrame.distances && currentFrame.distances[node.id] !== undefined && (
+                    <div className={`absolute -bottom-7 px-1.5 py-0.5 rounded shadow-sm text-[10px] font-bold tracking-tight border pointer-events-none whitespace-nowrap z-50 ${currentFrame.distances[node.id] !== Infinity && currentFrame.distances[node.id] !== '∞'
+                      ? 'bg-amber-100 dark:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-100'
+                      : 'bg-white dark:bg-[#131221] border-gray-200 dark:border-gray-700 text-gray-400'
+                      }`}>
+                      d: {currentFrame.distances[node.id] === Infinity ? '∞' : currentFrame.distances[node.id]}
+                    </div>
+                  )}
 
-                {isQueued && !isVisited && (
-                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white dark:border-[#131221]"></div>
-                )}
-              </div>
-            );
-          })}
+                  {isQueued && !isVisited && (
+                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white dark:border-[#131221]"></div>
+                  )}
+                </div>
+              );
+            })}
 
-        </div>
-
-        {/* Description Overlay (Bottom Right) */}
-        <div className="absolute bottom-4 right-4 z-40 flex flex-col items-end gap-2 max-w-md w-full pointer-events-none">
-          <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 w-full">
-            <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
-              {currentFrame.description || "Ready to visualize..."}
-            </p>
           </div>
+
+          {/* Description Overlay (Bottom Right) */}
+          <div className="absolute bottom-4 right-4 z-40 flex flex-col items-end gap-2 max-w-md w-full pointer-events-none">
+            <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100 w-full">
+              <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                {currentFrame.description || "Ready to visualize..."}
+              </p>
+            </div>
+          </div>
+
         </div>
 
-      </div>
-
-    </VisualizationLayout >
+      </VisualizationLayout>
+    </>
   );
 };
 
