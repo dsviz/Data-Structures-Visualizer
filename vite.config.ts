@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import fs from 'fs'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -8,7 +10,21 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = apiUrl.endsWith('/api') ? apiUrl.replace(/\/api$/, '') : apiUrl
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      {
+        name: 'copy-index-to-404',
+        writeBundle: () => {
+          const distDir = path.resolve(__dirname, 'dist');
+          if (fs.existsSync(path.join(distDir, 'index.html'))) {
+            fs.copyFileSync(
+              path.join(distDir, 'index.html'),
+              path.join(distDir, '404.html')
+            )
+          }
+        }
+      }
+    ],
     server: {
       port: 3000,
       open: true,

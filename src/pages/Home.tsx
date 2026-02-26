@@ -129,7 +129,7 @@ const Home = () => {
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>
             <a
-              href="https://github.com/shubhamkumarsharma03/Data-Structures-Visualizer"
+              href="https://github.com/dsviz/Data-Structures-Visualizer"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white dark:bg-[#1e1d32] text-gray-700 dark:text-white border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-[#272546] hover:border-gray-300 dark:hover:border-white/20 px-8 py-3 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg dark:shadow-none"
