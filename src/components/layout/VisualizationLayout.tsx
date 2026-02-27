@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLayout } from '../../context/LayoutContext';
+import LandscapeEnforcer from '../ui/LandscapeEnforcer';
 
 interface VisualizationLayoutProps {
     title: string;
@@ -79,6 +80,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
 
     return (
         <div className={`flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display ${isResizing ? 'cursor-col-resize select-none' : ''}`}>
+            <LandscapeEnforcer />
             <h1 className="sr-only">Interactive {title} Visualizer</h1>
             {/* Header Removed as per user request (duplicate of global Navbar) */}
 

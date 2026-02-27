@@ -199,7 +199,7 @@ const Home = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
 
             {mode === 'training' ? (
               // Training Mode Cards
@@ -233,19 +233,26 @@ const Home = () => {
                   bg: 'bg-purple-500/10'
                 }
               ].map((feature, idx) => (
-                <div key={idx} className="flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden cursor-not-allowed opacity-75 grayscale-[0.3]">
-                  <div className="p-6 flex flex-col flex-1 relative">
-                    <div className="absolute top-4 right-4">
+                <div key={idx} className="flex flex-row sm:flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden cursor-not-allowed opacity-75 grayscale-[0.3] h-36 sm:h-auto sm:aspect-square group">
+                  <div className="w-1/3 sm:w-full h-full sm:h-[55%] border-r sm:border-r-0 sm:border-b border-gray-200 dark:border-[#272546] flex items-center justify-center p-4 bg-gray-50 dark:bg-[#131221] shrink-0">
+                    <div className={`w-full sm:w-auto sm:size-16 max-w-[80px] aspect-square rounded-xl ${feature.bg} flex items-center justify-center`}>
+                      <span className={`material-symbols-outlined text-2xl sm:text-3xl ${feature.color}`}>{feature.icon}</span>
+                    </div>
+                  </div>
+                  <div className="p-4 sm:p-5 flex flex-col flex-1 relative justify-center sm:justify-start">
+                    <div className="absolute top-4 right-4 hidden sm:block">
                       <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-bold px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
                         IN DEV
                       </span>
                     </div>
-                    <div className={`size-12 rounded-xl ${feature.bg} flex items-center justify-center mb-4`}>
-                      <span className={`material-symbols-outlined text-2xl ${feature.color}`}>{feature.icon}</span>
+                    <div className="flex justify-between items-center mb-1 sm:mb-2">
+                      <h3 className="text-gray-900 dark:text-white text-base sm:text-lg font-bold">{feature.title}</h3>
+                      <span className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded border border-gray-200 dark:border-gray-700 sm:hidden">
+                        DEV
+                      </span>
                     </div>
-                    <h3 className="text-gray-900 dark:text-white text-lg font-bold mb-2">{feature.title}</h3>
-                    <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono leading-relaxed mb-4">{feature.description}</p>
-                    <div className="mt-auto">
+                    <p className="text-gray-500 dark:text-[#9794c7] text-xs sm:text-sm font-mono leading-relaxed line-clamp-2">{feature.description}</p>
+                    <div className="mt-auto hidden sm:block">
                       <button disabled className="w-full py-2 bg-gray-50 dark:bg-[#272546] text-gray-400 dark:text-gray-500 rounded-lg text-sm font-medium cursor-not-allowed border border-gray-100 dark:border-[#323055]">
                         Coming Soon
                       </button>
@@ -258,65 +265,71 @@ const Home = () => {
               filteredCards.map((card, index) => (
                 card.isPlaceholder ? (
                   // Placeholder Card
-                  <div key={index} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75">
-                    <div className={`h-52 ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo}`} flex items-center justify-center relative overflow-hidden`}>
+                  <div key={index} className="group relative flex flex-row sm:flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 cursor-not-allowed opacity-75 h-36 sm:h-auto sm:aspect-square">
+                    <div className={`w-1/3 sm:w-full h-full sm:h-[55%] ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo}`} border-r sm:border-r-0 sm:border-b border-gray-200 dark:border-[#272546] flex items-center justify-center relative overflow-hidden shrink-0`}>
                       {card.image ? (
                         <img
                           src={card.image}
                           alt={card.alt}
-                          className="absolute inset-0 w-full h-full object-contain p-2 opacity-90 group-hover:scale-110 transition-transform duration-500"
+                          className="absolute inset-0 w-full h-full object-contain p-2 sm:p-4 opacity-90 group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
                         <>
                           <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                          <span className={`material-symbols-outlined text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                          <span className={`material-symbols-outlined text-4xl sm:text-6xl ${card.iconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
                         </>
                       )}
                     </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
-                        <span className={`bg-red-500/10 text-red-400 text-xs font-mono px-2 py-1 rounded border border-red-500/20`}>{card.difficulty}</span>
+                    <div className="p-4 sm:p-5 flex flex-col flex-1 justify-center sm:justify-start relative">
+                      <div className="flex justify-between items-start mb-1 sm:mb-2">
+                        <h3 className="text-gray-900 dark:text-white text-base sm:text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                        <span className={`bg-red-500/10 text-red-400 text-[10px] sm:text-xs font-mono px-1.5 py-0.5 sm:px-2 sm:py-1 rounded border border-red-500/20 whitespace-nowrap ml-2`}>{card.difficulty}</span>
                       </div>
-                      <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
-                      <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                        <span className="material-symbols-outlined text-[16px] mr-1">lock</span>
+                      <p className="text-gray-500 dark:text-[#9794c7] text-xs sm:text-sm font-mono mb-2 sm:mb-4 line-clamp-2 md:line-clamp-2 max-w-3xl">{card.description}</p>
+                      <div className="mt-auto flex items-center text-[10px] sm:text-xs text-gray-400 dark:text-white/50 font-medium pt-2">
+                        <span className="material-symbols-outlined text-[14px] sm:text-[16px] mr-1">lock</span>
                         Coming Soon
                       </div>
                     </div>
                   </div>
                 ) : (
                   // Active Card
-                  <Link key={index} to={card.path} className="group relative flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1">
-                    <div className={`h-52 ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo}`} flex items-center justify-center relative overflow-hidden`}>
+                  <Link key={index} to={card.path} className="group relative flex flex-row sm:flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.15)] transition-all duration-300 hover:-translate-y-1 h-36 sm:h-auto sm:aspect-square">
+                    <div className={`w-1/3 sm:w-full h-full sm:h-[55%] ${card.imageBg || `bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} ${card.darkGradientFrom} ${card.darkGradientTo}`} border-r sm:border-r-0 sm:border-b border-gray-200 dark:border-[#272546] flex items-center justify-center relative overflow-hidden shrink-0`}>
                       {card.image ? (
                         <div className="absolute inset-0 w-full h-full">
                           <img
                             src={card.image}
                             alt={card.alt}
-                            className="w-full h-full object-contain p-2 opacity-90 group-hover:scale-110 transition-transform duration-500"
+                            className="w-full h-full object-contain p-2 sm:p-4 opacity-90 group-hover:scale-110 transition-transform duration-500"
                           />
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300 pointer-events-none"></div>
                         </div>
                       ) : (
                         <>
                           <div className="absolute inset-0 bg-[url('https://placeholder.pics/svg/400')] bg-cover opacity-20" data-alt={card.alt}></div>
-                          <span className={`material-symbols-outlined text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
+                          <span className={`material-symbols-outlined text-4xl sm:text-6xl ${card.iconColor} ${card.darkIconColor} drop-shadow-lg group-hover:scale-110 transition-transform duration-300`}>{card.icon}</span>
                         </>
                       )}
                     </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-gray-900 dark:text-white text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
-                        <span className={`text-xs font-mono px-2 py-1 rounded border ${card.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                    <div className="p-4 sm:p-5 flex flex-col flex-1 justify-center sm:justify-start relative">
+                      <div className="flex justify-between items-start mb-1 sm:mb-2">
+                        <h3 className="text-gray-900 dark:text-white text-base sm:text-lg font-bold group-hover:text-primary transition-colors">{card.title}</h3>
+                        <span className={`text-[10px] sm:text-xs font-mono px-1.5 py-0.5 sm:px-2 sm:py-1 rounded border whitespace-nowrap ml-2 ${card.difficulty === 'Easy' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
                           card.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
                             'bg-red-500/10 text-red-400 border-red-500/20'
                           }`}>{card.difficulty}</span>
                       </div>
-                      <p className="text-gray-500 dark:text-[#9794c7] text-sm font-mono mb-4 line-clamp-2">{card.description}</p>
-                      <div className="mt-auto flex items-center text-xs text-gray-400 dark:text-white/50 font-medium">
-                        <span className="material-symbols-outlined text-[16px] mr-1">play_circle</span>
-                        {card.count} {card.countLabel}
+                      <p className="text-gray-500 dark:text-[#9794c7] text-xs sm:text-sm font-mono mb-2 sm:mb-4 line-clamp-2 md:line-clamp-2 max-w-3xl">{card.description}</p>
+
+                      <div className="mt-auto flex items-center justify-between pt-2">
+                        <div className="flex items-center text-[10px] sm:text-xs text-gray-400 dark:text-[#9794c7] font-medium">
+                          <span className="material-symbols-outlined text-[14px] sm:text-[16px] mr-1">play_circle</span>
+                          {card.count} {card.countLabel}
+                        </div>
+                        <span className="text-primary text-sm font-bold opacity-0 sm:-translate-x-4 sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all duration-300 hidden sm:flex items-center gap-1">
+                          Start <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        </span>
                       </div>
                     </div>
                   </Link>
