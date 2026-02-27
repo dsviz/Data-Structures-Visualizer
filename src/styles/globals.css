@@ -14,44 +14,6 @@
   }
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .card {
-    @apply bg-white rounded-xl shadow-md p-6 border border-gray-200;
-  }
-
-  .visualizer-container {
-    @apply w-full h-full flex items-center justify-center bg-white rounded-lg border-2 border-gray-200 p-4;
-  }
-}
-
-@keyframes float-slow {
-
-  0%,
-  100% {
-    transform: translateY(0) translateX(0) rotate(0deg);
-  }
-
-  33% {
-    transform: translateY(-20px) translateX(10px) rotate(2deg);
-  }
-
-  66% {
-    transform: translateY(10px) translateX(-15px) rotate(-1deg);
-  }
-}
-
-.animate-float-slow {
-  animation: float-slow linear infinite;
-}
-
 .animate-shake {
   animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }

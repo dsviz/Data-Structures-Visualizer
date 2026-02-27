@@ -21,7 +21,7 @@ export const LinkedListTools: React.FC<LinkedListToolsProps> = ({
     ];
 
     return (
-        <div className="absolute top-4 left-4 bg-white dark:bg-[#1e1c33] p-1.5 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-200 dark:border-[#272546] flex flex-row items-center gap-1 z-50 animate-in slide-in-from-left-4 fade-in">
+        <div className="flex flex-row flex-wrap items-center gap-1.5 w-full">
             {tools.map(tool => (
                 <button
                     key={tool.id}

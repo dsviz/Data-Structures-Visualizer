@@ -23,9 +23,22 @@ const Trees = () => {
     clear
   } = treeVisualizer;
 
-  const [splitRatio, setSplitRatio] = useState(0.7);
-  const sidebarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // --- Floating Card State ---
+  const [isCodeExpanded, setIsCodeExpanded] = useState(false);
+  const [isOpsExpanded, setIsOpsExpanded] = useState(false);
+  const [isToolboxExpanded, setIsToolboxExpanded] = useState(false);
+  const [isCurrentOpExpanded, setIsCurrentOpExpanded] = useState(false);
+
+  // Auto-collapse logic when algorithm starts playing
+  useEffect(() => {
+    if (isPlaying) {
+      setIsOpsExpanded(false);
+      setIsToolboxExpanded(false);
+      setIsCurrentOpExpanded(true);
+    }
+  }, [isPlaying]);
 
   // Zoom & Pan
   const { setIsSidebarOpen } = useLayout();
@@ -57,28 +70,7 @@ const Trees = () => {
     };
   };
 
-  // Resizing Logic
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startRatio = splitRatio;
 
-    const handleMouseMove = (ev: MouseEvent) => {
-      if (!sidebarRef.current) return;
-      const h = sidebarRef.current.offsetHeight;
-      const delta = ev.clientY - startY;
-      const newRatio = Math.min(0.8, Math.max(0.2, startRatio + delta / h));
-      setSplitRatio(newRatio);
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
 
   // Zoom Handlers
   const handleWheel = (e: React.WheelEvent) => {
@@ -157,34 +149,7 @@ const Trees = () => {
   };
 
 
-  // Sidebar Content
-  const sidebarContent = (
-    <div className="h-full flex flex-col relative" ref={sidebarRef}>
-      {/* Controls Section */}
-      <div style={{ height: `${splitRatio * 100}%` }} className="min-h-0 overflow-y-auto border-b border-gray-200 dark:border-[#272546] p-4">
-        <TreeControls
-          {...treeVisualizer}
-        />
-      </div>
 
-      {/* Resizer Handle */}
-      <div
-        className="h-1 bg-gray-100 dark:bg-[#272546] hover:bg-primary cursor-row-resize transition-colors absolute w-full z-10"
-        style={{ top: `${splitRatio * 100}%` }}
-        onMouseDown={handleMouseDown}
-      ></div>
-
-      {/* Tabs Section */}
-      <div className="flex-1 min-h-0 overflow-hidden bg-white dark:bg-[#1e1c33]">
-        <TreeTabs
-          currentFrame={currentFrame}
-          codeLanguage={codeLanguage}
-          setCodeLanguage={setCodeLanguage}
-          activeAlgorithm={activeAlgorithm}
-        />
-      </div>
-    </div>
-  );
 
   // Playback Controls
   const playbackControls = (
@@ -242,128 +207,190 @@ const Trees = () => {
       </Helmet>
       <VisualizationLayout
         title="Binary Tree"
-        sidebarPosition="right"
-        contentClassName="flex-1 flex flex-col relative z-0 overflow-hidden"
-        sidebarNoPadding={true}
-        sidebarNoScroll={true}
-        sidebar={sidebarContent}
-        rightSidebar={null}
-        leftSidebar={null}
+        contentClassName="flex-1 flex flex-col relative z-10 overflow-hidden p-0"
         controls={playbackControls}
       >
-        <div
-          ref={containerRef}
-          className={`relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-gray-50/50 dark:bg-black/20 
-            ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
-            ${activeTool === 'node' ? 'cursor-crosshair' : ''}
-            ${activeTool === 'edge' ? 'cursor-alias' : ''}
-            ${activeTool === 'delete' ? 'cursor-not-allowed' : ''}
-        `}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          onMouseLeave={handleCanvasMouseUp}
-          onWheel={handleWheel}
-        >
-          <TreeTools
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            onClear={clear}
-          />
+        <div className="flex w-full h-full relative overflow-hidden bg-gray-50 dark:bg-background-dark">
+          {/* === CENTRAL CANVAS === */}
+          <div className="absolute inset-0 z-0 flex flex-col overflow-hidden">
+            <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.1]" style={{ backgroundImage: 'radial-gradient(#4236e7 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
-          {/* Tree Canvas */}
-          <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
+            <div
+              ref={containerRef}
+              className={`absolute inset-0 flex flex-col items-center justify-center overflow-hidden z-0
+                ${activeTool === 'move' ? 'cursor-grab active:cursor-grabbing' : ''} 
+                ${activeTool === 'node' ? 'cursor-crosshair' : ''}
+                ${activeTool === 'edge' ? 'cursor-alias' : ''}
+                ${activeTool === 'delete' ? 'cursor-not-allowed' : ''}
+              `}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              onWheel={handleWheel}
+            >
 
-            <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
-              <defs>
-                {/* Glow Filter */}
-                <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
-                  <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
-                  <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
-                </filter>
-              </defs>
+              {/* Tree Canvas */}
+              <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
 
-              {/* Edges */}
-              {currentFrame.edges.map((edge, i) => {
-                const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
-                const toNode = currentFrame.nodes.find(n => n.id === edge.to);
-                if (!fromNode || !toNode) return null;
+                <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
+                  <defs>
+                    {/* Glow Filter */}
+                    <filter height="140%" id="glow" width="140%" x="-20%" y="-20%">
+                      <feGaussianBlur result="blur" stdDeviation="3"></feGaussianBlur>
+                      <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+                    </filter>
+                  </defs>
 
-                return (
-                  <line
-                    key={`edge-${i}`}
-                    x1={fromNode.x} y1={fromNode.y}
-                    x2={toNode.x} y2={toNode.y}
-                    className="stroke-slate-400 dark:stroke-[#383564] stroke-2 transition-all duration-300"
-                  />
-                );
-              })}
+                  {/* Edges */}
+                  {currentFrame.edges.map((edge, i) => {
+                    const fromNode = currentFrame.nodes.find(n => n.id === edge.from);
+                    const toNode = currentFrame.nodes.find(n => n.id === edge.to);
+                    if (!fromNode || !toNode) return null;
 
-              {/* Temporary Edge (Drag) */}
-              {tempEdge && (
-                <line
-                  x1={tempEdge.x1} y1={tempEdge.y1}
-                  x2={tempEdge.x2} y2={tempEdge.y2}
-                  className="stroke-primary stroke-2 stroke-dasharray-4"
-                />
-              )}
+                    return (
+                      <line
+                        key={`edge-${i}`}
+                        x1={fromNode.x} y1={fromNode.y}
+                        x2={toNode.x} y2={toNode.y}
+                        className="stroke-slate-400 dark:stroke-[#383564] stroke-2 transition-all duration-300"
+                      />
+                    );
+                  })}
 
-              {/* Nodes */}
-              {currentFrame.nodes.map((node) => {
-                const isHighlighted = currentFrame.highlights?.includes(node.id);
-                const isEvaluated = currentFrame.evaluated?.includes(node.id);
-                const isSelected = selectedNode === node.id;
-                const isDragged = draggedNode === node.id;
+                  {/* Temporary Edge (Drag) */}
+                  {tempEdge && (
+                    <line
+                      x1={tempEdge.x1} y1={tempEdge.y1}
+                      x2={tempEdge.x2} y2={tempEdge.y2}
+                      className="stroke-primary stroke-2 stroke-dasharray-4"
+                    />
+                  )}
 
-                return (
-                  <g
-                    key={node.id}
-                    transform={`translate(${node.x}, ${node.y})`}
-                    className={`transition-all duration-500 ${isDragged ? 'transition-none' : ''}`}
-                    onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                    onMouseUp={(e) => handleNodeMouseUp(e, node.id)}
-                  >
-                    <circle
-                      r="24"
-                      className={`transition-all duration-300 cursor-pointer hover:stroke-primary/50
+                  {/* Nodes */}
+                  {currentFrame.nodes.map((node) => {
+                    const isHighlighted = currentFrame.highlights?.includes(node.id);
+                    const isEvaluated = currentFrame.evaluated?.includes(node.id);
+                    const isSelected = selectedNode === node.id;
+                    const isDragged = draggedNode === node.id;
+
+                    return (
+                      <g
+                        key={node.id}
+                        transform={`translate(${node.x}, ${node.y})`}
+                        className={`transition-all duration-500 ${isDragged ? 'transition-none' : ''}`}
+                        onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                        onMouseUp={(e) => handleNodeMouseUp(e, node.id)}
+                      >
+                        <circle
+                          r="24"
+                          className={`transition-all duration-300 cursor-pointer hover:stroke-primary/50
                         ${isHighlighted
-                          ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
-                          : isEvaluated
-                            ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
-                            : isSelected
-                              ? 'fill-white dark:fill-[#1e1c33] stroke-primary stroke-[3px]'
-                              : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
-                        }
+                              ? 'fill-primary stroke-primary stroke-[3px] filter drop-shadow-[0_0_8px_rgba(66,54,231,0.6)]'
+                              : isEvaluated
+                                ? 'fill-indigo-100 dark:fill-indigo-900/50 stroke-indigo-400 dark:stroke-indigo-600'
+                                : isSelected
+                                  ? 'fill-white dark:fill-[#1e1c33] stroke-primary stroke-[3px]'
+                                  : 'fill-white dark:fill-[#1e1c33] stroke-slate-400 dark:stroke-slate-500'
+                            }
                         stroke-[2.5px]
                     `}
-                    />
-                    <text
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      y="1"
-                      className={`text-sm font-bold font-mono select-none pointer-events-none
+                        />
+                        <text
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          y="1"
+                          className={`text-sm font-bold font-mono select-none pointer-events-none
                         ${isHighlighted ? 'fill-white' : 'fill-slate-900 dark:fill-white'}
                     `}
-                    >
-                      {node.value}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+                        >
+                          {node.value}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
 
-          {/* Description Overlay */}
-          <div className="absolute bottom-4 right-4 max-w-sm w-full pointer-events-none flex justify-end">
-            <div className="bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm p-4 rounded-xl border border-gray-200 dark:border-[#272546] shadow-xl pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100">
-              <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">Current Operation</h4>
-              <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
-                {currentFrame.description || "Ready to visualize..."}
-              </p>
             </div>
           </div>
-        </div>
 
+          {/* === CORNER DOCKS === */}
+
+          {/* Top-Left: All Operations */}
+          <div className="absolute top-0 left-0 flex items-start h-[75%] z-20 pointer-events-none drop-shadow-2xl">
+            <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-r border-[#272546] pointer-events-auto overflow-hidden ${isOpsExpanded ? 'w-[350px]' : 'w-0'}`}>
+              <div className="min-w-[350px] h-full flex flex-col">
+                <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">ALL OPERATIONS</div>
+                <div className="p-4 overflow-y-auto custom-scrollbar h-full">
+                  <TreeControls {...treeVisualizer} />
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setIsOpsExpanded(!isOpsExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tr border-y border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+              <span className="material-symbols-outlined text-[16px] font-bold">{isOpsExpanded ? 'chevron_left' : 'tune'}</span>
+            </button>
+          </div>
+
+          {/* Bottom-Left: Toolbox */}
+          <div className="absolute bottom-0 left-0 flex items-end h-[25%] z-20 pointer-events-none drop-shadow-2xl">
+            <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-r border-t border-[#272546] pointer-events-auto overflow-hidden ${isToolboxExpanded ? 'w-[350px]' : 'w-0'}`}>
+              <div className="min-w-[350px] h-full flex flex-col">
+                <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">TOOLBOX</div>
+                <div className="p-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar h-full">
+                  <TreeTools
+                    activeTool={activeTool}
+                    setActiveTool={setActiveTool}
+                    onClear={clear}
+                  />
+                </div>
+              </div>
+            </div>
+            <button onClick={() => setIsToolboxExpanded(!isToolboxExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-br border-b border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+              <span className="material-symbols-outlined text-[16px] font-bold">{isToolboxExpanded ? 'chevron_left' : 'build'}</span>
+            </button>
+          </div>
+
+          {/* Top-Right: Code & Data */}
+          <div className="absolute top-0 right-0 flex items-start h-[75%] z-20 pointer-events-none drop-shadow-2xl">
+            <button onClick={() => setIsCodeExpanded(!isCodeExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tl border-y border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+              <span className="material-symbols-outlined text-[16px] font-bold">{isCodeExpanded ? 'chevron_right' : 'code'}</span>
+            </button>
+            <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-[#272546] pointer-events-auto overflow-hidden ${isCodeExpanded ? 'w-[450px]' : 'w-0'}`}>
+              <div className="min-w-[450px] h-full flex flex-col">
+                <div className="p-2 border-b border-gray-100 dark:border-[#272546] shrink-0 flex items-center justify-between bg-gray-50/50 dark:bg-[#121121]">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-2">Code & Data</div>
+                </div>
+                <div className="flex-1 overflow-y-auto h-full p-2 custom-scrollbar">
+                  <TreeTabs
+                    currentFrame={currentFrame}
+                    codeLanguage={codeLanguage}
+                    setCodeLanguage={setCodeLanguage}
+                    activeAlgorithm={activeAlgorithm}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom-Right: Current Operation */}
+          <div className="absolute bottom-0 right-0 flex items-end h-[25%] z-20 pointer-events-none drop-shadow-2xl">
+            <button onClick={() => setIsCurrentOpExpanded(!isCurrentOpExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-bl border-b border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+              <span className="material-symbols-outlined text-[16px] font-bold">{isCurrentOpExpanded ? 'chevron_right' : 'description'}</span>
+            </button>
+            <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-t border-[#272546] pointer-events-auto overflow-hidden ${isCurrentOpExpanded ? 'w-[450px]' : 'w-0'}`}>
+              <div className="min-w-[450px] h-full flex flex-col">
+                <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">CURRENT OPERATION</div>
+                <div className="p-4 overflow-y-auto h-full custom-scrollbar">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed min-h-[3rem]">
+                    {currentFrame.description || "Ready to visualize..."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </VisualizationLayout>
     </>
   );
