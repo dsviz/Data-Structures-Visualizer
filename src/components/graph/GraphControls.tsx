@@ -60,7 +60,7 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
 
     const currentFrame = frames[currentStep];
 
-    const [selectedCategory, setSelectedCategory] = useState<string>('Traversal');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>('');
     const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
@@ -142,7 +142,7 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                     <Dropdown
                         value={selectedCategory}
                         onChange={(val) => setSelectedCategory(val)}
-                        options={CATEGORIES.map(cat => ({ value: cat.id, label: cat.label }))}
+                        options={[{ value: '', label: 'Select Category' }, ...CATEGORIES.map(cat => ({ value: cat.id, label: cat.label }))]}
                     />
                 </div>
 
@@ -156,18 +156,18 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                             options={ALGORITHMS[selectedCategory].map(algo => ({ value: algo.id, label: algo.label }))}
                         />
                     </div>
-                ) : (
+                ) : selectedCategory ? (
                     <div className="text-[11px] text-gray-400 dark:text-gray-500 italic py-2">
                         Algorithms for this category coming soon.
                     </div>
-                )}
+                ) : null}
 
-                {/* Start Node (if necessary) */}
-                {['Traversal', 'Shortest Path', 'MST', 'Basics'].includes(selectedCategory) && (
+                {/* Start Node (if necessary and algorithm selected) */}
+                {selectedAlgorithm && ['Traversal', 'Shortest Path', 'MST', 'Basics'].includes(selectedCategory) && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#121121] border border-gray-200 dark:border-[#272546]">
-                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300 whitespace-nowrap">Start Node:</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-gray-300 whitespace-nowrap shrink-0">Start Node:</span>
                         <input
-                            className="flex-1 bg-white dark:bg-[#1a182e] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-md p-1.5 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono shadow-inner"
+                            className="w-full min-w-0 bg-white dark:bg-[#1a182e] border border-gray-200 dark:border-[#272546] text-slate-900 dark:text-gray-200 text-sm rounded-md p-1.5 focus:ring-2 focus:ring-indigo-600 outline-none text-center font-mono shadow-inner"
                             placeholder="0"
                             type="text"
                             value={startNode}
@@ -372,16 +372,7 @@ export const GraphControls: React.FC<GraphControlsProps> = ({
                 </div>
             )}
 
-            {/* Reset Footer */}
-            <div className="mt-auto pt-4 border-t border-gray-200 dark:border-[#272546]">
-                <button
-                    onClick={reset}
-                    className="w-full py-2.5 px-4 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 text-xs font-bold transition-all flex items-center justify-center gap-2 group"
-                >
-                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-180 transition-transform duration-500">cleaning_services</span>
-                    Clear Visualizer
-                </button>
-            </div>
+
         </div>
     );
 };

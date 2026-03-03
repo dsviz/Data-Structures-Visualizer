@@ -39,9 +39,9 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
         if (typeof rightSidebarWidth === 'number') return rightSidebarWidth;
         if (typeof rightSidebarWidth === 'string') {
             const parsed = parseInt(rightSidebarWidth, 10);
-            return Number.isNaN(parsed) ? 400 : parsed;
+            return Number.isNaN(parsed) ? 300 : parsed;
         }
-        return 400;
+        return 300;
     }, [rightSidebarWidth]);
 
     const [sidebarWidth, setSidebarWidth] = React.useState(computeInitialWidth);
@@ -88,7 +88,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                 {/* Left Sidebar */}
                 {actualLeftSidebar && (
                     <>
-                        <aside className={`flex flex-col border-r border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1c1a32]/50 z-10 shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'} ${sidebarNoScroll ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                        <aside className={`flex flex-col border-r border-gray-200 dark:border-[#272546] bg-white dark:bg-[#1c1a32]/50 z-10 shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-72 opacity-100' : 'w-0 opacity-0 overflow-hidden border-none'} ${sidebarNoScroll ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                             <div className="px-6 py-4 border-b border-gray-200 dark:border-[#272546] flex justify-between items-center shrink-0">
                                 <div className="flex flex-wrap gap-2 items-center text-sm">
                                     <Link to="/" className="text-gray-500 dark:text-[#9794c7] hover:text-primary">Home</Link>
@@ -99,7 +99,7 @@ const VisualizationLayout: React.FC<VisualizationLayoutProps & { contentClassNam
                                     <span className="material-symbols-outlined text-[20px]">first_page</span>
                                 </button>
                             </div>
-                            <div className={sidebarNoPadding ? "flex flex-col h-full w-80" : "p-4 flex flex-col gap-6 w-80"}>
+                            <div className={sidebarNoPadding ? "flex flex-col h-full w-72" : "p-4 flex flex-col gap-6 w-72"}>
                                 {actualLeftSidebar}
                             </div>
                         </aside>

@@ -51,7 +51,10 @@ const Stack = () => {
         handleBrowserVisit,
         handleBrowserBack,
         handleBrowserForward,
-        handleExample
+        handleExample,
+        isNarrationEnabled,
+        setIsNarrationEnabled,
+        isGeneratingNarration
     } = useStackVisualizer();
 
     // --- Layout State ---
@@ -65,12 +68,12 @@ const Stack = () => {
 
     // Auto-collapse logic when algorithm starts playing
     useEffect(() => {
-        if (isPlaying) {
+        if (isPlaying || isGeneratingNarration) {
             setIsOpsExpanded(false);
             setIsToolboxExpanded(false);
             setIsCurrentOpExpanded(true);
         }
-    }, [isPlaying]);
+    }, [isPlaying, isGeneratingNarration]);
 
     const { setIsSidebarOpen } = useLayout();
 
@@ -156,18 +159,31 @@ const Stack = () => {
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 border-l border-gray-200 dark:border-[#272546] w-40 pl-6">
-                <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
-                <input
-                    type="range"
-                    min="0.5"
-                    max="3"
-                    step="0.5"
-                    value={playbackSpeed}
-                    onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
+            <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
+                <div className="flex flex-col gap-1 items-end">
+                    <button
+                        onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+                        title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
+                    >
+                        <span className="material-symbols-outlined text-[20px]">
+                            {isNarrationEnabled ? 'record_voice_over' : 'voice_over_off'}
+                        </span>
+                    </button>
+                </div>
+                <div className="flex items-center gap-3 w-32">
+                    <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.5"
+                        value={playbackSpeed}
+                        onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                    <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
+                </div>
             </div>
         </div>
     );
@@ -186,6 +202,12 @@ const Stack = () => {
                 <div className="flex w-full h-full relative overflow-hidden bg-gray-50 dark:bg-background-dark">
                     {/* === CENTRAL CANVAS === */}
                     <div className="absolute inset-0 z-0 flex flex-col overflow-hidden">
+                        {isGeneratingNarration && (
+                            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-indigo-500/10 border border-indigo-500/20 backdrop-blur-md px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+                                <span className="material-symbols-outlined text-indigo-500 animate-spin-slow">routine</span>
+                                <span className="text-sm font-bold tracking-wider text-indigo-700 dark:text-indigo-300">AI is generating narration...</span>
+                            </div>
+                        )}
                         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.1]" style={{ backgroundImage: 'radial-gradient(#4236e7 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                         <div className={`absolute inset-0 flex flex-col items-center justify-center overflow-hidden z-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
@@ -416,7 +438,7 @@ const Stack = () => {
                                 <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">CURRENT OPERATION</div>
                                 <div className="p-4 overflow-y-auto h-full custom-scrollbar">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed min-h-[3rem]">
-                                        {currentFrame.description || "Ready to visualize..."}
+                                        {currentFrame.narration || currentFrame.description || "Ready to visualize..."}
                                     </p>
                                 </div>
                             </div>

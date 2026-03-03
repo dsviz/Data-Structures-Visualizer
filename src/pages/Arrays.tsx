@@ -27,6 +27,11 @@ const Arrays = () => {
         twoSumTarget,
         currentFrame,
 
+        // Narration State
+        isNarrationEnabled,
+        setIsNarrationEnabled,
+        isGeneratingNarration,
+
         // Setters
         setMode,
         setIsPlaying,
@@ -158,6 +163,16 @@ const Arrays = () => {
                         <div className="flex items-center gap-2" >
                             <button onClick={() => setCurrentStep(0)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Start"><span className="material-symbols-outlined text-[20px]">skip_previous</span></button>
                             <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Prev"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
+
+                            {/* AI Narration Toggle */}
+                            <button
+                                onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                                className={`size-8 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'text-primary bg-primary/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+                                title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
+                            >
+                                <span className="material-symbols-outlined text-[18px]">psychology</span>
+                            </button>
+
                             <button onClick={() => setIsPlaying(!isPlaying)} className={`size-10 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-red-500' : 'bg-primary'}`}>
                                 <span className="material-symbols-outlined text-[24px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
                             </button>
@@ -214,6 +229,19 @@ const Arrays = () => {
                     </div>
 
                     {/* === CORNER DOCKS === */}
+
+                    {/* AI Thinking Overlay */}
+                    {isGeneratingNarration && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#1e1c33]/90 backdrop-blur-sm border border-primary/30 px-4 py-2 rounded-full shadow-lg flex items-center gap-3 z-50 animate-fade-in">
+                            <span className="material-symbols-outlined text-primary animate-pulse">psychology</span>
+                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">AI is thinking...</span>
+                            <div className="flex gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Top-Left: All Operations */}
                     <div className="absolute top-0 left-0 flex items-start h-[75%] z-20 pointer-events-none drop-shadow-2xl">
@@ -315,7 +343,7 @@ const Arrays = () => {
                                 <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">CURRENT OPERATION</div>
                                 <div className="p-4 overflow-y-auto h-full custom-scrollbar">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed min-h-[3rem]">
-                                        {currentFrame.description || "Ready to visualize..."}
+                                        {currentFrame.narration || currentFrame.description || "Ready to visualize..."}
                                     </p>
                                 </div>
                             </div>

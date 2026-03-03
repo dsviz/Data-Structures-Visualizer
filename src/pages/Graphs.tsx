@@ -37,7 +37,9 @@ const Graphs = () => {
     frames,
     currentStep, setCurrentStep,
     isPlaying, setIsPlaying,
-    playbackSpeed, setPlaybackSpeed
+    playbackSpeed, setPlaybackSpeed,
+    isNarrationEnabled, setIsNarrationEnabled,
+    isGeneratingNarration
   } = useGraphVisualizer();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,16 +53,17 @@ const Graphs = () => {
 
   // Auto-collapse logic when algorithm starts playing
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying || isGeneratingNarration) {
       setIsOpsExpanded(false);
       setIsToolboxExpanded(false);
       setIsCurrentOpExpanded(true);
+      setIsCodeExpanded(true);
     }
-  }, [isPlaying]);
+  }, [isPlaying, isGeneratingNarration]);
 
   // Zoom & Pan
   const { setIsSidebarOpen } = useLayout();
-  const [scale, setScale] = useState(0.6);
+  const [scale, setScale] = useState(0.7);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
@@ -235,6 +238,18 @@ const Graphs = () => {
           }}
         >
           <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
+        <div className="flex flex-col gap-1 items-end">
+          <button
+            onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+            title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
+          >
+            <span className="material-symbols-outlined text-[20px]">{isNarrationEnabled ? 'record_voice_over' : 'voice_over_off'}</span>
+          </button>
         </div>
       </div>
 
@@ -442,6 +457,19 @@ const Graphs = () => {
 
               </div>
 
+              {/* AI Thinking Overlay */}
+              {isGeneratingNarration && (
+                <div className="absolute inset-0 bg-white/50 dark:bg-[#131221]/70 backdrop-blur-md z-[100] flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                  <div className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-pulse drop-shadow-sm">
+                    AI is Generating Narration...
+                  </div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-3 bg-white/50 dark:bg-black/20 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 backdrop-blur">
+                    Processing algorithm steps through Gemini Flash
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -519,6 +547,9 @@ const Graphs = () => {
                     codeLanguage={codeLanguage}
                     setCodeLanguage={setCodeLanguage}
                     activeAlgorithm={activeAlgorithm}
+                    getNodeLabel={getNodeLabel}
+                    isPlaying={isPlaying}
+                    isGeneratingNarration={isGeneratingNarration}
                   />
                 </div>
               </div>
@@ -535,7 +566,7 @@ const Graphs = () => {
                 <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">CURRENT OPERATION</div>
                 <div className="p-4 overflow-y-auto h-full custom-scrollbar">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed min-h-[3rem]">
-                    {currentFrame.description || "Ready to visualize..."}
+                    {currentFrame.narration || currentFrame.description || "Ready to visualize..."}
                   </p>
                 </div>
               </div>

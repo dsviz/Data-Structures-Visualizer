@@ -66,13 +66,13 @@ export const GRAPH_INFO: Record<string, AlgorithmInfo> = {
         timeComplexity: "O(V)",
         spaceComplexity: "O(1)"
     },
-    highlightNeighbors: {
+    neighbors: {
         name: "Highlight Neighbors",
         description: "Visually highlights all immediate neighbors of the selected node.",
         timeComplexity: "O(V)",
         spaceComplexity: "O(1)"
     },
-    checkConnectivity: {
+    connectivity: {
         name: "Check Connectivity",
         description: "Determines if there is a path between every pair of vertices in the graph (Strongly/Weakly connected).",
         timeComplexity: "O(V + E)",

@@ -11,6 +11,7 @@ import { useLayout } from '../context/LayoutContext';
 export default function LinkedList() {
     const {
         // State
+        mode,
         createInput,
         inputValue,
         inputIndex,
@@ -20,9 +21,12 @@ export default function LinkedList() {
         currentStep,
         isPlaying,
         playbackSpeed,
+        isNarrationEnabled,
+        isGeneratingNarration,
         error,
 
         // Setters
+        setMode,
         setCreateInput,
         setInputValue,
         setInputIndex,
@@ -30,6 +34,7 @@ export default function LinkedList() {
         setCurrentStep,
         setIsPlaying,
         setPlaybackSpeed,
+        setIsNarrationEnabled,
 
         // Handlers
         runAction,
@@ -43,9 +48,6 @@ export default function LinkedList() {
     const [activeTool, setActiveTool] = useState<LinkedListTool>(null);
     const [editPopup, setEditPopup] = useState<{ index: number, val: number, x: number, y: number } | null>(null);
 
-    // --- Layout State ---
-    const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
-
     // --- Floating Card State ---
     const [isCodeExpanded, setIsCodeExpanded] = useState(false);
     const [isOpsExpanded, setIsOpsExpanded] = useState(false);
@@ -54,12 +56,13 @@ export default function LinkedList() {
 
     // Auto-collapse logic when algorithm starts playing
     useEffect(() => {
-        if (isPlaying) {
+        if (isPlaying || isGeneratingNarration) {
             setIsOpsExpanded(false);
             setIsToolboxExpanded(false);
             setIsCurrentOpExpanded(true);
+            setIsCodeExpanded(true);
         }
-    }, [isPlaying]);
+    }, [isPlaying, isGeneratingNarration]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
@@ -142,7 +145,7 @@ export default function LinkedList() {
             </div>
 
             <div className="flex-1 flex flex-col gap-2">
-                <div className="flex justify-between text-xs font-medium font-mono text-gray-500 dark:text-gray-400">
+                <div className="flex justify-between text-xs font-medium font-mono text-gray-400">
                     <span>Step {currentStep + 1}/{frames.length || 1}</span>
                     <span className="text-primary">{Math.round(((currentStep + 1) / (frames.length || 1)) * 100)}%</span>
                 </div>
@@ -157,18 +160,30 @@ export default function LinkedList() {
                 </div>
             </div>
 
-            <div className="flex items-center gap-3 border-l border-gray-200 dark:border-[#272546] w-40 pl-6">
-                <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
-                <input
-                    type="range"
-                    min="0.5"
-                    max="3"
-                    step="0.5"
-                    value={playbackSpeed}
-                    onChange={e => setPlaybackSpeed(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-gray-200 dark:bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary"
-                />
-                <span className="text-xs font-mono text-gray-500 w-8">{playbackSpeed}x</span>
+            <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
+                <button
+                    onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+                    title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
+                >
+                    <span className="material-symbols-outlined text-[22px]">{isNarrationEnabled ? 'volume_up' : 'volume_off'}</span>
+                </button>
+
+                <div className="h-8 w-[1px] bg-gray-200 dark:bg-[#272546]"></div>
+
+                <div className="flex items-center gap-3 w-40">
+                    <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="3"
+                        step="0.1"
+                        value={playbackSpeed}
+                        onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
+                        className="flex-1 h-1.5 bg-gray-200 dark:bg-[#272546] rounded-full appearance-none cursor-pointer accent-primary"
+                    />
+                    <span className="text-xs font-bold font-mono text-gray-400 min-w-[24px]">{playbackSpeed}x</span>
+                </div>
             </div>
         </div>
     );
@@ -200,20 +215,20 @@ export default function LinkedList() {
                         >
                             <div className="flex items-center transition-transform duration-100 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
                                 {currentFrame.nodes.length === 0 && (!currentFrame.tempNodes || currentFrame.tempNodes.length === 0) ? <div className="opacity-30 text-2xl font-bold uppercase text-gray-400">Empty List</div> : (
-                                    currentFrame.nodes.map((val, i) => {
-                                        const isHighlight = currentFrame.highlights.includes(i);
-                                        let nodePointers = currentFrame.pointers.filter(p => p.index === i);
+                                    currentFrame.nodes.map((node, i) => {
+                                        const isHighlight = currentFrame.highlights.includes(node.id);
+                                        let nodePointers = currentFrame.pointers.filter(p => p.id === node.id);
 
                                         // Persistent Head/Tail logic
                                         if (i === 0 && !nodePointers.some(p => p.label === 'HEAD')) {
-                                            nodePointers.push({ index: i, label: 'HEAD', color: 'red' });
+                                            nodePointers.push({ id: node.id, label: 'HEAD', color: 'red' });
                                         }
                                         if (i === currentFrame.nodes.length - 1 && !nodePointers.some(p => p.label === 'TAIL')) {
-                                            nodePointers.push({ index: i, label: 'TAIL', color: 'green' });
+                                            nodePointers.push({ id: node.id, label: 'TAIL', color: 'green' });
                                         }
 
                                         return (
-                                            <div key={i} className={`flex items-center group relative ${activeTool ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`} onClick={(e) => handleElementClick(i, val, e)}>
+                                            <div key={node.id} className={`flex items-center group relative ${activeTool ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`} onClick={(e) => handleElementClick(i, node.val, e)}>
                                                 <div className="relative z-10">
                                                     <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col-reverse gap-1">
                                                         {nodePointers.map((p, idx) => (
@@ -221,7 +236,7 @@ export default function LinkedList() {
                                                         ))}
                                                     </div>
                                                     <div className={`w-28 h-12 rounded-lg border-2 flex items-center justify-center text-xl font-bold font-mono shadow-sm transition-all ${isHighlight ? 'border-primary bg-primary/10 text-primary scale-110 shadow-[0_0_15px_rgba(66,54,231,0.3)]' : 'border-indigo-200 dark:border-[#383564] bg-blue-50/50 dark:bg-[#1e1e24] text-slate-800 dark:text-white'} ${activeTool ? 'hover:border-primary hover:shadow-md' : ''}`}>
-                                                        {val}
+                                                        {node.val}
                                                         <div className="absolute top-0 left-1 text-[9px] text-gray-400 p-1 opacity-50 border-r border-b border-gray-100 dark:border-[#2e2b4d] rounded-br">idx: {i}</div>
                                                         {listType === 'doubly' && <div className="absolute left-0 h-full w-4 border-r border-gray-200 dark:border-[#383564]"></div>}
                                                         <div className="absolute right-0 h-full w-8 border-l border-gray-200 dark:border-[#383564] bg-gray-50 dark:bg-[#151426] flex items-center justify-center"><div className="size-2 rounded-full bg-gray-400"></div></div>
@@ -255,7 +270,8 @@ export default function LinkedList() {
                                     if (node.position === 'left-of-head') left = -TOTAL_WIDTH;
                                     else if (node.position === 'right-of-tail') left = currentFrame.nodes.length * TOTAL_WIDTH;
                                     else if (node.position === 'above-at-index') {
-                                        left = (node.offsetIndex || 0) * TOTAL_WIDTH;
+                                        const targetIdx = currentFrame.nodes.findIndex(n => n.id === node.offsetId);
+                                        left = (targetIdx !== -1 ? targetIdx : (currentFrame.nodes.length)) * TOTAL_WIDTH;
                                         top = -100;
                                     }
 
@@ -292,20 +308,25 @@ export default function LinkedList() {
                                         const GAP = 64;
                                         const TOTAL_WIDTH = NODE_WIDTH + GAP;
 
-                                        const getX = (target: 'temp' | number | 'null') => {
-                                            if (typeof target === 'number') return target * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                        const getX = (target: string | 'temp' | 'null') => {
                                             if (target === 'null') return currentFrame.nodes.length * TOTAL_WIDTH + 20;
                                             if (target === 'temp') {
                                                 const temp = currentFrame.tempNodes?.[0];
                                                 if (!temp) return 0;
                                                 if (temp.position === 'left-of-head') return -TOTAL_WIDTH + NODE_WIDTH / 2;
                                                 if (temp.position === 'right-of-tail') return currentFrame.nodes.length * TOTAL_WIDTH + NODE_WIDTH / 2;
-                                                if (temp.position === 'above-at-index') return (temp.offsetIndex || 0) * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                                if (temp.position === 'above-at-index') {
+                                                    const targetIdx = currentFrame.nodes.findIndex(n => n.id === (temp.offsetId));
+                                                    return (targetIdx !== -1 ? targetIdx : currentFrame.nodes.length) * TOTAL_WIDTH + NODE_WIDTH / 2;
+                                                }
                                             }
+                                            // Regular node ID
+                                            const idx = currentFrame.nodes.findIndex(n => n.id === target);
+                                            if (idx !== -1) return idx * TOTAL_WIDTH + NODE_WIDTH / 2;
                                             return 0;
                                         };
 
-                                        const getY = (target: 'temp' | number | 'null') => {
+                                        const getY = (target: string | 'temp' | 'null') => {
                                             if (target === 'temp') {
                                                 const temp = currentFrame.tempNodes?.[0];
                                                 if (temp?.position === 'above-at-index') return -100 + 24;
@@ -330,6 +351,19 @@ export default function LinkedList() {
                             </div>
 
                             {/* Description Overlay (Bottom Right) is moved to the dock */}
+
+                            {/* AI Thinking Overlay */}
+                            {isGeneratingNarration && (
+                                <div className="absolute inset-0 bg-white/50 dark:bg-[#131221]/70 backdrop-blur-md z-[100] flex flex-col items-center justify-center">
+                                    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mb-6 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                                    <div className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-pulse drop-shadow-sm">
+                                        AI is Generating Narration...
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mt-3 bg-white/50 dark:bg-black/20 px-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-800 backdrop-blur">
+                                        Processing algorithm steps through Gemini Flash
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -360,6 +394,7 @@ export default function LinkedList() {
                                 <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">ALL OPERATIONS</div>
                                 <div className="p-4 overflow-y-auto custom-scrollbar h-full">
                                     <LinkedListControls
+                                        mode={mode} setMode={setMode}
                                         listType={listType} setListType={setListType}
                                         createInput={createInput} setCreateInput={setCreateInput}
                                         inputValue={inputValue} setInputValue={setInputValue}
@@ -367,7 +402,6 @@ export default function LinkedList() {
                                         error={error}
                                         runAction={runAction}
                                         handleExample={handleExample}
-                                        frames={frames} currentStep={currentStep}
                                     />
                                 </div>
                             </div>
@@ -406,26 +440,14 @@ export default function LinkedList() {
                             <div className="min-w-[450px] h-full flex flex-col">
                                 <div className="p-2 border-b border-gray-100 dark:border-[#272546] shrink-0 flex items-center justify-between bg-gray-50/50 dark:bg-[#121121]">
                                     <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 ml-2">Code & Data</div>
-                                    <div className="flex p-0.5 bg-gray-200/50 dark:bg-[#1c1a32] border border-gray-200 dark:border-[#383564] rounded-lg">
-                                        {(['pseudo', 'code', 'info'] as const).map(tab => (
-                                            <button
-                                                key={tab}
-                                                onClick={() => setActiveTab(tab)}
-                                                className={`px-3 py-1 text-[10px] uppercase font-bold rounded-md transition-all ${activeTab === tab
-                                                    ? 'bg-white dark:bg-[#2e2b52] text-primary shadow-sm'
-                                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                                                    }`}
-                                            >
-                                                {tab}
-                                            </button>
-                                        ))}
-                                    </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto h-full p-2 custom-scrollbar">
                                     <LinkedListTabs
                                         currentFrame={currentFrame}
                                         codeLanguage={codeLanguage}
                                         setCodeLanguage={setCodeLanguage}
+                                        isPlaying={isPlaying}
+                                        isGeneratingNarration={isGeneratingNarration}
                                     />
                                 </div>
                             </div>
@@ -440,9 +462,9 @@ export default function LinkedList() {
                         <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-t border-[#272546] pointer-events-auto overflow-hidden ${isCurrentOpExpanded ? 'w-[450px]' : 'w-0'}`}>
                             <div className="min-w-[450px] h-full flex flex-col">
                                 <div className="p-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-gray-100 dark:border-[#272546] shrink-0 bg-gray-50/50 dark:bg-[#121121]">CURRENT OPERATION</div>
-                                <div className="p-4 overflow-y-auto h-full custom-scrollbar">
+                                <div className="p-4 overflow-y-auto h-full custom-scrollbar relative">
                                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed min-h-[3rem]">
-                                        {currentFrame.description || "Ready to visualize..."}
+                                        {currentFrame.narration || currentFrame.description || "Ready to visualize..."}
                                     </p>
                                 </div>
                             </div>

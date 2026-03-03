@@ -614,7 +614,7 @@ const Sorting = () => {
         sidebar={null} // Left sidebar is consolidated into right tab
         sidebarPosition="right"
         rightSidebar={unifiedRightSidebar}
-        rightSidebarWidth={350}
+        rightSidebarWidth={280}
         controls={bottomControls}
       >
         {/* Stats Header (Updated Position since top bar is gone) */}

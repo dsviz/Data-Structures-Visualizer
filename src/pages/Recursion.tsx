@@ -215,7 +215,7 @@ const Recursion = () => {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar: Config & Call Stack */}
-                    <aside className="w-80 border-r border-gray-200 dark:border-[#272546] flex flex-col bg-white dark:bg-[#131221] z-10 shrink-0">
+                    <aside className="w-72 border-r border-gray-200 dark:border-[#272546] flex flex-col bg-white dark:bg-[#131221] z-10 shrink-0">
                         <div className="p-4 border-b border-gray-200 dark:border-[#272546]">
                             <div className="flex flex-wrap gap-2 items-center text-xs mb-1">
                                 <span className="text-gray-500 dark:text-[#9794c7]">Work Mode</span>
@@ -435,7 +435,7 @@ const Recursion = () => {
                     </main>
 
                     {/* Right Sidebar: Code Editor */}
-                    <aside className="w-[400px] border-l border-gray-200 dark:border-[#272546] flex flex-col bg-slate-50 dark:bg-[#0d0c15] z-10 shrink-0 hidden xl:flex">
+                    <aside className="w-[300px] border-l border-gray-200 dark:border-[#272546] flex flex-col bg-slate-50 dark:bg-[#0d0c15] z-10 shrink-0 hidden xl:flex">
                         <div className="px-4 py-3 bg-white dark:bg-[#1c1a32] border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
                             <h3 className="text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[16px]">code</span> Source Code

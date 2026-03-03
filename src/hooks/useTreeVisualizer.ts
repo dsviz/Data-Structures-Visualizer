@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { generateNarrationBatch } from '../services/aiService';
 import { TreeTool } from '../components/tree/TreeTools';
 
 // Types
@@ -26,6 +27,7 @@ export interface Frame {
     pseudoLines: string[];
     description: string;
     output?: string; // For traversal output
+    narration?: string;
 }
 
 const INITIAL_NODES: TreeNode[] = [
@@ -60,6 +62,8 @@ export const useTreeVisualizer = () => {
     const [activeAlgorithm, setActiveAlgorithm] = useState<string | null>(null);
     const [activeTool, setActiveTool] = useState<TreeTool>('move');
     const [selectedNode, setSelectedNode] = useState<number | null>(null);
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+    const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
     // Refs
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -138,6 +142,30 @@ export const useTreeVisualizer = () => {
 
     // --- Actions ---
 
+    const applyNarrationAndPlay = async (timeline: Frame[]) => {
+        setFrames(timeline);
+        setCurrentStep(0);
+        setIsPlaying(true);
+
+        if (isNarrationEnabled && timeline.length > 0) {
+            setIsGeneratingNarration(true);
+            try {
+                const descriptions = timeline.map(f => f.description);
+                const narrations = await generateNarrationBatch(descriptions, 'Binary Tree');
+                const narratedFrames = timeline.map((frame, i) => ({
+                    ...frame,
+                    narration: narrations[i]?.narrated || frame.description
+                }));
+                setFrames(narratedFrames);
+            } catch (err) {
+                console.error("Narration error:", err);
+            } finally {
+                setIsGeneratingNarration(false);
+            }
+        }
+    };
+
+
     const insert = (val: number) => {
         setActiveAlgorithm('insert');
         setFrames([]);
@@ -171,8 +199,7 @@ export const useTreeVisualizer = () => {
                 pseudoLines: ["if root is NULL, return createNode(val)", "if val < root->val, root->left = insert(root->left, val)", "else if val > root->val, root->right = insert(root->right, val)", "return root"],
                 description: `Root was empty. Created new root with value ${val}.`
             });
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -268,8 +295,7 @@ export const useTreeVisualizer = () => {
         const finalNodes = calculateLayout(currentNodes, rootId);
         setNodes(finalNodes);
         setEdges(getEdgesFromNodes(finalNodes));
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const deleteNode = (val: number) => {
@@ -414,8 +440,7 @@ export const useTreeVisualizer = () => {
         if (realRoot) setRootId(realRoot.id);
         else setRootId(null);
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const search = (val: number) => {
@@ -492,8 +517,7 @@ export const useTreeVisualizer = () => {
             }
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // Traversals
@@ -575,8 +599,7 @@ export const useTreeVisualizer = () => {
                 }
             }
 
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -646,23 +669,83 @@ export const useTreeVisualizer = () => {
 
         if (rootId !== null) recurse(rootId);
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // --- Playback Control ---
     useEffect(() => {
-        if (isPlaying && currentStep < frames.length - 1) {
-            timerRef.current = setTimeout(() => {
+        let isCancelled = false;
+
+        const advanceStep = () => {
+            if (isCancelled) return;
+            if (currentStep < frames.length - 1) {
                 setCurrentStep(prev => prev + 1);
-            }, 1000 / playbackSpeed);
-        } else {
-            setIsPlaying(false);
-        }
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+            } else {
+                setIsPlaying(false);
+            }
         };
-    }, [isPlaying, currentStep, frames.length, playbackSpeed]);
+
+        if (isPlaying && currentStep < frames.length - 1) {
+            if (isNarrationEnabled && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const frame = frames[currentStep];
+                const textToSpeak = frame?.narration || frame?.description;
+
+                if (textToSpeak) {
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        let validVoices = voices.filter(v => v.lang === 'en-GB');
+                        if (validVoices.length === 0) validVoices = voices.filter(v => v.lang.startsWith('en'));
+                        if (validVoices.length === 0) validVoices = voices;
+
+                        const maleKeywords = ['male', 'man', 'boy', 'david', 'mark', 'daniel', 'george', 'arthur', 'ryan'];
+                        let selectedVoice = validVoices.find(v => maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+
+                        if (!selectedVoice) {
+                            const femaleKeywords = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'tessa', 'melina', 'monica', 'paulina', 'luciana', 'amelie', 'marie', 'anna', 'helena', 'veena', 'lekha', 'hazel'];
+                            selectedVoice = validVoices.find(v => !femaleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+                        }
+
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        } else if (validVoices.length > 0) {
+                            utterance.voice = validVoices[0];
+                        }
+                    }
+
+                    utterance.lang = 'en-GB';
+                    utterance.rate = Math.min(2.0, playbackSpeed * 0.9);
+
+                    utterance.onend = () => {
+                        if (!isCancelled && isPlaying) advanceStep();
+                    };
+
+                    utterance.onerror = (e) => {
+                        console.error("Speech synthesis error", e);
+                        if (!isCancelled && isPlaying) {
+                            timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+                        }
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+                }
+            } else {
+                timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+            }
+        } else if (!isPlaying) {
+            window.speechSynthesis?.cancel();
+        }
+
+        return () => {
+            isCancelled = true;
+            if (timerRef.current) clearTimeout(timerRef.current as any);
+            window.speechSynthesis?.cancel();
+        };
+    }, [isPlaying, currentStep, frames, playbackSpeed, isNarrationEnabled]);
 
 
     // Reset
@@ -976,8 +1059,7 @@ export const useTreeVisualizer = () => {
             }
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // --- BST OPERATIONS ---
@@ -1001,8 +1083,7 @@ export const useTreeVisualizer = () => {
             }
             curr = nodes.find(n => n.id === curr!.left);
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const findMax = () => {
@@ -1030,8 +1111,7 @@ export const useTreeVisualizer = () => {
             }
             curr = nodes.find(n => n.id === curr!.right);
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const findSuccessor = (val: number) => {
@@ -1070,8 +1150,7 @@ export const useTreeVisualizer = () => {
                 nodes: [...nodes], edges: [...edges], highlights: [], codeLine: 0, pseudoLines: ["Search node", "If right child: return min(right)", "Else: return deepest ancestor where node is in left subtree"],
                 description: `Node ${val} not found.`
             });
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -1107,8 +1186,7 @@ export const useTreeVisualizer = () => {
                 });
             }
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const findPredecessor = (val: number) => {
@@ -1150,8 +1228,7 @@ export const useTreeVisualizer = () => {
                 description: `Node ${val} not found.`,
                 output: `Node ${val} not found.`
             });
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -1197,8 +1274,7 @@ export const useTreeVisualizer = () => {
                 });
             }
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const validateBST = () => {
@@ -1248,8 +1324,7 @@ export const useTreeVisualizer = () => {
             });
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // --- PROPERTIES ---
@@ -1294,8 +1369,7 @@ export const useTreeVisualizer = () => {
             description: `Total height of the tree is ${h}.`,
             output: `Total Height: ${h}`
         });
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const countNodes = () => {
@@ -1328,8 +1402,7 @@ export const useTreeVisualizer = () => {
             description: `Total nodes in the tree: ${count}.`,
             output: `Total Nodes: ${count}`
         });
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const countLeafNodes = () => {
@@ -1365,8 +1438,7 @@ export const useTreeVisualizer = () => {
             description: `Total leaf nodes in the tree: ${count}.`,
             output: `Total Leaves: ${count}`
         });
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const checkDiameter = () => {
@@ -1409,8 +1481,7 @@ export const useTreeVisualizer = () => {
             description: `The diameter of the tree is ${maxDiameter}.`,
             output: `Final Diameter: ${maxDiameter}`
         });
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const checkBalanced = () => {
@@ -1470,8 +1541,7 @@ export const useTreeVisualizer = () => {
                 output: "Tree is Unbalanced."
             });
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const isFull = () => {
@@ -1517,8 +1587,7 @@ export const useTreeVisualizer = () => {
                 output: "Tree is Not Full."
             });
         }
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const isComplete = () => {
@@ -1533,8 +1602,7 @@ export const useTreeVisualizer = () => {
                 nodes: [...nodes], edges: [...edges], highlights: [], codeLine: 0, pseudoLines: ["Empty tree is complete."], description: "Empty tree is complete.",
                 output: "Empty tree is complete."
             });
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -1579,8 +1647,7 @@ export const useTreeVisualizer = () => {
                         description: `Found a non-null node (${node.value}) after encountering a null. Not Complete.`,
                         output: `Not Complete: ${node.value}`
                     });
-                    setFrames(framesBuffer);
-                    setIsPlaying(true);
+                    applyNarrationAndPlay(framesBuffer);
                     return;
                 }
 
@@ -1599,8 +1666,7 @@ export const useTreeVisualizer = () => {
             description: `Tree is Complete.`,
             output: `Tree is Complete.`
         });
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // --- CONSTRUCTION ---
@@ -1685,8 +1751,7 @@ export const useTreeVisualizer = () => {
         else setRootId(null);
         nextIdRef.current = nextId; // Update ref for future manual insertions
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const buildFromPreIn = (preStr: string, inStr: string) => {
@@ -1740,8 +1805,7 @@ export const useTreeVisualizer = () => {
         setEdges(getEdgesFromNodes(layoutNodes));
         setRootId(rootId);
         nextIdRef.current = nextId;
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const buildFromPostIn = (postStr: string, inStr: string) => {
@@ -1795,8 +1859,7 @@ export const useTreeVisualizer = () => {
         setEdges(getEdgesFromNodes(layoutNodes));
         setRootId(rootId);
         nextIdRef.current = nextId;
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const buildBalancedBST = (input: string) => {
@@ -1860,8 +1923,7 @@ export const useTreeVisualizer = () => {
         setEdges(getEdgesFromNodes(layoutNodes));
         setRootId(rootId);
         nextIdRef.current = nextId;
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const deserialize = (input: string) => {
@@ -1976,8 +2038,7 @@ export const useTreeVisualizer = () => {
         setEdges(getEdgesFromNodes(layoutNodes));
         setRootId(rootId);
         nextIdRef.current = nextId;
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     // --- BALANCING (AVL) ---
@@ -2017,8 +2078,7 @@ export const useTreeVisualizer = () => {
             output: `BFs: ${outputStr}`
         });
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const rotateLeft = (val: number) => {
@@ -2037,7 +2097,7 @@ export const useTreeVisualizer = () => {
         const rightChildId = node.right;
         if (rightChildId === undefined) {
             framesBuffer.push({ nodes: [...currentNodes], edges: [...edgesList], highlights: [node.id], codeLine: 0, pseudoLines: [], description: `Cannot rotate left: Node ${val} has no right child.`, output: `Cannot rotate left: ${val} has no right child.` });
-            setFrames(framesBuffer); setIsPlaying(true); return;
+            applyNarrationAndPlay(framesBuffer); return;
         }
 
         const rightChild = currentNodes.find((n: any) => n.id === rightChildId)!;
@@ -2071,8 +2131,7 @@ export const useTreeVisualizer = () => {
 
         setNodes(currentNodes);
         setEdges(getEdgesFromNodes(currentNodes));
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const rotateRight = (val: number) => {
@@ -2091,7 +2150,7 @@ export const useTreeVisualizer = () => {
         const leftChildId = node.left;
         if (leftChildId === undefined) {
             framesBuffer.push({ nodes: [...currentNodes], edges: [...edgesList], highlights: [node.id], codeLine: 0, pseudoLines: [], description: `Cannot rotate right: Node ${val} has no left child.`, output: `Cannot rotate right: ${val} has no left child.` });
-            setFrames(framesBuffer); setIsPlaying(true); return;
+            applyNarrationAndPlay(framesBuffer); return;
         }
 
         const leftChild = currentNodes.find((n: any) => n.id === leftChildId)!;
@@ -2125,8 +2184,7 @@ export const useTreeVisualizer = () => {
 
         setNodes(currentNodes);
         setEdges(getEdgesFromNodes(currentNodes));
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const insertAVL = (val: number) => {
@@ -2148,8 +2206,7 @@ export const useTreeVisualizer = () => {
             framesBuffer.push({
                 nodes: calculateLayout([...currentNodes], nextId), edges: getEdgesFromNodes(currentNodes), highlights: [nextId], codeLine: 0, pseudoLines: ["Insert(val)"], description: `Inserted ${val}. Tree is now balanced.`, output: `${val}`
             });
-            setFrames(framesBuffer);
-            setIsPlaying(true);
+            applyNarrationAndPlay(framesBuffer);
             return;
         }
 
@@ -2219,8 +2276,7 @@ export const useTreeVisualizer = () => {
 
         setNodes(currentNodes);
         setEdges(getEdgesFromNodes(currentNodes));
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const deleteAVL = (val: number) => { console.log("deleteAVL", val); };
@@ -2292,8 +2348,7 @@ export const useTreeVisualizer = () => {
             });
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const getLeftView = () => {
@@ -2331,8 +2386,7 @@ export const useTreeVisualizer = () => {
             if (node.right !== undefined) queue.push({ id: node.right, level: level + 1 });
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const getRightView = () => {
@@ -2372,8 +2426,7 @@ export const useTreeVisualizer = () => {
         framesBuffer.push({ nodes: [...nodes], edges: [...edges], highlights: [], codeLine: 0, pseudoLines: ["maxLevel = -1", "dfs(root, 0)"], description: "Starting Right View Traversal (DFS Right-first).", output: "Right View:" });
         rightViewDFS(rootId!, 0);
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const getTopView = () => {
@@ -2410,8 +2463,7 @@ export const useTreeVisualizer = () => {
             if (node.right !== undefined) queue.push({ id: node.right, hd: hd + 1 });
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const getBottomView = () => {
@@ -2447,8 +2499,7 @@ export const useTreeVisualizer = () => {
             if (node.right !== undefined) queue.push({ id: node.right, hd: hd + 1 });
         }
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const boundaryTraversal = () => {
@@ -2533,8 +2584,7 @@ export const useTreeVisualizer = () => {
         addLeaves(root.id); // Or start from left/right if optimizations needed
         addRight(root.right);
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
     const mirrorTree = () => {
@@ -2590,8 +2640,7 @@ export const useTreeVisualizer = () => {
         setNodes(layoutNodes);
         setEdges(getEdgesFromNodes(layoutNodes));
 
-        setFrames(framesBuffer);
-        setIsPlaying(true);
+        applyNarrationAndPlay(framesBuffer);
     };
 
 
@@ -2658,6 +2707,9 @@ export const useTreeVisualizer = () => {
         playbackSpeed,
         setPlaybackSpeed,
         activeAlgorithm,
+        isNarrationEnabled,
+        setIsNarrationEnabled,
+        isGeneratingNarration,
         getCurrentFrame: () => {
             if (frames.length > 0 && currentStep < frames.length) return frames[currentStep];
             return {

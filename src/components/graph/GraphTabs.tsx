@@ -8,20 +8,39 @@ interface GraphTabsProps {
     codeLanguage: Language;
     setCodeLanguage: (lang: Language) => void;
     activeAlgorithm: string | null;
+    getNodeLabel: (id: number) => string;
+    isPlaying: boolean;
+    isGeneratingNarration: boolean;
 }
 
 export const GraphTabs: React.FC<GraphTabsProps> = ({
     currentFrame,
     codeLanguage,
     setCodeLanguage,
-    activeAlgorithm
+    activeAlgorithm,
+    getNodeLabel,
+    isPlaying,
+    isGeneratingNarration
 }) => {
-    const [activeTab, setActiveTab] = useState<'pseudo' | 'code' | 'info'>('pseudo');
+    const [activeTab, setActiveTab] = useState<'output' | 'pseudo' | 'code' | 'info'>('output');
+
+    // Auto-open output tab when an algorithm starts playing
+    React.useEffect(() => {
+        if (isPlaying || activeAlgorithm || isGeneratingNarration) {
+            setActiveTab('output');
+        }
+    }, [isPlaying, activeAlgorithm, isGeneratingNarration]);
 
     return (
         <div className="flex flex-col h-full">
             {/* Tab Headers */}
             <div className="flex border-b border-gray-200 dark:border-[#272546]">
+                <button
+                    onClick={() => setActiveTab('output')}
+                    className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === 'output' ? 'text-primary border-b-2 border-primary' : 'text-gray-400 hover:text-gray-300'}`}
+                >
+                    Output
+                </button>
                 <button
                     onClick={() => setActiveTab('pseudo')}
                     className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${activeTab === 'pseudo' ? 'text-primary border-b-2 border-primary' : 'text-gray-400 hover:text-gray-300'}`}
@@ -115,6 +134,122 @@ export const GraphTabs: React.FC<GraphTabsProps> = ({
                         ) : (
                             <div className="text-center italic text-gray-500 mt-4">
                                 Select an algorithm to view its details.
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'output' && (
+                    <div className="p-4 space-y-6">
+                        {/* VISITED BOX */}
+                        <div>
+                            <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Visited</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {currentFrame.visited && currentFrame.visited.length > 0 ? (
+                                    currentFrame.visited.map((nodeId, idx) => (
+                                        <div key={idx} className="w-8 h-8 rounded border border-green-500/30 bg-green-500/10 flex items-center justify-center text-green-500 font-bold text-sm shadow-sm">
+                                            {getNodeLabel(nodeId)}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-xs text-gray-400 italic">None</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* QUEUE/STACK BOX */}
+                        {(currentFrame.queue && currentFrame.queue.length > 0) || (currentFrame.stack && currentFrame.stack.length > 0) ? (
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">
+                                    {currentFrame.queue?.length > 0 ? 'Queue (Front → Back)' : 'Stack (Top → Bottom)'}
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    {currentFrame.queue?.length > 0 && currentFrame.queue.map((nodeId, idx) => (
+                                        <div key={idx} className="w-8 h-8 rounded border border-indigo-500/30 bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm shadow-sm">
+                                            {getNodeLabel(nodeId)}
+                                        </div>
+                                    ))}
+                                    {currentFrame.stack?.length > 0 && currentFrame.stack.map((nodeId, idx) => (
+                                        <div key={idx} className="w-8 h-8 rounded border border-indigo-500/30 bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-sm shadow-sm">
+                                            {getNodeLabel(nodeId)}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+
+                        {/* DISTANCES ARRAY BOX */}
+                        {currentFrame.distances && Object.keys(currentFrame.distances).length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Distances Array</h4>
+                                <div className="bg-[#121121] dark:bg-[#151426] p-3 rounded-lg border border-gray-200 dark:border-[#272546] overflow-x-auto custom-scrollbar">
+                                    <div className="flex gap-2 min-w-max">
+                                        {Object.entries(currentFrame.distances).map(([nodeId, dist]) => (
+                                            <div key={nodeId} className="flex flex-col items-center min-w-[3rem] bg-white dark:bg-[#1c1a32] rounded border border-gray-200 dark:border-[#34315b] overflow-hidden shadow-sm">
+                                                <div className="w-full bg-gray-50 dark:bg-[#272546] text-center text-[10px] font-bold text-gray-500 py-1 border-b border-gray-200 dark:border-[#34315b]">
+                                                    {getNodeLabel(parseInt(nodeId))}
+                                                </div>
+                                                <div className={`py-1.5 px-2 text-sm font-mono font-bold ${dist === 'Infinity' || dist === Infinity ? 'text-orange-400' : 'text-primary'}`}>
+                                                    {dist === Infinity ? '∞' : dist}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 2D DISTANCES MATRIX (Floyd-Warshall) */}
+                        {currentFrame.distances2D && Object.keys(currentFrame.distances2D).length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Distance Matrix</h4>
+                                <div className="bg-[#121121] dark:bg-[#151426] p-3 rounded-lg border border-gray-200 dark:border-[#272546] overflow-x-auto custom-scrollbar">
+                                    <table className="min-w-max border-collapse">
+                                        <thead>
+                                            <tr>
+                                                <th className="p-1 border border-transparent"></th>
+                                                {Object.keys(currentFrame.distances2D).map((colId) => (
+                                                    <th key={colId} className="p-1 text-[10px] font-bold text-gray-500 border border-transparent text-center">
+                                                        {getNodeLabel(parseInt(colId))}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.entries(currentFrame.distances2D).map(([rowId, cols]) => (
+                                                <tr key={rowId}>
+                                                    <td className="p-1 text-[10px] font-bold text-gray-500 border border-transparent text-right pr-3">
+                                                        {getNodeLabel(parseInt(rowId))}
+                                                    </td>
+                                                    {Object.entries(cols).map(([colId, dist]) => (
+                                                        <td key={colId} className="bg-white dark:bg-[#1c1a32] border border-gray-100 dark:border-[#272546] p-1.5 text-center min-w-[2.5rem]">
+                                                            <span className={`text-xs font-mono font-bold ${dist === 'Infinity' || dist === Infinity ? 'text-orange-400' : 'text-primary'}`}>
+                                                                {dist === Infinity ? '∞' : dist}
+                                                            </span>
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* GENERAL OUTPUT BOX */}
+                        {currentFrame.output && (
+                            <div>
+                                <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-2">Algorithm Output</h4>
+                                <div className="bg-[#121121] dark:bg-[#151426] p-3 rounded-lg border border-gray-200 dark:border-[#272546] text-sm text-gray-700 dark:text-gray-300 font-mono shadow-inner">
+                                    {currentFrame.output}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* EMPTY STATE */}
+                        {!(currentFrame.visited?.length) && !(currentFrame.queue?.length) && !(currentFrame.stack?.length) && !(currentFrame.distances) && !(currentFrame.distances2D) && !currentFrame.output && (
+                            <div className="text-center italic text-gray-500 mt-4">
+                                Play the animation to see the execution state.
                             </div>
                         )}
                     </div>

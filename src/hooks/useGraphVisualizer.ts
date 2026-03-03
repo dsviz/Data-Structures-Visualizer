@@ -25,6 +25,7 @@ export interface Frame {
     codeLine: number;
     pseudoLines: string[];
     description: string;
+    narration?: string;
     distances?: Record<number, number | string>; // For algorithms like Bellman-Ford/Dijkstra
     distances2D?: Record<number, Record<number, number | string>>; // For Floyd-Warshall
     output?: string; // For traversal output
@@ -60,6 +61,10 @@ export const useGraphVisualizer = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [activeAlgorithm, setActiveAlgorithm] = useState<string | null>(null);
+
+    // Audio Narration State
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(false);
+    const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
     // Inputs
     const [startNode, setStartNode] = useState<string>('0');
@@ -200,6 +205,33 @@ export const useGraphVisualizer = () => {
         setIsPlaying(false);
         setActiveAlgorithm(null);
     }
+
+    const dispatchAnimation = async (newFrames: Frame[]) => {
+        if (isNarrationEnabled) {
+            setIsGeneratingNarration(true);
+            try {
+                const { generateNarrationBatch } = await import('../services/aiService');
+                const descriptions = newFrames.map(f => f.description).filter(Boolean);
+                const narrations = await generateNarrationBatch(descriptions, 'Graph');
+
+                const narratedTimeline = newFrames.map(frame => {
+                    const narration = narrations.find((n: { original: string, narrated: string }) => n.original === frame.description);
+                    return {
+                        ...frame,
+                        narration: narration ? narration.narrated : frame.description
+                    };
+                });
+                newFrames = narratedTimeline;
+            } catch (err) {
+                console.error("AI Narration interception failed:", err);
+            } finally {
+                setIsGeneratingNarration(false);
+            }
+        }
+        setFrames(newFrames);
+        setCurrentStep(0);
+        setIsPlaying(true);
+    };
 
     // --- Helpers ---
     const getAdjList = () => {
@@ -348,9 +380,7 @@ export const useGraphVisualizer = () => {
             output: `BFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runDFS = () => {
@@ -425,9 +455,7 @@ export const useGraphVisualizer = () => {
             output: `DFS: ${Array.from(visited).map(id => getNodeLabel(id)).join(', ')}`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     // --- Advanced Algorithms ---
@@ -557,9 +585,7 @@ export const useGraphVisualizer = () => {
             description: `Dijkstra completed.`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runPrim = () => {
@@ -654,9 +680,7 @@ export const useGraphVisualizer = () => {
             });
         }
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runKruskal = () => {
@@ -768,9 +792,7 @@ export const useGraphVisualizer = () => {
             description: `Kruskal's Algorithm completed. MST size: ${mstEdges.length}.`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runBoruvka = () => {
@@ -910,9 +932,7 @@ export const useGraphVisualizer = () => {
             description: `Boruvka's Algorithm completed. MST size: ${mstEdges.length}.`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     // --- Basics Concept Algorithms ---
@@ -970,9 +990,7 @@ export const useGraphVisualizer = () => {
             description: `Check complete! ${isDirected ? `In-Degree: ${inDegree}, Out-Degree: ${outDegree}` : `Total Degree: ${totalDegree}`}`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runHighlightNeighbors = () => {
@@ -1005,9 +1023,7 @@ export const useGraphVisualizer = () => {
             description: `Node ${getNodeLabel(start)} has ${neighbors.length} neighbor(s): ${neighbors.map(n => getNodeLabel(n)).join(', ') || 'None'}`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runCheckConnectivity = () => {
@@ -1070,9 +1086,7 @@ export const useGraphVisualizer = () => {
             description: msg
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runDetectCycle = () => {
@@ -1149,9 +1163,7 @@ export const useGraphVisualizer = () => {
             });
         }
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runBellmanFord = () => {
@@ -1304,9 +1316,7 @@ export const useGraphVisualizer = () => {
             distances: { ...dist } as Record<number, number | string>
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runFloydWarshall = () => {
@@ -1425,9 +1435,7 @@ export const useGraphVisualizer = () => {
             distances2D: getDistMatrixSnapshot()
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runAStar = () => {
@@ -1600,9 +1608,7 @@ export const useGraphVisualizer = () => {
             });
         }
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runTopologicalSort = () => {
@@ -1617,9 +1623,7 @@ export const useGraphVisualizer = () => {
                 pseudoLines: ["Topological Sort requires a Directed graph."],
                 description: "Graph must be Directed."
             });
-            setFrames(newFrames);
-            setCurrentStep(0);
-            setIsPlaying(true);
+            dispatchAnimation(newFrames);
             return;
         }
 
@@ -1689,9 +1693,7 @@ export const useGraphVisualizer = () => {
             });
         }
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runKahn = () => {
@@ -1706,9 +1708,7 @@ export const useGraphVisualizer = () => {
                 pseudoLines: ["Kahn's Algorithm requires a Directed graph."],
                 description: "Graph must be Directed."
             });
-            setFrames(newFrames);
-            setCurrentStep(0);
-            setIsPlaying(true);
+            dispatchAnimation(newFrames);
             return;
         }
 
@@ -1772,9 +1772,7 @@ export const useGraphVisualizer = () => {
             });
         }
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runTarjanBridges = () => {
@@ -1846,9 +1844,7 @@ export const useGraphVisualizer = () => {
             description: `Algorithm complete. Found ${bridges.length} bridge(s).`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runArticulationPoints = () => {
@@ -1924,9 +1920,7 @@ export const useGraphVisualizer = () => {
             description: `Algorithm complete. Found ${ap.size} Articulation Point(s).`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runFordFulkerson = () => {
@@ -1941,9 +1935,7 @@ export const useGraphVisualizer = () => {
                 pseudoLines: ["Ford-Fulkerson requires a Directed, Weighted graph.", "Weights represent capacities."],
                 description: "Graph must be Directed and Weighted."
             });
-            setFrames(newFrames);
-            setCurrentStep(0);
-            setIsPlaying(true);
+            dispatchAnimation(newFrames);
             return;
         }
 
@@ -2032,9 +2024,7 @@ export const useGraphVisualizer = () => {
             description: `Ford-Fulkerson complete. Total Max Flow: ${maxFlow}.`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
     const runEdmondsKarp = () => {
@@ -2049,9 +2039,7 @@ export const useGraphVisualizer = () => {
                 pseudoLines: ["Edmonds-Karp requires a Directed, Weighted graph.", "Weights represent capacities."],
                 description: "Graph must be Directed and Weighted."
             });
-            setFrames(newFrames);
-            setCurrentStep(0);
-            setIsPlaying(true);
+            dispatchAnimation(newFrames);
             return;
         }
 
@@ -2153,24 +2141,97 @@ export const useGraphVisualizer = () => {
             description: `Edmonds-Karp complete. Total Max Flow: ${maxFlow}.`
         });
 
-        setFrames(newFrames);
-        setCurrentStep(0);
-        setIsPlaying(true);
+        dispatchAnimation(newFrames);
     };
 
-    // Helper interface for local use if needed    // --- Playback Logic ---
+    // --- Playback Logic ---
     useEffect(() => {
-        if (isPlaying && currentStep < frames.length - 1) {
-            timerRef.current = setTimeout(() => {
+        let isCancelled = false;
+
+        const advanceStep = () => {
+            if (isCancelled) return;
+            if (currentStep < frames.length - 1) {
                 setCurrentStep(prev => prev + 1);
-            }, 1000 / playbackSpeed);
-        } else {
-            setIsPlaying(false);
-        }
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+            } else {
+                setIsPlaying(false);
+            }
         };
-    }, [isPlaying, currentStep, frames.length, playbackSpeed]);
+
+        if (isPlaying && currentStep < frames.length - 1) {
+            if (isNarrationEnabled && window.speechSynthesis) {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+
+                const frame = frames[currentStep];
+                if (frame && frame.description) {
+                    const textToSpeak = frame.description;
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+                    // --- JARVIS Voice Selection Heuristic ---
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        // 1. Filter by requested language (match British English)
+                        let validVoices = voices.filter(v => v.lang === 'en-GB');
+                        if (validVoices.length === 0) validVoices = voices.filter(v => v.lang.startsWith('en')); // fallback to any English
+                        if (validVoices.length === 0) validVoices = voices; // ultimate fallback
+
+                        // 2. Try to find explicitly male English voices via name keywords
+                        const maleKeywords = ['male', 'man', 'boy', 'david', 'mark', 'daniel', 'george', 'arthur', 'ryan'];
+                        let selectedVoice = validVoices.find(v => maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+
+                        // 3. Fallback: try to avoid known female voices
+                        if (!selectedVoice) {
+                            const femaleKeywords = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'tessa', 'melina', 'monica', 'paulina', 'luciana', 'amelie', 'marie', 'anna', 'helena', 'veena', 'lekha', 'hazel'];
+                            selectedVoice = validVoices.find(v => !femaleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+                        }
+
+                        // 4. Ultimate fallback: just pick the first valid voice
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        } else if (validVoices.length > 0) {
+                            utterance.voice = validVoices[0];
+                        }
+                    }
+
+                    utterance.lang = 'en-GB';
+                    // Scale speech rate based on playback speed. Standard rate is 1.0.
+                    // A playback speed of 2x might mean a speech rate of 1.5x (cap it so it's comprehensible)
+                    utterance.rate = Math.min(2.0, playbackSpeed * 0.9);
+
+                    utterance.onend = () => {
+                        // After speaking is done, immediately advance to the next step
+                        if (!isCancelled && isPlaying) {
+                            advanceStep();
+                        }
+                    };
+
+                    utterance.onerror = (e) => {
+                        console.error("Speech synthesis error", e);
+                        // Fallback to time-based if speech fails
+                        if (!isCancelled && isPlaying) {
+                            timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed);
+                        }
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    // No description, just advance
+                    timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed);
+                }
+            } else {
+                // Standard time-based playback
+                timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed);
+            }
+        } else if (!isPlaying) {
+            window.speechSynthesis?.cancel();
+        }
+
+        return () => {
+            isCancelled = true;
+            if (timerRef.current) clearTimeout(timerRef.current);
+            window.speechSynthesis?.cancel();
+        };
+    }, [isPlaying, currentStep, frames, playbackSpeed, isNarrationEnabled]);
 
     const getCurrentFrame = () => {
         if (frames.length > 0 && currentStep < frames.length) {
@@ -2827,6 +2888,8 @@ export const useGraphVisualizer = () => {
         updateWeightsByDistance,
         adjustPhysicalDistance,
         loadExampleGraph,
-        getNodeLabel, getInverseNodeLabel
+        getNodeLabel, getInverseNodeLabel,
+        isNarrationEnabled, setIsNarrationEnabled,
+        isGeneratingNarration
     };
 };

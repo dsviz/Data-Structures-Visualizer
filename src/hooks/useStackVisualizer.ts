@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { generateNarrationBatch } from '../services/aiService';
 
 // --- Types ---
 export type Operation = 'create' | 'push' | 'pop' | 'peek' | 'app_reverse' | 'app_balanced_parentheses' | 'app_postfix_eval' | 'app_browser_history' | null;
@@ -27,6 +28,7 @@ export interface Frame {
         currentOp: string;
         output?: string;
     };
+    narration?: string;
 }
 
 // --- Complexity Data ---
@@ -154,7 +156,9 @@ export const useStackVisualizer = () => {
     const [frames, setFrames] = useState<Frame[]>([]);
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x default
+    const [playbackSpeed, setPlaybackSpeed] = useState(1);
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+    const [isGeneratingNarration, setIsGeneratingNarration] = useState(false); // 1x default
 
     // UI State
     const [activeOp, setActiveOp] = useState<Operation>(null);
@@ -542,10 +546,31 @@ export const useStackVisualizer = () => {
 
     // --- Handlers ---
 
-    const runSimulation = (generatorResult: { endStacks: StackItem[][], timeline: Frame[] }) => {
-        setFrames(generatorResult.timeline);
+    const applyNarrationAndPlay = async (timeline: Frame[]) => {
+        setFrames(timeline);
         setCurrentStep(0);
         setIsPlaying(true);
+
+        if (isNarrationEnabled && timeline.length > 0) {
+            setIsGeneratingNarration(true);
+            try {
+                const descriptions = timeline.map(f => f.description);
+                const narrations = await generateNarrationBatch(descriptions, 'Stack');
+                const narratedFrames = timeline.map((frame, i) => ({
+                    ...frame,
+                    narration: narrations[i]?.narrated || frame.description
+                }));
+                setFrames(narratedFrames);
+            } catch (err) {
+                console.error("Narration error:", err);
+            } finally {
+                setIsGeneratingNarration(false);
+            }
+        }
+    };
+
+    const runSimulation = (generatorResult: { endStacks: StackItem[][], timeline: Frame[] }) => {
+        applyNarrationAndPlay(generatorResult.timeline);
         setInitialStacks(generatorResult.endStacks);
     };
 
@@ -657,19 +682,78 @@ export const useStackVisualizer = () => {
 
     // Playback Effect
     useEffect(() => {
-        if (isPlaying && frames.length > 0) {
-            timerRef.current = window.setInterval(() => {
-                setCurrentStep(prev => {
-                    if (prev < frames.length - 1) return prev + 1;
-                    setIsPlaying(false);
-                    return prev;
-                });
-            }, 1000 / playbackSpeed);
-        } else {
-            if (timerRef.current) clearInterval(timerRef.current);
+        let isCancelled = false;
+
+        const advanceStep = () => {
+            if (isCancelled) return;
+            if (currentStep < frames.length - 1) {
+                setCurrentStep(prev => prev + 1);
+            } else {
+                setIsPlaying(false);
+            }
+        };
+
+        if (isPlaying && currentStep < frames.length - 1) {
+            if (isNarrationEnabled && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+                const frame = frames[currentStep];
+                const textToSpeak = frame?.narration || frame?.description;
+
+                if (textToSpeak) {
+                    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+                    const voices = window.speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        let validVoices = voices.filter(v => v.lang === 'en-GB');
+                        if (validVoices.length === 0) validVoices = voices.filter(v => v.lang.startsWith('en'));
+                        if (validVoices.length === 0) validVoices = voices;
+
+                        const maleKeywords = ['male', 'man', 'boy', 'david', 'mark', 'daniel', 'george', 'arthur', 'ryan'];
+                        let selectedVoice = validVoices.find(v => maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+
+                        if (!selectedVoice) {
+                            const femaleKeywords = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'tessa', 'melina', 'monica', 'paulina', 'luciana', 'amelie', 'marie', 'anna', 'helena', 'veena', 'lekha', 'hazel'];
+                            selectedVoice = validVoices.find(v => !femaleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+                        }
+
+                        if (selectedVoice) {
+                            utterance.voice = selectedVoice;
+                        } else if (validVoices.length > 0) {
+                            utterance.voice = validVoices[0];
+                        }
+                    }
+
+                    utterance.lang = 'en-GB';
+                    utterance.rate = Math.min(2.0, playbackSpeed * 0.9);
+
+                    utterance.onend = () => {
+                        if (!isCancelled && isPlaying) advanceStep();
+                    };
+
+                    utterance.onerror = (e) => {
+                        console.error("Speech synthesis error", e);
+                        if (!isCancelled && isPlaying) {
+                            timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+                        }
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+                }
+            } else {
+                timerRef.current = setTimeout(advanceStep, 1000 / playbackSpeed) as any;
+            }
+        } else if (!isPlaying) {
+            window.speechSynthesis?.cancel();
         }
-        return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }, [isPlaying, frames.length, playbackSpeed]);
+
+        return () => {
+            isCancelled = true;
+            if (timerRef.current) clearTimeout(timerRef.current as any);
+            window.speechSynthesis?.cancel();
+        };
+    }, [isPlaying, currentStep, frames, playbackSpeed, isNarrationEnabled]);
 
     // Current State Derivations
     const currentFrame = frames[currentStep] || {
@@ -795,6 +879,9 @@ export const useStackVisualizer = () => {
         browserCurrent,
         browserInput,
         currentFrame,
+        isNarrationEnabled,
+        setIsNarrationEnabled,
+        isGeneratingNarration,
 
         // Setters
         setIsPlaying,
