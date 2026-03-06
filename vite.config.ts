@@ -40,10 +40,29 @@ export default defineConfig(({ mode }) => {
         writeBundle: () => {
           const distDir = path.resolve(__dirname, 'dist');
           if (fs.existsSync(path.join(distDir, 'index.html'))) {
+            // Create 404 fallback for GitHub pages
             fs.copyFileSync(
               path.join(distDir, 'index.html'),
               path.join(distDir, '404.html')
-            )
+            );
+            
+            // Create static HTML fallbacks for all dynamic routes to return 200 OK status
+            dynamicRoutes.forEach(route => {
+              if (route === '/') return;
+              
+              // Remove leading slash to create relative paths
+              const routePath = route.startsWith('/') ? route.slice(1) : route;
+              const routeDir = path.join(distDir, routePath);
+              
+              if (!fs.existsSync(routeDir)) {
+                fs.mkdirSync(routeDir, { recursive: true });
+              }
+              
+              fs.copyFileSync(
+                path.join(distDir, 'index.html'),
+                path.join(routeDir, 'index.html')
+              );
+            });
           }
         }
       }
