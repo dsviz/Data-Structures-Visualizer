@@ -32,3 +32,9 @@ dist-ssr
 
 # Server
 server/.env*
+
+# Dev artifact files (auto-generated, should not be tracked)
+.lint_output.txt
+.git_status.txt
+*.lint_output.txt
+*.git_status.txt

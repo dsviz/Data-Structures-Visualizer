@@ -7,6 +7,8 @@ import { TreeTabs } from '../components/tree/TreeTabs';
 import { TreeTools } from '../components/tree/TreeTools';
 import { Language } from '../data/TreeCode';
 import { useLayout } from '../context/LayoutContext';
+import { useAiContextStore } from '../store/aiContextStore';
+import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Trees = () => {
   const treeVisualizer = useTreeVisualizer();
@@ -56,6 +58,32 @@ const Trees = () => {
   const [tempEdge, setTempEdge] = useState<{ x1: number, y1: number, x2: number, y2: number } | null>(null);
 
   const currentFrame = getCurrentFrame();
+
+  const setDataStructure = useAiContextStore(state => state.setDataStructure);
+  const setCurrentFrameInStore = useAiContextStore(state => state.setCurrentFrame);
+  const activeIntent = useAiContextStore(state => state.activeIntent);
+  const clearIntent = useAiContextStore(state => state.clearIntent);
+  const dataStructure = useAiContextStore(state => state.dataStructure);
+
+  useEffect(() => {
+    setDataStructure('Binary Tree');
+  }, [setDataStructure]);
+  useEffect(() => {
+    setCurrentFrameInStore(currentFrame);
+  }, [currentFrame, setCurrentFrameInStore]);
+
+  useEffect(() => {
+    if (activeIntent && dataStructure === 'Binary Tree') {
+      const { action } = activeIntent;
+      if (action === 'play') setIsPlaying(true);
+      else if (action === 'pause') setIsPlaying(false);
+      else if (action === 'step_forward') setCurrentStep(s => Math.min(frames.length - 1, s + 1));
+      else if (action === 'step_backward') setCurrentStep(s => Math.max(0, s - 1));
+      else if (action === 'reset') setCurrentStep(0);
+      
+      clearIntent();
+    }
+  }, [activeIntent, clearIntent, dataStructure, frames.length, setCurrentStep, setIsPlaying]);
 
   // Ensure Left Sidebar is Closed
   useEffect(() => {
@@ -155,7 +183,7 @@ const Trees = () => {
 
   // Playback Controls
   const playbackControls = (
-    <div className="w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md relative z-20">
+    <div data-tour="dock-playbar" className="w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] px-8 py-4 flex items-center justify-between gap-8 h-20 shadow-md relative z-20">
       <div className="flex items-center gap-4">
         <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
         <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
@@ -348,7 +376,7 @@ const Trees = () => {
                 </div>
               </div>
             </div>
-            <button onClick={() => setIsOpsExpanded(!isOpsExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tr border-y border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+            <button data-tour="dock-ops" onClick={() => setIsOpsExpanded(!isOpsExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tr border-y border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
               <span className="material-symbols-outlined text-[16px] font-bold">{isOpsExpanded ? 'chevron_left' : 'tune'}</span>
             </button>
           </div>
@@ -367,14 +395,14 @@ const Trees = () => {
                 </div>
               </div>
             </div>
-            <button onClick={() => setIsToolboxExpanded(!isToolboxExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-br border-b border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+            <button data-tour="dock-toolbox" onClick={() => setIsToolboxExpanded(!isToolboxExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-br border-b border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
               <span className="material-symbols-outlined text-[16px] font-bold">{isToolboxExpanded ? 'chevron_left' : 'build'}</span>
             </button>
           </div>
 
           {/* Top-Right: Code & Data */}
           <div className="absolute top-0 right-0 flex items-start h-[75%] z-20 pointer-events-none drop-shadow-2xl">
-            <button onClick={() => setIsCodeExpanded(!isCodeExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tl border-y border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+            <button data-tour="dock-code" onClick={() => setIsCodeExpanded(!isCodeExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tl border-y border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
               <span className="material-symbols-outlined text-[16px] font-bold">{isCodeExpanded ? 'chevron_right' : 'code'}</span>
             </button>
             <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-[#272546] pointer-events-auto overflow-hidden ${isCodeExpanded ? 'w-[450px]' : 'w-0'}`}>
@@ -396,7 +424,7 @@ const Trees = () => {
 
           {/* Bottom-Right: Current Operation */}
           <div className="absolute bottom-0 right-0 flex items-end h-[25%] z-20 pointer-events-none drop-shadow-2xl">
-            <button onClick={() => setIsCurrentOpExpanded(!isCurrentOpExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-bl border-b border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+            <button data-tour="dock-currentop" onClick={() => setIsCurrentOpExpanded(!isCurrentOpExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-bl border-b border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
               <span className="material-symbols-outlined text-[16px] font-bold">{isCurrentOpExpanded ? 'chevron_right' : 'description'}</span>
             </button>
             <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-t border-[#272546] pointer-events-auto overflow-hidden ${isCurrentOpExpanded ? 'w-[450px]' : 'w-0'}`}>
@@ -413,6 +441,7 @@ const Trees = () => {
 
         </div>
       </VisualizationLayout>
+      <PageTour steps={DOCK_TOUR_STEPS('Binary Tree')} tourKey="tour_trees_v1" />
     </>
   );
 };

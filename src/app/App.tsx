@@ -20,11 +20,25 @@ import Signup from '../pages/Signup'
 import VerifyOtp from '../pages/VerifyOtp'
 import Profile from '../pages/Profile'
 import { useLayout } from '../context/LayoutContext'
+import { AiTutorPanel } from '../components/ui/AiTutorPanel'
 
+const VISUALIZATION_ROUTES = new Set([
+  '/arrays',
+  '/graphs',
+  '/linked-list',
+  '/queue',
+  '/sorting',
+  '/stack',
+  '/trees',
+  '/recursion'
+])
+
+const isVisualizationRoute = (pathname: string) => VISUALIZATION_ROUTES.has(pathname)
 
 function AppContent() {
   const { isNavbarVisible, setIsNavbarVisible } = useLayout();
   const location = useLocation();
+  const showAiTutorPanel = isVisualizationRoute(location.pathname);
 
   useEffect(() => {
     const isAuthPage = ['/login', '/signup', '/verify-otp', '/profile'].includes(location.pathname);
@@ -35,7 +49,7 @@ function AppContent() {
     <div className="flex flex-col h-screen overflow-hidden">
       <MobileWarning />
       {isNavbarVisible && <Navbar />}
-      <main className={`flex-1 ${isNavbarVisible ? 'overflow-auto' : 'overflow-hidden h-full'}`}>
+      <main className={`flex-1 overflow-auto ${!isNavbarVisible ? 'h-full' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/arrays" element={<Arrays />} />
@@ -55,6 +69,7 @@ function AppContent() {
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
+        {showAiTutorPanel && <AiTutorPanel />}
       </main>
     </div>
   );

@@ -5,6 +5,8 @@ import { ArraysControls } from '../components/arrays/ArraysControls';
 import { ArraysTabs } from '../components/arrays/ArraysTabs';
 import { ArrayTools, ArrayTool } from '../components/arrays/ArrayTools';
 import { useArraysVisualizer } from '../hooks/useArraysVisualizer';
+import { useAiContextStore } from '../store/aiContextStore';
+import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Arrays = () => {
     // --- Hook State ---
@@ -61,6 +63,46 @@ const Arrays = () => {
         handleCanvasUpdate,
         handleCanvasClear
     } = useArraysVisualizer();
+
+    const setDataStructure = useAiContextStore(state => state.setDataStructure);
+    const setCurrentFrameInStore = useAiContextStore(state => state.setCurrentFrame);
+    const activeIntent = useAiContextStore(state => state.activeIntent);
+    const clearIntent = useAiContextStore(state => state.clearIntent);
+    const dataStructure = useAiContextStore(state => state.dataStructure);
+
+    useEffect(() => {
+        setDataStructure('Array');
+    }, [setDataStructure]);
+    useEffect(() => {
+        setCurrentFrameInStore(currentFrame);
+    }, [currentFrame, setCurrentFrameInStore]);
+
+    useEffect(() => {
+        if (activeIntent && dataStructure === 'Array') {
+            const { action, value } = activeIntent;
+            
+            if (action === 'play') setIsPlaying(true);
+            else if (action === 'pause') setIsPlaying(false);
+            else if (action === 'step_forward') setCurrentStep(s => Math.min(frames.length - 1, s + 1));
+            else if (action === 'step_backward') setCurrentStep(s => Math.max(0, s - 1));
+            else if (action === 'reset') setCurrentStep(0);
+            else if (action === 'insert' && value !== null) handleInsert(value);
+            else if (action === 'delete' && value !== null) handleRemove(value);
+            else if (action === 'search' && value !== null) handleSearch(value);
+            
+            clearIntent();
+        }
+    }, [
+        activeIntent,
+        clearIntent,
+        dataStructure,
+        frames.length,
+        handleInsert,
+        handleRemove,
+        handleSearch,
+        setCurrentStep,
+        setIsPlaying
+    ]);
 
     const [activeTool, setActiveTool] = useState<ArrayTool>(null);
     const [editPopup, setEditPopup] = useState<{ index: number, val: number, x: number, y: number } | null>(null);
@@ -159,7 +201,7 @@ const Arrays = () => {
                 title="Arrays"
                 contentClassName="flex-1 flex flex-col relative z-10 overflow-hidden p-0"
                 controls={
-                    <div className="w-full h-16 bg-white dark:bg-[#1e1c33] border-t border-gray-200 dark:border-[#272546] flex items-center px-6 gap-6 z-20 shrink-0">
+                    <div data-tour="dock-playbar" className="w-full h-16 bg-white dark:bg-[#1e1c33] border-t border-gray-200 dark:border-[#272546] flex items-center px-6 gap-6 z-20 shrink-0">
                         <div className="flex items-center gap-2" >
                             <button onClick={() => setCurrentStep(0)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Start"><span className="material-symbols-outlined text-[20px]">skip_previous</span></button>
                             <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Prev"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
@@ -192,9 +234,10 @@ const Arrays = () => {
                                 <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3 w-32 border-l border-[#272546] pl-4" >
+                        <div className="flex items-center gap-3 w-40 border-l border-[#272546] pl-4" >
                             <span className="material-symbols-outlined text-gray-500 text-sm">speed</span>
                             <input type="range" min="0.5" max="3" step="0.5" value={playbackSpeed} onChange={e => setPlaybackSpeed(parseFloat(e.target.value))} className="w-full h-1 bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary" />
+                            <span className="text-xs font-mono text-gray-400 w-7 text-right shrink-0">{playbackSpeed}x</span>
                         </div>
                     </div>
                 }
@@ -272,7 +315,7 @@ const Arrays = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={() => setIsOpsExpanded(!isOpsExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tr border-y border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+                        <button data-tour="dock-ops" onClick={() => setIsOpsExpanded(!isOpsExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tr border-y border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
                             <span className="material-symbols-outlined text-[16px] font-bold">{isOpsExpanded ? 'chevron_left' : 'tune'}</span>
                         </button>
                     </div>
@@ -292,14 +335,14 @@ const Arrays = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={() => setIsToolboxExpanded(!isToolboxExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-br border-b border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+                        <button data-tour="dock-toolbox" onClick={() => setIsToolboxExpanded(!isToolboxExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-br border-b border-r border-l-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
                             <span className="material-symbols-outlined text-[16px] font-bold">{isToolboxExpanded ? 'chevron_left' : 'build'}</span>
                         </button>
                     </div>
 
                     {/* Top-Right: Code & Data */}
                     <div className="absolute top-0 right-0 flex items-start h-[75%] z-20 pointer-events-none drop-shadow-2xl">
-                        <button onClick={() => setIsCodeExpanded(!isCodeExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tl border-y border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+                        <button data-tour="dock-code" onClick={() => setIsCodeExpanded(!isCodeExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-125 hover:brightness-110 text-white flex items-center justify-center rounded-tl border-y border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
                             <span className="material-symbols-outlined text-[16px] font-bold">{isCodeExpanded ? 'chevron_right' : 'code'}</span>
                         </button>
                         <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-[#272546] pointer-events-auto overflow-hidden ${isCodeExpanded ? 'w-[450px]' : 'w-0'}`}>
@@ -335,7 +378,7 @@ const Arrays = () => {
 
                     {/* Bottom-Right: Current Operation */}
                     <div className="absolute bottom-0 right-0 flex items-end h-[25%] z-20 pointer-events-none drop-shadow-2xl">
-                        <button onClick={() => setIsCurrentOpExpanded(!isCurrentOpExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-bl border-b border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
+                        <button data-tour="dock-currentop" onClick={() => setIsCurrentOpExpanded(!isCurrentOpExpanded)} className="pointer-events-auto w-6 h-full bg-primary brightness-75 hover:brightness-50 text-white flex items-center justify-center rounded-bl border-b border-l border-r-0 border-black/20 dark:border-[#272546] shadow-md transition-all">
                             <span className="material-symbols-outlined text-[16px] font-bold">{isCurrentOpExpanded ? 'chevron_right' : 'description'}</span>
                         </button>
                         <div className={`transition-[width] duration-300 ease-in-out h-full bg-white dark:bg-[#1c1a32] border-l border-t border-[#272546] pointer-events-auto overflow-hidden ${isCurrentOpExpanded ? 'w-[450px]' : 'w-0'}`}>
@@ -370,6 +413,7 @@ const Arrays = () => {
 
                 </div>
             </VisualizationLayout>
+            <PageTour steps={DOCK_TOUR_STEPS('Array')} tourKey="tour_arrays_v1" />
         </>
     );
 };

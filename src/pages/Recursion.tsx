@@ -1,5 +1,39 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
+import PageTour, { TourStep } from '../components/ui/PageTour';
+
+const RECURSION_TOUR_STEPS: TourStep[] = [
+    {
+        target: 'recursion-config',
+        title: 'Configuration Panel',
+        body: 'Choose the recursion input, set the playback speed, and launch the simulation from this left panel.',
+        position: 'right',
+    },
+    {
+        target: 'recursion-stack',
+        title: 'Live Call Stack',
+        body: 'Watch recursive frames pause, resume, and return values exactly like a real function call stack.',
+        position: 'right',
+    },
+    {
+        target: 'recursion-toolbar',
+        title: 'Execution Toolbar',
+        body: 'Step backward, play, pause, step forward, or reset the recursion tree at any point.',
+        position: 'bottom',
+    },
+    {
+        target: 'recursion-code',
+        title: 'Highlighted Source Code',
+        body: 'The active line moves with the animation so you can connect stack changes to the exact recursive statement.',
+        position: 'left',
+    },
+    {
+        target: 'recursion-console',
+        title: 'Console Output',
+        body: 'Read the recursive trace in plain text to see call order, base cases, and returned values.',
+        position: 'left',
+    },
+];
 
 
 // --- Types ---
@@ -42,6 +76,12 @@ const Recursion = () => {
     const [steps, setSteps] = useState<Step[]>([]);
 
     const intervalRef = useRef<number | null>(null);
+    const pageTourSteps = useMemo(() => {
+        const isExtraLargeViewport = typeof window === 'undefined' ? true : window.innerWidth >= 1280;
+        return isExtraLargeViewport
+            ? RECURSION_TOUR_STEPS
+            : RECURSION_TOUR_STEPS.filter(step => step.target !== 'recursion-code' && step.target !== 'recursion-console');
+    }, []);
 
     // --- Algorithm Logic: Fibonacci Generator ---
     const generateSteps = useCallback((n: number) => {
@@ -215,7 +255,7 @@ const Recursion = () => {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Left Sidebar: Config & Call Stack */}
-                    <aside className="w-72 border-r border-gray-200 dark:border-[#272546] flex flex-col bg-white dark:bg-[#131221] z-10 shrink-0">
+                    <aside data-tour="recursion-config" className="w-72 border-r border-gray-200 dark:border-[#272546] flex flex-col bg-white dark:bg-[#131221] z-10 shrink-0">
                         <div className="p-4 border-b border-gray-200 dark:border-[#272546]">
                             <div className="flex flex-wrap gap-2 items-center text-xs mb-1">
                                 <span className="text-gray-500 dark:text-[#9794c7]">Work Mode</span>
@@ -278,11 +318,27 @@ const Recursion = () => {
                                     Start Simulation
                                 </button>
                             </div>
+
+                            {/* Complexity Info */}
+                            <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-xl p-3 space-y-2">
+                                <p className="text-[10px] uppercase font-bold tracking-wider text-gray-400">Fibonacci Complexity</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/40 rounded-lg p-2 text-center">
+                                        <div className="text-[9px] uppercase font-bold text-rose-400 mb-1">Time</div>
+                                        <div className="text-sm font-black font-mono text-rose-600 dark:text-rose-400">O(2ⁿ)</div>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-lg p-2 text-center">
+                                        <div className="text-[9px] uppercase font-bold text-blue-400 mb-1">Space</div>
+                                        <div className="text-sm font-black font-mono text-blue-600 dark:text-blue-400">O(n)</div>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-gray-400 italic">Each call branches into 2 sub-calls. The call stack depth equals n.</p>
+                            </div>
                         </div>
 
 
                         {/* Call Stack Panel */}
-                        <div className="flex flex-col flex-1 overflow-hidden bg-white dark:bg-[#131221]">
+                        <div data-tour="recursion-stack" className="flex flex-col flex-1 overflow-hidden bg-white dark:bg-[#131221]">
                             <div className="px-4 py-3 bg-gray-50 dark:bg-[#1c1a32] border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
                                 <h3 className="text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
                                     <span className="material-symbols-outlined text-[16px]">layers</span> Call Stack
@@ -339,7 +395,7 @@ const Recursion = () => {
                         <div className="absolute inset-0 z-0 opacity-[0.05] dark:opacity-[0.1]" style={{ backgroundImage: 'linear-gradient(to right, #4236e7 1px, transparent 1px), linear-gradient(to bottom, #4236e7 1px, transparent 1px)', backgroundSize: '40px 40px', maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }}></div>
 
                         {/* Canvas Toolbar */}
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#1c1a32]/90 backdrop-blur border border-gray-200 dark:border-[#272546] rounded-full p-1.5 flex gap-1 shadow-xl z-20">
+                        <div data-tour="recursion-toolbar" className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#1c1a32]/90 backdrop-blur border border-gray-200 dark:border-[#272546] rounded-full p-1.5 flex gap-1 shadow-xl z-20">
                             <button onClick={stepBack} className="size-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 flex items-center justify-center text-slate-700 dark:text-white transition-colors" title="Step Back">
                                 <span className="material-symbols-outlined text-[20px]">skip_previous</span>
                             </button>
@@ -435,7 +491,7 @@ const Recursion = () => {
                     </main>
 
                     {/* Right Sidebar: Code Editor */}
-                    <aside className="w-[300px] border-l border-gray-200 dark:border-[#272546] flex flex-col bg-slate-50 dark:bg-[#0d0c15] z-10 shrink-0 hidden xl:flex">
+                    <aside data-tour="recursion-code" className="w-[300px] border-l border-gray-200 dark:border-[#272546] flex flex-col bg-slate-50 dark:bg-[#0d0c15] z-10 shrink-0 hidden xl:flex">
                         <div className="px-4 py-3 bg-white dark:bg-[#1c1a32] border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
                             <h3 className="text-xs font-bold text-gray-500 dark:text-gray-300 uppercase tracking-wider flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[16px]">code</span> Source Code
@@ -470,7 +526,7 @@ const Recursion = () => {
                             </div>
                         </div>
                         {/* Console */}
-                        <div className="h-1/3 border-t border-gray-200 dark:border-[#272546] flex flex-col bg-gray-50 dark:bg-[#1c1a32]">
+                        <div data-tour="recursion-console" className="h-1/3 border-t border-gray-200 dark:border-[#272546] flex flex-col bg-gray-50 dark:bg-[#1c1a32]">
                             <div className="px-4 py-2 bg-gray-100 dark:bg-black/20 border-b border-gray-200 dark:border-[#272546] flex justify-between items-center">
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Console Output</h3>
                                 <button className="text-[10px] text-gray-500 hover:text-slate-900 dark:hover:text-white transition-colors">Clear</button>
@@ -485,6 +541,7 @@ const Recursion = () => {
                     </aside>
                 </div>
             </div>
+            <PageTour steps={pageTourSteps} tourKey="tour_recursion_v1" />
         </>
     );
 }

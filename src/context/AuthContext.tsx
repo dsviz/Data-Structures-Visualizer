@@ -28,13 +28,14 @@ interface AuthContextType {
     signup: (name: string, email: string, password: string) => Promise<{ verifyNeeded?: boolean } | void>;
     verifyOtp: (email: string, code: string) => Promise<void>;
     updateUserProfile: (name: string, avatarUrl?: string) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'supabase-auth-token';
 const USER_KEY = 'app-user-data';
+const AI_KEY_STORAGE_PREFIX = 'ai-key-';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // 1. Synchronously initialize state from LocalStorage for an instant load
@@ -116,6 +117,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Clear local storage
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(USER_KEY);
+        if (user?.id) {
+            sessionStorage.removeItem(`${AI_KEY_STORAGE_PREFIX}${user.id}`);
+        }
         setUser(null);
 
         // Clear supabase 

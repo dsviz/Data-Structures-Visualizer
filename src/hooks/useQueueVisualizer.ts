@@ -138,7 +138,7 @@ export const useQueueVisualizer = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
-    const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(false);
     const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
     // UI State

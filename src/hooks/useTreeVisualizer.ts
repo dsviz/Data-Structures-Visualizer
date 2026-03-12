@@ -62,7 +62,7 @@ export const useTreeVisualizer = () => {
     const [activeAlgorithm, setActiveAlgorithm] = useState<string | null>(null);
     const [activeTool, setActiveTool] = useState<TreeTool>('move');
     const [selectedNode, setSelectedNode] = useState<number | null>(null);
-    const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(false);
     const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
     // Refs

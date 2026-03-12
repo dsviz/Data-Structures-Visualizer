@@ -88,7 +88,7 @@ export const useArraysVisualizer = () => {
     const [currentStep, setCurrentStep] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
-    const [isNarrationEnabled, setIsNarrationEnabled] = useState(true);
+    const [isNarrationEnabled, setIsNarrationEnabled] = useState(false);
     const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
     // UI State
@@ -393,9 +393,9 @@ export const useArraysVisualizer = () => {
         setInitialArray(generatorResult.endArr);
     };
 
-    const handleInsert = () => {
+    const handleInsert = (valueOverride?: string | number) => {
         const idx = parseInt(insertIndex);
-        const val = parseInt(insertValue);
+        const val = parseInt(valueOverride !== undefined ? String(valueOverride) : insertValue);
         if (isNaN(idx) || isNaN(val)) { setError("Invalid Inputs"); return; }
         if (idx < 0 || idx > initialArray.filter(x => x !== null).length) { setError("Bounds Error"); return; }
         if (initialArray.filter(x => x !== null).length >= MAX_CAPACITY) { setError("Full"); return; }
@@ -403,8 +403,8 @@ export const useArraysVisualizer = () => {
         runSimulation(generateInsertFrames(initialArray, idx, val));
     };
 
-    const handleRemove = () => {
-        const idx = parseInt(removeIndex);
+    const handleRemove = (indexOverride?: string | number) => {
+        const idx = parseInt(indexOverride !== undefined ? String(indexOverride) : removeIndex);
         if (isNaN(idx)) { setError("Invalid Input"); return; }
         const size = initialArray.filter(x => x !== null).length;
         if (idx < 0 || idx >= size) { setError("Bounds Error"); return; }
@@ -422,8 +422,8 @@ export const useArraysVisualizer = () => {
         runSimulation(generateUpdateFrames(initialArray, idx, val));
     };
 
-    const handleSearch = () => {
-        const val = parseInt(searchInput);
+    const handleSearch = (valueOverride?: string | number) => {
+        const val = parseInt(valueOverride !== undefined ? String(valueOverride) : searchInput);
         if (isNaN(val)) { setError("Invalid Input"); return; }
         setError(null);
         const result = searchType === 'linear'

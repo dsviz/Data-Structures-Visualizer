@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useLayout } from '../context/LayoutContext';
+import PageTour, { TourStep } from '../components/ui/PageTour';
 import { SORTING_CODE, Language } from '../data/SortingCode';
 import { SORTING_INFO } from '../data/SortingData';
 import { playSortingSound } from '../utils/soundUtils';
@@ -13,6 +14,27 @@ import {
   generateMergeSortFrames,
   generateQuickSortFrames
 } from '../utils/sortingAlgorithms';
+
+const SORTING_TOUR_STEPS: TourStep[] = [
+  {
+    target: 'sorting-stats',
+    title: 'Live Sorting Stats',
+    body: 'Track the current array size and the exact animation step while the sort progresses.',
+    position: 'bottom',
+  },
+  {
+    target: 'sorting-sidebar',
+    title: 'Controls, Code, and Complexity',
+    body: 'Use the right panel to switch algorithms, enter a custom array, inspect source code, and compare complexity details.',
+    position: 'left',
+  },
+  {
+    target: 'sorting-playbar',
+    title: 'Timeline Playback',
+    body: 'Replay the sort frame by frame, scrub the timeline, adjust speed, and mute or enable audio cues.',
+    position: 'top',
+  },
+];
 
 const Sorting = () => {
   // --- State ---
@@ -496,7 +518,7 @@ const Sorting = () => {
   };
 
   const unifiedRightSidebar = (
-    <div className="flex flex-col h-full bg-white dark:bg-[#1e1c33] border-l border-gray-200 dark:border-[#272546]">
+    <div data-tour="sorting-sidebar" className="flex flex-col h-full bg-white dark:bg-[#1e1c33] border-l border-gray-200 dark:border-[#272546]">
       {renderTabs()}
       <div className="flex-1 overflow-hidden relative">
         {activeTab === 'controls' && renderControlsContent()}
@@ -521,7 +543,7 @@ const Sorting = () => {
       )}
 
       {/* Main Controls Bar */}
-      <div className={`transition-all duration-300 z-30 w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] flex items-center justify-between gap-6 px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative ${showControls ? 'h-16 opacity-100 translate-y-0' : 'h-0 opacity-0 translate-y-full overflow-hidden'}`}>
+      <div data-tour="sorting-playbar" className={`transition-all duration-300 z-30 w-full bg-white dark:bg-[#131221] border-t border-gray-200 dark:border-[#272546] flex items-center justify-between gap-6 px-6 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] relative ${showControls ? 'h-16 opacity-100 translate-y-0' : 'h-0 opacity-0 translate-y-full overflow-hidden'}`}>
 
         {/* Hide Button (Absolute) */}
         <button
@@ -618,7 +640,7 @@ const Sorting = () => {
         controls={bottomControls}
       >
         {/* Stats Header (Updated Position since top bar is gone) */}
-        <div className="absolute top-2 left-0 w-full z-10 px-6 py-2 flex flex-wrap items-center justify-between gap-4 pointer-events-none">
+        <div data-tour="sorting-stats" className="absolute top-2 left-0 w-full z-10 px-6 py-2 flex flex-wrap items-center justify-between gap-4 pointer-events-none">
           {/* Left: Title or Breadcrumbs could go here if needed, but VisualLayout handles it */}
           <div></div>
 
@@ -744,9 +766,10 @@ const Sorting = () => {
               })}
             </div>
           )}
-      </VisualizationLayout >
+      </VisualizationLayout>
+      <PageTour steps={SORTING_TOUR_STEPS} tourKey="tour_sorting_v1" />
     </>
-  )
-}
+  );
+};
 
 export default Sorting;

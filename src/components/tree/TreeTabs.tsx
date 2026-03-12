@@ -2,6 +2,61 @@ import React, { useState } from 'react';
 import { Frame } from '../../hooks/useTreeVisualizer';
 import { TREE_CODE, Language } from '../../data/TreeCode';
 
+interface ComplexityEntry {
+    time: string;
+    space: string;
+    best?: string;
+    avg?: string;
+    worst?: string;
+    note?: string;
+}
+
+const TREE_COMPLEXITY: Record<string, ComplexityEntry> = {
+    // BST core
+    insert:           { best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', time: 'O(log n)', space: 'O(1)', note: 'Worst case on unbalanced / skewed tree' },
+    delete:           { best: 'O(log n)', avg: 'O(log n)', worst: 'O(n)', time: 'O(log n)', space: 'O(1)', note: 'Worst case on unbalanced tree' },
+    search:           { best: 'O(1)',     avg: 'O(log n)', worst: 'O(n)', time: 'O(log n)', space: 'O(1)', note: 'Worst case on skewed tree' },
+    // Traversals
+    inorder:          { time: 'O(n)', space: 'O(h)', note: 'h = height; O(n) worst for skewed, O(log n) for balanced' },
+    preorder:         { time: 'O(n)', space: 'O(h)' },
+    postorder:        { time: 'O(n)', space: 'O(h)' },
+    bfs:              { time: 'O(n)', space: 'O(w)', note: 'w = max width of tree' },
+    zigzag:           { time: 'O(n)', space: 'O(w)' },
+    // BST queries
+    findMin:          { time: 'O(h)', space: 'O(1)', note: 'Leftmost node traversal' },
+    findMax:          { time: 'O(h)', space: 'O(1)', note: 'Rightmost node traversal' },
+    successor:        { time: 'O(h)', space: 'O(1)' },
+    predecessor:      { time: 'O(h)', space: 'O(1)' },
+    lca:              { time: 'O(h)', space: 'O(1)', note: 'Lowest Common Ancestor' },
+    // Tree properties
+    validate:         { time: 'O(n)', space: 'O(h)', note: 'Validate BST property' },
+    height:           { time: 'O(n)', space: 'O(h)' },
+    count:            { time: 'O(n)', space: 'O(h)' },
+    countLeaves:      { time: 'O(n)', space: 'O(h)' },
+    diameter:         { time: 'O(n)', space: 'O(h)' },
+    balanced:         { time: 'O(n)', space: 'O(h)', note: 'Height-balanced check' },
+    isFull:           { time: 'O(n)', space: 'O(h)' },
+    isComplete:       { time: 'O(n)', space: 'O(n)' },
+    // Views
+    leftView:         { time: 'O(n)', space: 'O(h)' },
+    rightView:        { time: 'O(n)', space: 'O(h)' },
+    topView:          { time: 'O(n)', space: 'O(n)' },
+    bottomView:       { time: 'O(n)', space: 'O(n)' },
+    boundary:         { time: 'O(n)', space: 'O(h)' },
+    mirror:           { time: 'O(n)', space: 'O(h)' },
+    // Construction
+    buildFromArray:   { time: 'O(n log n)', space: 'O(n)', note: 'n insertions into BST' },
+    buildPreIn:       { time: 'O(n)', space: 'O(n)', note: 'Reconstruct from preorder + inorder' },
+    buildPostIn:      { time: 'O(n)', space: 'O(n)', note: 'Reconstruct from postorder + inorder' },
+    buildBalanced:    { time: 'O(n log n)', space: 'O(n)' },
+    deserialize:      { time: 'O(n)', space: 'O(n)' },
+    // AVL
+    balanceFactors:   { time: 'O(n)', space: 'O(h)', note: 'Annotate all balance factors' },
+    rotateLeft:       { time: 'O(1)', space: 'O(1)', note: 'Single left rotation' },
+    rotateRight:      { time: 'O(1)', space: 'O(1)', note: 'Single right rotation' },
+    insertAVL:        { best: 'O(log n)', avg: 'O(log n)', worst: 'O(log n)', time: 'O(log n)', space: 'O(log n)', note: 'Always balanced — guaranteed O(log n)' },
+};
+
 interface TreeTabsProps {
     currentFrame: Frame;
     codeLanguage: Language;
@@ -90,7 +145,59 @@ export const TreeTabs: React.FC<TreeTabsProps> = ({
                 )}
 
                 {activeTab === 'info' && (
-                    <div className="p-4 space-y-6">
+                    <div className="p-4 space-y-4">
+                        {/* Complexity Cards */}
+                        {activeAlgorithm && TREE_COMPLEXITY[activeAlgorithm] ? (() => {
+                            const cx = TREE_COMPLEXITY[activeAlgorithm];
+                            return (
+                                <div className="space-y-3">
+                                    <h4 className="text-[10px] uppercase font-bold text-gray-400">Complexity</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/40 rounded-lg p-2.5 text-center">
+                                            <div className="text-[9px] uppercase font-bold text-rose-400 mb-1 tracking-wider">Time</div>
+                                            <div className="text-base font-black font-mono text-rose-600 dark:text-rose-400">{cx.time}</div>
+                                        </div>
+                                        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-lg p-2.5 text-center">
+                                            <div className="text-[9px] uppercase font-bold text-blue-400 mb-1 tracking-wider">Space</div>
+                                            <div className="text-base font-black font-mono text-blue-600 dark:text-blue-400">{cx.space}</div>
+                                        </div>
+                                    </div>
+                                    {(cx.best || cx.avg || cx.worst) && (
+                                        <div className="bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 rounded-lg overflow-hidden">
+                                            <table className="w-full text-xs">
+                                                <tbody>
+                                                    {cx.best && (
+                                                        <tr className="border-b border-gray-100 dark:border-white/5">
+                                                            <td className="px-3 py-2 text-emerald-500 font-bold uppercase text-[10px]">Best</td>
+                                                            <td className="px-3 py-2 font-mono text-right text-gray-700 dark:text-gray-300">{cx.best}</td>
+                                                        </tr>
+                                                    )}
+                                                    {cx.avg && (
+                                                        <tr className="border-b border-gray-100 dark:border-white/5">
+                                                            <td className="px-3 py-2 text-yellow-500 font-bold uppercase text-[10px]">Avg</td>
+                                                            <td className="px-3 py-2 font-mono text-right text-gray-700 dark:text-gray-300">{cx.avg}</td>
+                                                        </tr>
+                                                    )}
+                                                    {cx.worst && (
+                                                        <tr>
+                                                            <td className="px-3 py-2 text-rose-500 font-bold uppercase text-[10px]">Worst</td>
+                                                            <td className="px-3 py-2 font-mono text-right text-gray-700 dark:text-gray-300">{cx.worst}</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                    {cx.note && (
+                                        <p className="text-[10px] text-gray-400 italic leading-relaxed">{cx.note}</p>
+                                    )}
+                                </div>
+                            );
+                        })() : (
+                            <div className="text-center italic text-gray-400 text-xs mt-4">Select an algorithm to view complexity.</div>
+                        )}
+
+                        {/* Traversal Output */}
                         {currentFrame.output !== undefined && (
                             <div>
                                 <h4 className="text-[10px] uppercase font-bold text-gray-400 mb-2">Traversal Output</h4>

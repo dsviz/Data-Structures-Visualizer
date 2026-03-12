@@ -90,23 +90,23 @@ cd server
 npm install
 ```
 
-6. **Configure backend environment:**
+6. **Configure backend environment (run from `server/`):**
 ```bash
 cp .env.example .env # use: copy .env.example .env (Windows)
 ```
 Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
 
-7. **Run database migrations:**
+7. **Run database migrations (still in `server/`):**
 ```bash
 npx prisma migrate dev
 ```
 
-8. **Seed algorithm metadata:**
+8. **Seed algorithm metadata (still in `server/`):**
 ```bash
 npm run prisma:seed
 ```
 
-9. **Start backend API:**
+9. **Start backend API (still in `server/`):**
 ```bash
 npm run dev
 ```
