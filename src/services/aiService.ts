@@ -1,13 +1,19 @@
 import { AiProvider } from '../store/aiKeyStore';
 
-const AI_SERVER_URL = 'http://localhost:3001';
+const configuredAiBase = import.meta.env.VITE_AI_SERVER_URL?.replace(/\/+$/, '');
+const AI_SERVER_BASE = configuredAiBase || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+
+const aiApiUrl = (path: string) => {
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return AI_SERVER_BASE ? `${AI_SERVER_BASE}${normalizedPath}` : normalizedPath;
+};
 
 export const generateNarrationBatch = async (descriptions: string[], dataStructure?: string): Promise<{ original: string, narrated: string }[]> => {
     try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
         const apiUrl = supabaseUrl
             ? `${supabaseUrl}/functions/v1/ai-narrate`
-            : `${AI_SERVER_URL}/api/narrate`;
+            : aiApiUrl('/api/narrate');
 
         const response = await fetch(apiUrl, {
             method: 'POST',
@@ -20,7 +26,7 @@ export const generateNarrationBatch = async (descriptions: string[], dataStructu
 
         if (!response.ok) {
             console.error('AI Backend error:', response.status);
-            if (supabaseUrl && apiUrl !== `${AI_SERVER_URL}/api/narrate`) {
+            if (supabaseUrl && apiUrl !== aiApiUrl('/api/narrate')) {
                 console.log("Attempting local fallback...");
                 return generateNarrationBatchLocal(descriptions, dataStructure);
             }
@@ -44,7 +50,7 @@ export const generateNarrationBatch = async (descriptions: string[], dataStructu
 
 const generateNarrationBatchLocal = async (descriptions: string[], dataStructure?: string) => {
     try {
-        const response = await fetch(`${AI_SERVER_URL}/api/narrate`, {
+        const response = await fetch(aiApiUrl('/api/narrate'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ descriptions, dataStructure })
@@ -68,7 +74,7 @@ export const sendChatMessage = async (
     apiKey?: string
 ) => {
     try {
-        const response = await fetch(`${AI_SERVER_URL}/api/chat`, {
+        const response = await fetch(aiApiUrl('/api/chat'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message, context, dataStructure, provider, apiKey })
@@ -81,7 +87,7 @@ export const sendChatMessage = async (
         return await response.json();
     } catch (e) {
         console.error(e);
-        return { response: "An error occurred while connecting to the AI server. Is the backend running on port 3001?" };
+        return { response: "An error occurred while connecting to the AI server. Please verify the backend is reachable or set VITE_AI_SERVER_URL." };
     }
 };
 
@@ -91,7 +97,7 @@ export const parseNaturalLanguageIntent = async (
     apiKey?: string
 ) => {
     try {
-        const response = await fetch(`${AI_SERVER_URL}/api/intent`, {
+        const response = await fetch(aiApiUrl('/api/intent'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ command, provider, apiKey })
