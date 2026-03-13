@@ -577,6 +577,47 @@ export const LINKED_LIST_CODE: OperationCodes = {
             mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
         }
     },
+    recursiveTraversal: {
+        c: {
+            lines: [
+                "void traverse(struct Node* node) {",
+                "    if (node == NULL) return;",
+                "    // Process node->data",
+                "    traverse(node->next);",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        cpp: {
+            lines: [
+                "void traverse(Node* node) {",
+                "    if (node == nullptr) return;",
+                "    // Process node->val",
+                "    traverse(node->next);",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        java: {
+            lines: [
+                "void traverse(Node node) {",
+                "    if (node == null) return;",
+                "    // Process node.val",
+                "    traverse(node.next);",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        python: {
+            lines: [
+                "def traverse(node):",
+                "    if node is None: return",
+                "    # Process node.val",
+                "    traverse(node.next)"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        }
+    },
     convertToArray: {
         c: {
             lines: [
