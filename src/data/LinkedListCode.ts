@@ -1116,5 +1116,77 @@ export const LINKED_LIST_CODE: OperationCodes = {
             ],
             mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 8: 6, 9: 6, 10: 6 }
         }
+    },
+    deleteAllOccurrences: {
+        c: {
+            lines: [
+                "struct Node* temp;",
+                "while (head != NULL && head->data == target) {",
+                "    temp = head;",
+                "    head = head->next;",
+                "    free(temp);",
+                "}",
+                "struct Node* curr = head;",
+                "while (curr != NULL && curr->next != NULL) {",
+                "    if (curr->next->data == target) {",
+                "        temp = curr->next;",
+                "        curr->next = temp->next;",
+                "        free(temp);",
+                "    } else {",
+                "        curr = curr->next;",
+                "    }",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 10: 11, 11: 13, 12: 13 }
+        },
+        cpp: {
+            lines: [
+                "while (head != nullptr && head->val == target) {",
+                "    Node* temp = head;",
+                "    head = head->next;",
+                "    delete temp;",
+                "}",
+                "Node* curr = head;",
+                "while (curr != nullptr && curr->next != nullptr) {",
+                "    if (curr->next->val == target) {",
+                "        Node* temp = curr->next;",
+                "        curr->next = temp->next;",
+                "        delete temp;",
+                "    } else {",
+                "        curr = curr->next;",
+                "    }",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 10: 12 }
+        },
+        java: {
+            lines: [
+                "while (head != null && head.val == target) {",
+                "    head = head.next;",
+                "}",
+                "Node curr = head;",
+                "while (curr != null && curr.next != null) {",
+                "    if (curr.next.val == target) {",
+                "        curr.next = curr.next.next;",
+                "    } else {",
+                "        curr = curr.next;",
+                "    }",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 3, 3: 4, 4: 5, 5: 6, 6: 8 }
+        },
+        python: {
+            lines: [
+                "while head is not None and head.val == target:",
+                "    head = head.next",
+                "curr = head",
+                "while curr is not None and curr.next is not None:",
+                "    if curr.next.val == target:",
+                "        curr.next = curr.next.next",
+                "    else:",
+                "        curr = curr.next"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 7 }
+        }
     }
 };
