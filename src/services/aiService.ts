@@ -1,7 +1,15 @@
 import { AiProvider } from '../store/aiKeyStore';
 
-const configuredAiBase = import.meta.env.VITE_AI_SERVER_URL?.replace(/\/+$/, '');
-const AI_SERVER_BASE = configuredAiBase || (import.meta.env.DEV ? 'http://localhost:3001' : '');
+const normalizeBaseUrl = (value?: string) => {
+    if (!value) return '';
+    const trimmed = value.trim().replace(/\/+$/, '');
+    // Accept values like https://host/api and normalize to https://host
+    return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+};
+
+const configuredAiBase = normalizeBaseUrl(import.meta.env.VITE_AI_SERVER_URL);
+const configuredApiBase = normalizeBaseUrl(import.meta.env.VITE_API_URL);
+const AI_SERVER_BASE = configuredAiBase || configuredApiBase || (import.meta.env.DEV ? 'http://localhost:3001' : '');
 
 const aiApiUrl = (path: string) => {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -81,7 +89,10 @@ export const sendChatMessage = async (
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            const detail = errorData.details || errorData.error || `Server error (${response.status})`;
+            const fallbackDetail = response.status === 405
+                ? 'Server error (405). Backend route not reachable. Set VITE_AI_SERVER_URL (or VITE_API_URL) to your Express API base URL.'
+                : `Server error (${response.status})`;
+            const detail = errorData.details || errorData.error || fallbackDetail;
             return { response: `⚠️ ${detail}` };
         }
         return await response.json();

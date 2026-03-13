@@ -20,7 +20,7 @@ const Profile = () => {
     const [uploadingImage, setUploadingImage] = useState(false);
 
     // AI Key State
-    const { provider, apiKey, setKey, loadKey } = useAiKeyStore();
+    const { provider, apiKey, setKey, clearKey, loadKey } = useAiKeyStore();
     const [localProvider, setLocalProvider] = useState<AiProvider>(provider);
     const [localApiKey, setLocalApiKey] = useState(apiKey);
     const [showApiKey, setShowApiKey] = useState(false);
@@ -79,6 +79,21 @@ const Profile = () => {
             const message = err instanceof Error ? err.message : 'Failed to save AI settings';
             setError(message);
             setAiSaveSuccess(false);
+        }
+    };
+
+    const handleClearAiKey = () => {
+        if (!user) return;
+
+        try {
+            clearKey(user.id);
+            setLocalApiKey('');
+            setAiSaveSuccess(false);
+            setError('');
+            setSuccess('AI key removed from this browser.');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to remove AI key';
+            setError(message);
         }
     };
 
@@ -345,13 +360,22 @@ const Profile = () => {
                                         </button>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSaveAiKey}
-                                    className="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all"
-                                >
-                                    {aiSaveSuccess ? '✓ Saved!' : 'Save AI Key'}
-                                </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveAiKey}
+                                        className="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all"
+                                    >
+                                        {aiSaveSuccess ? '✓ Saved!' : 'Save AI Key'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleClearAiKey}
+                                        className="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                                    >
+                                        Remove Key
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
