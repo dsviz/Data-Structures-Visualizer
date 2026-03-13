@@ -303,9 +303,9 @@ const Profile = () => {
                             <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/60 dark:bg-white/5 p-3 mb-4">
                                 <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-2">Get API keys:</p>
                                 <div className="flex flex-wrap gap-2 text-[11px]">
-                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition-colors">Gemini Key</a>
-                                    <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">Groq Key</a>
-                                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">OpenAI Key</a>
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer noopener" aria-label="Gemini Key (opens in a new tab)" className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20 hover:bg-blue-500/20 transition-colors">Gemini Key</a>
+                                    <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer noopener" aria-label="Groq Key (opens in a new tab)" className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">Groq Key</a>
+                                    <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer noopener" aria-label="OpenAI Key (opens in a new tab)" className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors">OpenAI Key</a>
                                 </div>
                                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
                                     Read how AI data is handled in

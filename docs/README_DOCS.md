@@ -4,52 +4,41 @@ This document outlines the architectural diagrams and data flow for the Data Str
 
 ## 1. High-Level Architecture Diagram
 
-This diagram shows how major components of your application are structured and interact with each other.
+This diagram shows how major components of your application are structured and interact with each other, including the AI subsystem.
 
 ```mermaid
-flowchart TB
-    User["User (Browser)"]
-    
+flowchart LR
+    User[User Browser] --> UI[React + Vite Frontend]
+
     subgraph Frontend
-        UI["UI Components"]
-        Controls["Control Panel"]
-        Visual["Visualization Components"]
+      UI --> Routes[Pages and Router]
+      UI --> Stores[Zustand Stores]
+      UI --> Hooks[Visualizer Hooks]
+      Hooks --> Components[Visualizer Components]
+      UI --> AIClient[AI Service Client]
+      UI --> Auth[Supabase Auth and Profile]
     end
 
-    subgraph State_Management
-        Store["Zustand Store"]
-    end
+    AIClient --> API[Express AI Backend]
+    API --> Providers[Gemini or Groq or OpenAI]
 
-    subgraph Core_Logic
-        Algo["Algorithm Engine"]
-        Steps["Step Generator"]
-        Animation["Animation Engine"]
-    end
+    Auth --> Supabase[(Supabase)]
 
-    subgraph Rendering
-        Canvas["Canvas Renderer"]
-        SVG["SVG Renderer"]
+    subgraph AI_Flow
+      Key[User API Key in localStorage] --> AIClient
+      AIClient --> ChatEndpoint["/api/chat"]
+      AIClient --> IntentEndpoint["/api/intent"]
+      AIClient --> NarrateEndpoint["/api/narrate"]
     end
-
-    User --> UI
-    UI --> Controls
-    Controls --> Store
-    Store --> Algo
-    Algo --> Steps
-    Steps --> Animation
-    Animation --> Canvas
-    Animation --> SVG
-    Canvas --> Visual
-    SVG --> Visual
-    Visual --> UI
 ```
 
 **Explanation:**
-- **React Components** manage the UI and interact with user controls.
-- **Zustand** centralizes application state (current animation step, speeds, selected algorithm).
-- **Algorithm Engine** defines data structure operations and yields abstract "steps" representing their logic, separate from visuals.
-- **Animation Engine** interprets those steps into animations using either SVG (for trees/graphs) or Canvas (for sorting and arrays).
-- **Hosted** as a static site (Vercel deployment).
+- **React + Vite Frontend** manages all UI rendering, routing, and user interactions.
+- **Zustand Stores** centralize state: current animation step, speed, selected algorithm, and AI key/provider.
+- **Visualizer Hooks** define data structure operations and yield abstract "steps" for the animation engine.
+- **AI Service Client** dispatches chat, intent, and narration requests to the Express backend using the user-provided API key stored in localStorage.
+- **Supabase** handles user authentication and profile data.
+- **Hosted** as a static site (Vercel) with the AI backend deployed as a separate serverless function.
 
 ## 2. Data Flow Diagram (Level 1)
 
@@ -154,7 +143,36 @@ flowchart TB
     CDN -->|Serve| Users
 ```
 
-## 7. Clean UML Class Diagram (Conceptual)
+## 7. AI Feature Data Flow
+
+Shows how user voice/text input flows through the AI subsystem:
+
+```mermaid
+flowchart LR
+    User -->|Type or Speak| AiTutorPanel
+    AiTutorPanel -->|Text Message| AiService
+    AiTutorPanel -->|Voice Input| SpeechRecognition
+    SpeechRecognition -->|Transcript| AiService
+
+    AiService -->|Resolve Key + Provider| KeyStore[Zustand aiKeyStore]
+    KeyStore --> AiService
+
+    AiService -->|"POST /api/chat"| Backend[Express Backend]
+    AiService -->|"POST /api/intent"| Backend
+    AiService -->|"POST /api/narrate"| Backend
+
+    Backend -->|Forward with Key| Provider[Gemini / Groq / OpenAI]
+    Provider -->|Response| Backend
+    Backend -->|Return Text| AiService
+    AiService -->|Display + TTS| AiTutorPanel
+```
+
+**Highlights:**
+- User API keys are stored in `localStorage` via the `aiKeyStore` Zustand store and never sent to any server other than the selected AI provider.
+- Voice input uses the browser `SpeechRecognition` API; the resulting transcript is passed directly to the same AI pipeline as typed messages.
+- TTS playback uses the browser `SpeechSynthesis` API with an optional auto-speak toggle.
+
+## 8. Clean UML Class Diagram (Conceptual)
 
 Logic & state relationships:
 

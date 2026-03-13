@@ -1,278 +1,345 @@
-# 📘 Web-Based Data Structures & Algorithms Visualizer
+# Data Structures Visualizer
 
-An interactive educational web application designed to help students and developers understand the internal working of fundamental data structures and algorithms through **step-by-step visual animations**.
+An interactive web app for learning data structures and algorithms through step-by-step visual simulation, AI-assisted tutoring, and voice interaction.
+
+<p align="center">
+  <img src="public/Site_logo.png" alt="Data Structures Visualizer logo" width="120" />
+</p>
 
 ![React](https://img.shields.io/badge/React-18.2-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
-![Vite](https://img.shields.io/badge/Vite-5.1-purple)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-cyan)
+![Vite](https://img.shields.io/badge/Vite-5.x-646CFF)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-06B6D4)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🎯 Key Features
+## Table of Contents
+- Overview
+- Architecture (Mermaid)
+- Product Visuals
+- Key Features
+- What's New
+- Tech Stack
+- Project Structure
+- Getting Started
+- Environment Variables
+- AI Features and Privacy
+- API Endpoints
+- Deployment
+- Troubleshooting
+- Scripts
+- Contributing
+- License
 
-- ✅ **Step-by-step visual animations** of algorithms
-- ✅ **Interactive controls** (play, pause, step forward/backward, speed adjustment)
-- ✅ **Clean separation** of algorithm logic from visualization
-- ✅ **Modular and extensible** architecture
-- ✅ Support for **sorting, searching, trees, graphs, stacks, and queues**
+## Overview
+Data Structures Visualizer helps learners understand algorithm behavior by animating each operation frame-by-frame. It supports multiple modules (arrays, linked lists, stacks, queues, trees, graphs, sorting, recursion) and includes AI capabilities for tutoring, narration, and voice commands.
 
-## 🛠️ Technology Stack
+## Architecture (Mermaid)
+
+```mermaid
+flowchart LR
+    User[User Browser] --> UI[React + Vite Frontend]
+
+    subgraph Frontend
+      UI --> Routes[Pages and Router]
+      UI --> Stores[Zustand Stores]
+      UI --> Hooks[Visualizer Hooks]
+      Hooks --> Components[Visualizer Components]
+      UI --> AIClient[AI Service Client]
+      UI --> Auth[Supabase Auth and Profile]
+    end
+
+    AIClient --> API[Express AI Backend]
+    API --> Providers[Gemini or Groq or OpenAI]
+
+    Auth --> Supabase[(Supabase)]
+
+    subgraph AI Flow
+      Key[User API Key in localStorage] --> AIClient
+      AIClient --> ChatEndpoint["/api/chat"]
+      AIClient --> IntentEndpoint["/api/intent"]
+      AIClient --> NarrateEndpoint["/api/narrate"]
+    end
+```
+
+## Product Visuals
+
+### Home and Core Modules
+
+| Module | Demo |
+| --- | --- |
+| Arrays | ![Arrays demo](public/array.gif) |
+| Linked List | ![Linked list demo](public/list.gif) |
+| Stack | ![Stack demo](public/stack.gif) |
+| Queue | ![Queue demo](public/queue.gif) |
+
+### Advanced Modules
+
+| Module | Demo |
+| --- | --- |
+| Trees (BST) | ![BST demo](public/bst.gif) |
+| Graphs (DFS/BFS) | ![Graph traversal demo](public/dfsbfs.gif) |
+| Graph Data Structures | ![Graph DS demo](public/graphds.gif) |
+| Sorting | ![Sorting demo](public/sorting.gif) |
+
+### Additional Learning Visuals
+
+| Module | Demo |
+| --- | --- |
+| Recursion | ![Recursion demo](public/recursion.gif) |
+| Heap | ![Heap demo](public/heap.gif) |
+| Hash Table | ![Hash table demo](public/hashtable.gif) |
+
+## Key Features
+- Interactive visualizers for core DSA topics.
+- Playback controls: play, pause, step forward/backward, jump, speed control.
+- AI Tutor panel for context-aware explanations.
+- AI narration for algorithm steps.
+- Voice input in chatbot with transcript and command support.
+- Voice output (text-to-speech) in chatbot with optional auto-speak.
+- User authentication and profile management.
+- Per-user API key management for AI providers.
+- Dedicated AI Data and Privacy page.
+
+## What's New
+Recent updates included in this repository:
+
+- Persistent user AI key storage:
+  - AI provider/key now persists in browser `localStorage` per user.
+  - Key is no longer requested repeatedly on browser reopen.
+  - Added explicit `Remove Key` action in Profile.
+
+- AI key flow modernization:
+  - Chat, intent parsing, and narration all use the same user-provided provider/key.
+  - Removed dependency on fixed developer key for narration.
+
+- Deployment API fallback improvements:
+  - AI service base URL now resolves from:
+    1. `VITE_AI_SERVER_URL`
+    2. `VITE_API_URL`
+    3. local dev fallback (`http://localhost:3001`)
+  - Better 405 guidance when backend route is missing/misconfigured.
+
+- Voice UX upgrades:
+  - Start/stop listening toggle.
+  - Interim transcript preview.
+  - Improved error states and cleanup.
+  - Voice input now consistently reaches AI response flow.
+  - Optional TTS playback and auto-voice mode.
+  - Brave browser handling improved for speech `network` errors (auto-retry + guidance).
+
+- Security and accessibility enhancements:
+  - External profile key links include `rel="noreferrer noopener"`.
+  - New-tab links include accessible labeling.
+
+- Privacy documentation:
+  - Added `/ai-data-privacy` page and navigation links.
+
+## Tech Stack
 
 ### Frontend
-- **React** - Component-based UI architecture
-- **TypeScript** - Type-safe code
-- **Vite** - Ultra-fast development and build tool
-- **Tailwind CSS** - Utility-first styling
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router (`HashRouter`)
+- Zustand
 
 ### Backend
-- **Node.js + Express** - HTTP API layer
-- **TypeScript** - Shared types across the stack
-- **Prisma ORM** - Type-safe access to PostgreSQL
-- **PostgreSQL** - Durable relational datastore
+- Node.js
+- Express
+- `@google/generative-ai` (Gemini SDK support)
+- CORS + rate limiting
 
-### Visualization
-- **SVG** - For trees, graphs, linked lists
-- **HTML Canvas** - For sorting and array animations
+### Auth and Data Services
+- Supabase (auth/profile/storage integrations in frontend)
 
-### State Management
-- **Zustand** - Lightweight state management
+## Project Structure
 
-## 📁 Project Structure
-
+```text
+Data-Structures-Visualizer/
+├── src/
+│   ├── app/                # Router and app shell
+│   ├── components/         # UI and visualization components
+│   ├── context/            # Auth, theme, layout contexts
+│   ├── hooks/              # Visualizer logic hooks
+│   ├── pages/              # Route pages
+│   ├── services/           # AI service integration
+│   ├── store/              # Zustand stores
+│   └── ...
+├── server/
+│   ├── server.js           # Express AI backend
+│   └── package.json
+├── supabase/
+│   └── functions/
+├── supabase-proxy/
+├── docs/
+└── README.md
 ```
-dsa-visualizer/
-├── docs/                 # Technical documentation, diagrams, screenshots
-├── src/                  # Frontend application (React + Vite)
-│   ├── components/       # Reusable UI components
-│   ├── context/          # React context & state wrappers
-│   ├── data/             # Algorithm data constants
-│   ├── hooks/            # Custom React hooks
-│   ├── pages/            # Main application screens & visualizers
-│   └── utils/            # Helper functions
-└── server/               # Backend service (Express + Prisma)
-        ├── src/              # Application source
-        ├── prisma/           # Database schema & migrations
-        └── .env.example      # Backend environment template
-```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- PostgreSQL 14+ (Docker or local install)
+- Node.js 18+
+- npm 9+
 
-### Installation
+### 1. Install dependencies
 
-1. **Fork the repository:**
-   Click the "Fork" button at the top right of this repository's GitHub page to create a copy under your own account.
+From project root:
 
-2. **Clone the repository:**
-```bash
-git clone https://github.com/<your-username>/Data-Structures-Visualizer.git
-cd Data-Structures-Visualizer
-```
-
-3. **Install frontend dependencies:**
 ```bash
 npm install
 ```
 
-4. **Copy frontend environment template:**
-```bash
-cp .env.example .env # use: copy .env.example .env (Windows)
-```
-The default `VITE_API_URL` points to the local Express server (`http://localhost:4000`).
+For backend:
 
-5. **Install backend dependencies:**
 ```bash
 cd server
 npm install
 ```
 
-6. **Configure backend environment (run from `server/`):**
-```bash
-cp .env.example .env # use: copy .env.example .env (Windows)
-```
-Update `DATABASE_URL` with your PostgreSQL credentials and set a strong `JWT_SECRET`.
+### 2. Configure environment
+Create `.env` in the root (frontend) and set required values.
 
-7. **Run database migrations (still in `server/`):**
+Common frontend keys:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_AI_SERVER_URL` (recommended in deployed environments)
+- `VITE_API_URL` (fallback if `VITE_AI_SERVER_URL` is not set)
+
+Backend (`server/.env`) optional values:
+- `PORT` (default `3001`)
+- `AI_REQUEST_TIMEOUT_MS` (default `10000`)
+
+Note: user-provided AI keys are now used for chat, intent, and narration. A fixed server Gemini key is not required for these flows.
+
+### 3. Run locally
+
+Start backend:
+
 ```bash
-npx prisma migrate dev
+cd server
+npm start
 ```
 
-8. **Seed algorithm metadata (still in `server/`):**
-```bash
-npm run prisma:seed
-```
+Start frontend (new terminal, root):
 
-9. **Start backend API (still in `server/`):**
 ```bash
 npm run dev
 ```
 
-10. **Start frontend dev server (new terminal):**
-```bash
-cd ..
-npm run dev
+Open the app at `http://localhost:3000`.
+
+## Environment Variables
+
+### Frontend (.env)
+
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_AI_SERVER_URL=http://localhost:3001
+# Optional fallback if AI server URL is not set
+VITE_API_URL=http://localhost:3001
 ```
 
-11. **Open your browser:**
-        Navigate to `http://localhost:3000`
+### Backend (server/.env)
 
-### Build for Production
+```env
+PORT=3001
+AI_REQUEST_TIMEOUT_MS=10000
+```
+
+## AI Features and Privacy
+
+### Provider keys
+Users can configure their own API keys in:
+- `Profile -> AI Tutor Settings`
+
+Supported providers:
+- Gemini
+- Groq
+- OpenAI
+
+Key links are provided in UI and open in a new tab.
+
+### Storage model
+- Provider and API key are stored locally in browser storage per user.
+- Keys can be updated or removed from Profile.
+
+### Privacy page
+- AI-specific privacy details are available at:
+  - `/ai-data-privacy`
+- General privacy page:
+  - `/privacy`
+
+## API Endpoints
+
+Backend routes exposed by `server/server.js`:
+- `POST /api/chat` - AI tutor responses.
+- `POST /api/intent` - Voice/command intent extraction.
+- `POST /api/narrate` - Narration generation for visualizer steps.
+
+## Deployment
+
+### Frontend
+- Build:
 
 ```bash
 npm run build
 ```
 
-The production-ready files will be in the `dist/` directory.
+- Deploy static output from `dist/`.
+- Ensure `VITE_AI_SERVER_URL` (or `VITE_API_URL`) points to your deployed backend base URL.
 
-### Backend Testing
+### Backend
+- Deploy `server/` as a Node/Express service.
+- Ensure CORS is configured for your frontend origin if needed.
 
-```bash
-cd server
-npm run test
-```
+## Troubleshooting
 
-The Jest suite covers health checks, catalog queries, and authentication flows using mocked Prisma interactions.
+### 405 errors in AI chat on deployed app
+Cause:
+- Frontend is calling `/api/...` on static host instead of backend.
 
-## 🎨 Architecture
+Fix:
+- Set `VITE_AI_SERVER_URL` to your backend URL and redeploy frontend.
+- Or set `VITE_API_URL` as fallback.
 
-```mermaid
-flowchart TB
-    User["User (Browser)"]
-    
-    subgraph Frontend
-        UI["UI Components"]
-        Controls["Control Panel"]
-        Visual["Visualization Components"]
-    end
+### Voice works in Chrome but fails in Brave
+Possible cause:
+- Brave privacy/shields can block speech services and raise network errors.
 
-    subgraph State_Management
-        Store["Zustand Store"]
-    end
+What to check:
+- Allow microphone permission.
+- Disable Shields for the site.
+- Check Brave speech/privacy settings.
 
-    subgraph Core_Logic
-        Algo["Algorithm Engine"]
-        Steps["Step Generator"]
-        Animation["Animation Engine"]
-    end
+The app includes retry handling and user guidance for transient speech network failures.
 
-    subgraph Rendering
-        Canvas["Canvas Renderer"]
-        SVG["SVG Renderer"]
-    end
+### AI key prompts repeatedly
+- Ensure key is saved in Profile.
+- Keys persist per user in local storage.
+- Use "Remove Key" only when you want to clear it.
 
-    User --> UI
-    UI --> Controls
-    Controls --> Store
-    Store --> Algo
-    Algo --> Steps
-    Steps --> Animation
-    Animation --> Canvas
-    Animation --> SVG
-    Canvas --> Visual
-    SVG --> Visual
-    Visual --> UI
-```
+## Scripts
 
-For a comprehensive breakdown of our system design, please see our detailed [Architecture Documentation](./docs/README_DOCS.md), which includes:
+### Frontend (root)
+- `npm run dev` - start Vite dev server.
+- `npm run build` - type-check and production build.
+- `npm run preview` - preview production build locally.
+- `npm run lint` - run ESLint.
 
-1. **High-Level System Architecture Diagram**
-2. **Component Interaction Diagram**
-3. **Data Flow Diagram (DFD)**
-4. **Sequence Diagram for Visualizations**
-5. **Module Dependency Diagram**
-6. **Deployment Architecture**
-7. **UML Diagrams (Class & State)**
+### Backend (`server/`)
+- `npm start` - start Express server.
+- `npm run build` - no-op build message.
 
-### Key Principles
+## Contributing
+Contributions are welcome.
 
-1. **Separation of Concerns**: Algorithm logic is completely separate from visualization
-2. **Step-Based Execution**: Algorithms generate logical steps, not visual instructions
-3. **Centralized Animation**: Single animation engine handles all visualizations
-4. **Type Safety**: Full TypeScript coverage for reliability
+1. Fork the repository.
+2. Create a feature branch.
+3. Make your changes.
+4. Run build/lint checks.
+5. Open a pull request.
 
-## 📚 Algorithm & Data Structure Categories
-
-### Data Structures
-
-#### **Arrays**
-- **Standard Operations:** Search (Linear/Binary), Insert, Remove, Update
-- **Applications:** Array Reversal, Two Sum (Sorted), Cycle Detection (Array as Graph)
-
-#### **Linked Lists** (Singly, Doubly, Circular)
-- **Standard Operations:** Traversal (Iterative/Recursive), Insertion, Deletion, Searching, Reverse
-- **Applications:** Cycle Detection (Floyd), Merge Two Lists, Check Palindrome, Intersection Point, Odd Even Rearrange
-
-#### **Stacks**
-- **Standard Operations:** Push, Pop, Peek
-- **Applications:** Reverse String, Balanced Parentheses, Postfix Evaluator, Browser History Simulator
-
-#### **Queues**
-- **Standard Operations:** Enqueue, Dequeue, Peek
-- **Applications:** Binary Number Generator, Hot Potato Simulator
-
-#### **Trees** (General & BST & AVL)
-- **Standard Operations:** Insert, Delete, Search, Traversals (In-order, Pre-order, Post-order, BFS, Zig-Zag), Find Min/Max
-- **Applications:** Validate BST, Calculate Height/Diameter, Lowest Common Ancestor (LCA), Various Views (Left, Right, Top, Bottom)
-
-#### **Graphs** (Directed, Undirected, Weighted)
-- **Standard Operations:** BFS, DFS, Check Connectivity, Detect Cycle, Highlight Neighbors
-- **Applications:** Shortest Path (Dijkstra, A*), Minimum Spanning Tree (Prim, Kruskal), Topological Sort, Network Flow (Ford-Fulkerson)
-
-### Sorting Algorithms
-- **Standard Sorts:** Bubble Sort, Selection Sort, Insertion Sort
-- **Advanced Sorts:** Merge Sort, Quick Sort
-
-### Advanced Algorithms
-#### **Recursion**
-- **Standard Operations:** Fibonacci Sequence Computation
-- **Upcoming Applications:** Factorial Calculation
-
-## 🎯 Development Roadmap
-
-- [x] Project initialization
-- [x] Array Operations visualizer
-- [x] Linked List visualizer
-- [x] Sorting visualizer
-- [x] Tree visualizer
-- [x] Graph visualizer
-- [x] Stack & Queue visualizer
-- [x] Recursion visualizer
-- [x] Complexity analysis display
-- [ ] Code editor integration
-- [ ] Custom input support
-- [ ] Algorithm comparison mode
-- [ ] User accounts (optional backend)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
+## License
 This project is licensed under the MIT License.
-
-## 🎓 Educational Purpose
-
-This project is designed for educational purposes to help students and developers:
-- Understand algorithm internals visually
-- Learn best practices in React/TypeScript development
-- Explore clean architecture patterns
-- Build interactive web applications
-
-## 📧 Contact
-
-For questions or suggestions, please open an issue on GitHub.
-
----
-
-**Built with ❤️ for learners and developers**

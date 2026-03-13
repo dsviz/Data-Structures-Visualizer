@@ -29,6 +29,9 @@ export const AiTutorPanel: React.FC = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<any>(null);
     const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+    const networkRetryUsedRef = useRef(false);
+    const suppressOnEndStatusRef = useRef(false);
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isPlatformMode = !dataStructure;
     const prevDataStructureRef = useRef(dataStructure);
@@ -65,6 +68,10 @@ export const AiTutorPanel: React.FC = () => {
 
     useEffect(() => {
         return () => {
+            if (retryTimerRef.current) {
+                clearTimeout(retryTimerRef.current);
+                retryTimerRef.current = null;
+            }
             if (recognitionRef.current) {
                 recognitionRef.current.onstart = null;
                 recognitionRef.current.onresult = null;
@@ -115,6 +122,7 @@ export const AiTutorPanel: React.FC = () => {
         const cleanCommand = command.trim();
         if (!cleanCommand) return;
 
+        setInput('');
         setMessages(prev => [...prev, { role: 'user', content: `🎤 ${cleanCommand}` }]);
         setIsThinking(true);
 
@@ -125,14 +133,24 @@ export const AiTutorPanel: React.FC = () => {
                 return;
             }
 
-            const aiResponse = await parseNaturalLanguageIntent(cleanCommand, provider, apiKey);
-            if (aiResponse.intent && aiResponse.intent.action !== 'unknown') {
-                setIntent(aiResponse.intent);
-                appendAiMessage(`Executing command: ${aiResponse.intent.action}`);
-            } else {
-                const fallback = await sendChatMessage(cleanCommand, currentFrame, dataStructure, provider, apiKey);
-                appendAiMessage(fallback.response || `I didn't understand that command.`);
+            let executedAction: string | null = null;
+            try {
+                const intentResponse = await parseNaturalLanguageIntent(cleanCommand, provider, apiKey);
+                if (intentResponse.intent && intentResponse.intent.action !== 'unknown') {
+                    setIntent(intentResponse.intent);
+                    executedAction = intentResponse.intent.action;
+                }
+            } catch (intentError) {
+                console.error('Intent parsing failed:', intentError);
             }
+
+            if (executedAction) {
+                appendAiMessage(`Executing command: ${executedAction}`);
+            }
+
+            // Always send voice input to chat model so the user gets a proper AI reply.
+            const aiResponse = await sendChatMessage(cleanCommand, currentFrame, dataStructure, provider, apiKey);
+            appendAiMessage(aiResponse.response || `I couldn't generate a response right now.`);
         } catch (error) {
             console.error('Failed to process voice input:', error);
             appendAiMessage('An error occurred while processing your voice input.');
@@ -179,6 +197,8 @@ export const AiTutorPanel: React.FC = () => {
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
+        networkRetryUsedRef.current = false;
+        suppressOnEndStatusRef.current = false;
         
         recognition.continuous = false;
         recognition.interimResults = true;
@@ -188,6 +208,7 @@ export const AiTutorPanel: React.FC = () => {
             setIsListening(true);
             setVoiceStatus('Listening... speak now');
             setInterimTranscript('');
+            suppressOnEndStatusRef.current = false;
         };
         
         recognition.onresult = (event: any) => {
@@ -215,23 +236,61 @@ export const AiTutorPanel: React.FC = () => {
 
         recognition.onerror = (event: any) => {
             console.error('Speech recognition error', event.error);
+            const isBrave = typeof navigator !== 'undefined' && typeof (navigator as any).brave !== 'undefined';
+
+            if (event.error === 'network' && !networkRetryUsedRef.current) {
+                networkRetryUsedRef.current = true;
+                suppressOnEndStatusRef.current = true;
+                setVoiceStatus('Voice network issue detected. Retrying...');
+                setIsListening(false);
+                setInterimTranscript('');
+
+                if (retryTimerRef.current) {
+                    clearTimeout(retryTimerRef.current);
+                }
+
+                retryTimerRef.current = setTimeout(() => {
+                    retryTimerRef.current = null;
+                    try {
+                        recognition.start();
+                    } catch {
+                        suppressOnEndStatusRef.current = false;
+                        setVoiceStatus(
+                            isBrave
+                                ? 'Brave blocked speech recognition. Try allowing mic, disabling Shields for this site, or enabling Google speech services in Brave settings.'
+                                : 'Network issue while capturing speech. Please retry.'
+                        );
+                    }
+                }, 300);
+                return;
+            }
+
             const errorMap: Record<string, string> = {
                 'not-allowed': 'Microphone access denied. Please allow mic permission.',
                 'audio-capture': 'No microphone found. Please check your mic device.',
-                'network': 'Network issue while capturing speech.',
+                'network': isBrave
+                    ? 'Brave blocked speech recognition. Try allowing mic, disabling Shields for this site, or enabling Google speech services in Brave settings.'
+                    : 'Network issue while capturing speech. Please retry.',
                 'no-speech': 'No speech detected. Try speaking a little louder.',
                 'aborted': 'Listening was interrupted.'
             };
             setVoiceStatus(errorMap[event.error] || 'Voice recognition failed. Please try again.');
             setIsListening(false);
             setInterimTranscript('');
+            suppressOnEndStatusRef.current = false;
         };
 
         recognition.onend = () => {
             setIsListening(false);
-            if (!voiceStatus || voiceStatus === 'Listening... speak now') {
-                setVoiceStatus('Tap mic to speak again.');
+            if (suppressOnEndStatusRef.current) {
+                return;
             }
+            setVoiceStatus(prev => {
+                if (!prev || prev === 'Listening... speak now') {
+                    return 'Tap mic to speak again.';
+                }
+                return prev;
+            });
         };
 
         try {
