@@ -266,6 +266,14 @@ const Navbar = () => {
                     <span className="material-symbols-outlined text-[18px]">person</span>
                     Profile
                   </Link>
+                  <Link
+                    to="/ai-data-privacy"
+                    onClick={() => setShowUserDropdown(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">privacy_tip</span>
+                    AI Data & Privacy
+                  </Link>
                   <button
                     onClick={async (e) => {
                       e.preventDefault();
@@ -353,6 +361,10 @@ const Navbar = () => {
                 <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 text-gray-700 dark:text-gray-200 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#272546] transition-colors">
                   <span className="material-symbols-outlined size-6 flex items-center justify-center">person</span>
                   <span className="text-lg font-medium">Profile</span>
+                </Link>
+                <Link to="/ai-data-privacy" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 text-gray-700 dark:text-gray-200 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#272546] transition-colors">
+                  <span className="material-symbols-outlined size-6 flex items-center justify-center">privacy_tip</span>
+                  <span className="text-lg font-medium">AI Data & Privacy</span>
                 </Link>
                 <button
                   onClick={async (e) => {

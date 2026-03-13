@@ -6,6 +6,7 @@ import { ArraysTabs } from '../components/arrays/ArraysTabs';
 import { ArrayTools, ArrayTool } from '../components/arrays/ArrayTools';
 import { useArraysVisualizer } from '../hooks/useArraysVisualizer';
 import { useAiContextStore } from '../store/aiContextStore';
+import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Arrays = () => {
@@ -190,6 +191,14 @@ const Arrays = () => {
         }
     }, [currentFrame.array.length]);
 
+    const handleNarrationToggle = () => {
+        if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
+            window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
+            return;
+        }
+        setIsNarrationEnabled(!isNarrationEnabled);
+    };
+
 
     return (
         <>
@@ -208,7 +217,7 @@ const Arrays = () => {
 
                             {/* AI Narration Toggle */}
                             <button
-                                onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                                onClick={handleNarrationToggle}
                                 className={`size-8 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'text-primary bg-primary/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
                                 title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
                             >

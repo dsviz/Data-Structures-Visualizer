@@ -7,6 +7,7 @@ import { LinkedListTabs } from '../components/linkedlist/LinkedListTabs';
 import { LinkedListTools, LinkedListTool } from '../components/linkedlist/LinkedListTools';
 import { Language } from '../data/LinkedListCode';
 import { useLayout } from '../context/LayoutContext';
+import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 export default function LinkedList() {
@@ -128,6 +129,14 @@ export default function LinkedList() {
         }
     };
 
+    const handleNarrationToggle = () => {
+        if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
+            window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
+            return;
+        }
+        setIsNarrationEnabled(!isNarrationEnabled);
+    };
+
 
 
     const playbackControls = (
@@ -163,7 +172,7 @@ export default function LinkedList() {
 
             <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
                 <button
-                    onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+                    onClick={handleNarrationToggle}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
                     title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
                 >

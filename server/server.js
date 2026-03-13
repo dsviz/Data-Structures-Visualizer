@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -77,23 +76,17 @@ async function fetchWithTimeout(url, options, timeoutMs = AI_REQUEST_TIMEOUT_MS)
     }
 }
 
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 app.post('/api/narrate', async (req, res) => {
     try {
-        const { descriptions, dataStructure } = req.body;
+        const { descriptions, dataStructure, provider, apiKey } = req.body;
 
         if (!descriptions || !Array.isArray(descriptions)) {
             return res.status(400).json({ error: 'Missing or invalid descriptions array' });
         }
 
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_api_key_here') {
-            // Fallback if no key is provided
-            return res.json({ narrations: descriptions });
+        if (!provider || !apiKey) {
+            return res.status(400).json({ error: 'Missing provider or apiKey. Please configure your API key in Profile -> AI Settings.' });
         }
-
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         let dataStructureContext = "a visual algorithm execution";
         let additionalInstructions = "";
@@ -150,9 +143,7 @@ ${JSON.stringify(descriptions, null, 2)}
 Return a raw JSON array of strings containing ONLY the rewritten narrations in the exact same order. No markdown blocks, no code fences — just the JSON array.
 `;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let text = response.text().trim();
+        let text = await callAI(provider, apiKey, prompt);
 
         // Strip markdown if it exists
         if (text.startsWith('```json')) {
@@ -360,7 +351,4 @@ For "next step" return {"action": "step_forward", "value": null}.
 
 app.listen(PORT, () => {
     console.log(`AI Narration Backend running on http://localhost:${PORT}`);
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_api_key_here') {
-        console.warn("WARNING: GEMINI_API_KEY is not set or is still the default template in .env. The API will return the original descriptions.");
-    }
 });

@@ -16,28 +16,80 @@ const aiApiUrl = (path: string) => {
     return AI_SERVER_BASE ? `${AI_SERVER_BASE}${normalizedPath}` : normalizedPath;
 };
 
-export const generateNarrationBatch = async (descriptions: string[], dataStructure?: string): Promise<{ original: string, narrated: string }[]> => {
+const AI_KEY_STORAGE_PREFIX = 'ai-key-';
+const USER_STORAGE_KEY = 'app-user-data';
+
+const getResolvedAiCredentials = (
+    provider?: AiProvider,
+    apiKey?: string
+): { provider?: AiProvider; apiKey?: string } => {
+    const safeProvider = typeof provider === 'string' ? provider : undefined;
+    const safeApiKey = typeof apiKey === 'string' ? apiKey.trim() : '';
+
+    if (safeProvider && safeApiKey) {
+        return { provider: safeProvider, apiKey: safeApiKey };
+    }
+
+    if (typeof window === 'undefined') {
+        return {};
+    }
+
     try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const apiUrl = supabaseUrl
-            ? `${supabaseUrl}/functions/v1/ai-narrate`
-            : aiApiUrl('/api/narrate');
+        const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
+        if (!rawUser) return {};
+
+        const parsedUser = JSON.parse(rawUser) as { id?: string };
+        if (!parsedUser?.id) return {};
+
+        const rawAiKey = window.localStorage.getItem(`${AI_KEY_STORAGE_PREFIX}${parsedUser.id}`)
+            ?? window.sessionStorage.getItem(`${AI_KEY_STORAGE_PREFIX}${parsedUser.id}`);
+
+        if (!rawAiKey) return {};
+
+        const parsedAiConfig = JSON.parse(rawAiKey) as { provider?: AiProvider; apiKey?: string };
+        const resolvedProvider = parsedAiConfig?.provider;
+        const resolvedApiKey = typeof parsedAiConfig?.apiKey === 'string' ? parsedAiConfig.apiKey.trim() : '';
+
+        if (!resolvedProvider || !resolvedApiKey) return {};
+        return { provider: resolvedProvider, apiKey: resolvedApiKey };
+    } catch {
+        return {};
+    }
+};
+
+export const resolveAiCredentials = (provider?: AiProvider, apiKey?: string) =>
+    getResolvedAiCredentials(provider, apiKey);
+
+export const hasConfiguredAiCredentials = (provider?: AiProvider, apiKey?: string): boolean => {
+    const credentials = getResolvedAiCredentials(provider, apiKey);
+    return !!credentials.provider && !!credentials.apiKey;
+};
+
+export const generateNarrationBatch = async (
+    descriptions: string[],
+    dataStructure?: string,
+    provider?: AiProvider,
+    apiKey?: string
+): Promise<{ original: string, narrated: string }[]> => {
+    try {
+        const credentials = getResolvedAiCredentials(provider, apiKey);
+        const apiUrl = aiApiUrl('/api/narrate');
 
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ descriptions, dataStructure })
+            body: JSON.stringify({
+                descriptions,
+                dataStructure,
+                provider: credentials.provider,
+                apiKey: credentials.apiKey
+            })
         });
 
         if (!response.ok) {
             console.error('AI Backend error:', response.status);
-            if (supabaseUrl && apiUrl !== aiApiUrl('/api/narrate')) {
-                console.log("Attempting local fallback...");
-                return generateNarrationBatchLocal(descriptions, dataStructure);
-            }
             return descriptions.map(d => ({ original: d, narrated: d }));
         }
 
@@ -52,24 +104,6 @@ export const generateNarrationBatch = async (descriptions: string[], dataStructu
         return descriptions.map(d => ({ original: d, narrated: d }));
     } catch (error) {
         console.error("Failed to connect to AI server.", error);
-        return descriptions.map(d => ({ original: d, narrated: d }));
-    }
-};
-
-const generateNarrationBatchLocal = async (descriptions: string[], dataStructure?: string) => {
-    try {
-        const response = await fetch(aiApiUrl('/api/narrate'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ descriptions, dataStructure })
-        });
-        if (!response.ok) return descriptions.map(d => ({ original: d, narrated: d }));
-        const data = await response.json();
-        return data.narrations.map((narrated: string, i: number) => ({
-            original: descriptions[i],
-            narrated
-        }));
-    } catch (e) {
         return descriptions.map(d => ({ original: d, narrated: d }));
     }
 };

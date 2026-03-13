@@ -7,6 +7,7 @@ import { GraphTabs } from '../components/graph/GraphTabs';
 import { GraphTools } from '../components/graph/GraphTools';
 import { Language } from '../data/GraphCode';
 import { useLayout } from '../context/LayoutContext';
+import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Graphs = () => {
@@ -208,6 +209,14 @@ const Graphs = () => {
     }
   };
 
+  const handleNarrationToggle = () => {
+    if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
+      window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
+      return;
+    }
+    setIsNarrationEnabled(!isNarrationEnabled);
+  };
+
 
 
   // Playback Controls
@@ -245,7 +254,7 @@ const Graphs = () => {
       <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
         <div className="flex flex-col gap-1 items-end">
           <button
-            onClick={() => setIsNarrationEnabled(!isNarrationEnabled)}
+            onClick={handleNarrationToggle}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
             title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
           >

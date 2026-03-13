@@ -15,6 +15,7 @@ import About from '../pages/About'
 import Team from '../pages/Team'
 import Terms from '../pages/Terms'
 import Privacy from '../pages/Privacy'
+import AiDataPrivacy from '../pages/AiDataPrivacy'
 import Login from '../pages/Login'
 import Signup from '../pages/Signup'
 import VerifyOtp from '../pages/VerifyOtp'
@@ -64,6 +65,7 @@ function AppContent() {
           <Route path="/team" element={<Team />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/ai-data-privacy" element={<AiDataPrivacy />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
