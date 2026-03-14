@@ -858,6 +858,22 @@ export const useStackVisualizer = () => {
         }
     };
 
+    const handleImport = (arr: StackItem[]) => {
+        const vals = arr.slice(0, MAX_CAPACITY);
+        const newStacks = [...initialStacks];
+        while (newStacks.length <= activeStackIndex) newStacks.push([]);
+        newStacks[activeStackIndex] = vals;
+        
+        setInitialStacks(newStacks);
+        setCreateInput(vals.join(', '));
+        setCreateSize(vals.length.toString());
+
+        const pointers: Pointer[] = vals.length > 0 ? [{ index: vals.length - 1, label: 'top', color: 'primary' }] : [];
+        setFrames([createFrame(newStacks, [], pointers, 2, `Stack Imported from image`, "IMPORT")]);
+        setCurrentStep(0);
+        setIsPlaying(false);
+    };
+
     return {
         // State
         initialStacks,
@@ -908,6 +924,7 @@ export const useStackVisualizer = () => {
         handleCanvasPop,
         handleCanvasClear,
         handleCanvasUpdate,
+        handleImport,
         handleReverseString,
         handleBalancedParentheses,
         handlePostfixEval,

@@ -10,6 +10,9 @@ import { useLayout } from '../context/LayoutContext';
 import { useAiContextStore } from '../store/aiContextStore';
 import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
+import { CanvasHint } from '../components/ui/CanvasHint';
+import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
+import { resolveAiCredentials } from '../services/aiService';
 
 const Trees = () => {
   const treeVisualizer = useTreeVisualizer();
@@ -24,9 +27,34 @@ const Trees = () => {
     addNode, addEdge, removeNode, moveNode,
     selectedNode, setSelectedNode,
     clear,
+    handleExample,
+    handleImport,
     isNarrationEnabled, setIsNarrationEnabled,
     isGeneratingNarration
   } = treeVisualizer;
+
+  const { apiKey } = resolveAiCredentials();
+  const {
+      isProcessing: isImporting,
+      error: importError,
+      result: importResult,
+      uploadImageFile,
+      reset: resetImport,
+  } = useImageToDataStructure(apiKey, 'Tree');
+
+  useEffect(() => {
+    if (importResult) {
+      handleImport(importResult as any);
+      setShowCanvasHint(false);
+      resetImport();
+    }
+  }, [importResult, resetImport, handleImport]);
+
+  useEffect(() => {
+    if (importError) {
+      setShowCanvasHint(true);
+    }
+  }, [importError]);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +63,7 @@ const Trees = () => {
   const [isOpsExpanded, setIsOpsExpanded] = useState(false);
   const [isToolboxExpanded, setIsToolboxExpanded] = useState(false);
   const [isCurrentOpExpanded, setIsCurrentOpExpanded] = useState(false);
+  const [showCanvasHint, setShowCanvasHint] = useState(true);
 
   // Auto-collapse logic when algorithm starts playing
   useEffect(() => {
@@ -196,6 +225,7 @@ const Trees = () => {
       <div className="flex items-center gap-4">
         <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
         <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+        
         <button
           onClick={() => setIsPlaying(!isPlaying)}
           className="rounded-full flex items-center justify-center text-white bg-primary size-12 shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95"
@@ -223,17 +253,16 @@ const Trees = () => {
       </div>
 
       <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
-        <div className="flex flex-col gap-1 items-end">
-          <button
-            onClick={handleNarrationToggle}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
-            title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
-          >
-            <span className="material-symbols-outlined text-[20px]">
-              {isNarrationEnabled ? 'record_voice_over' : 'voice_over_off'}
-            </span>
-          </button>
-        </div>
+        <button
+          onClick={handleNarrationToggle}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+          title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
+        >
+          <span className="material-symbols-outlined text-[20px]">psychology</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
         <div className="flex items-center gap-3 w-32">
           <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
           <input
@@ -286,10 +315,11 @@ const Trees = () => {
               onMouseUp={handleCanvasMouseUp}
               onMouseLeave={handleCanvasMouseUp}
               onWheel={handleWheel}
+              onClick={() => { if (showCanvasHint) setShowCanvasHint(false); }}
             >
-
-              {/* Tree Canvas */}
-              <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
+              <div className={showCanvasHint ? 'opacity-0 pointer-events-none' : ''}>
+                {/* Tree Canvas */}
+                <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: (isPanning || draggedNode !== null) ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[800px] h-[600px] pointer-events-none origin-top-left">
 
                 <svg className="absolute inset-0 size-full overflow-visible pointer-events-auto">
                   <defs>
@@ -369,9 +399,48 @@ const Trees = () => {
                   })}
                 </svg>
               </div>
+              </div>
 
             </div>
-          </div>
+            </div>
+
+            {showCanvasHint && (
+              <CanvasHint
+                title="Get started with binary trees"
+                description="Upload an image, use the toolbox to add nodes and edges, or open the controls to explore algorithms."
+                error={importError}
+                isProcessing={isImporting}
+                onUpload={uploadImageFile}
+                buttons={[
+                  {
+                    label: 'Upload an image',
+                    isUpload: true,
+                    variant: 'primary'
+                  },
+                  {
+                    label: 'Draw from toolbox',
+                    onClick: () => {
+                      setShowCanvasHint(false);
+                      clear();
+                      setIsToolboxExpanded(true);
+                    },
+                    variant: 'secondary'
+                  },
+                  {
+                    label: 'Load a prebuilt example',
+                    onClick: () => {
+                      setShowCanvasHint(false);
+                      handleExample();
+                    },
+                    variant: 'secondary'
+                  }
+                ]}
+                onDismiss={() => {
+                  setShowCanvasHint(false);
+                  clear();
+                }}
+              />
+            )}
 
           {/* === CORNER DOCKS === */}
 

@@ -2643,6 +2643,27 @@ export const useTreeVisualizer = () => {
         applyNarrationAndPlay(framesBuffer);
     };
 
+    const handleImport = (importedTree: { nodes?: TreeNode[], edges?: TreeEdge[] }) => {
+        if (!importedTree || !importedTree.nodes || importedTree.nodes.length === 0) return;
+        const newNodes = importedTree.nodes;
+        const newEdges = importedTree.edges || [];
+        
+        // Let's assume the first node is root if not explicitly set
+        const root = newNodes[0].id;
+        if (root !== null) {
+            // Recalculate layout
+            const layoutNodes = calculateLayout(newNodes, root);
+            setNodes(layoutNodes);
+            setEdges(newEdges);
+            
+            // Generate single frame indicating imported tree
+            setFrames([{
+                nodes: layoutNodes, edges: newEdges, highlights: [],
+                codeLine: 0, pseudoLines: [], description: "Imported tree structure from image."
+            }]);
+            setCurrentStep(0);
+        }
+    };
 
     return {
         nodes,
@@ -2654,6 +2675,7 @@ export const useTreeVisualizer = () => {
         reset,
         clear,
         handleExample,
+        handleImport,
         // New Ops
         generateRandomTree,
         traverseZigZag,

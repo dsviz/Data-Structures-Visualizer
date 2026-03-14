@@ -7,6 +7,7 @@ export interface SortingFrame {
     codeLine: number; // Mapped line in SortingCode
     variables: Record<string, number>;
     description: string;
+    narration?: string;
     // For Merge Sort Visualization
     mergeLevels?: MergeGroup[][];
 }

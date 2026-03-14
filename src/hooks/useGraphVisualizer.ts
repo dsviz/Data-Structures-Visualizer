@@ -120,6 +120,16 @@ export const useGraphVisualizer = () => {
         setSelectedNode(null);
     };
 
+    const importGraph = (nodes: GraphNode[], edges: GraphEdge[], directed: boolean, weighted: boolean) => {
+        setNodes(nodes);
+        setEdges(edges);
+        setIsDirected(directed);
+        setIsWeighted(weighted);
+        setNextId(nodes.length ? Math.max(...nodes.map(n => n.id)) + 1 : 0);
+        setGraphSnapshot(null);
+        resetAnimation();
+    };
+
     const addNode = (x: number, y: number) => {
         const finalX = isGridSnapped ? snapToGrid(x) : x;
         const finalY = isGridSnapped ? snapToGrid(y) : y;
@@ -2848,7 +2858,7 @@ export const useGraphVisualizer = () => {
         edges, setEdges,
         isDirected, setIsDirected,
         isWeighted, setIsWeighted,
-        frames,
+        frames, setFrames,
         currentStep, setCurrentStep,
         isPlaying, setIsPlaying,
         playbackSpeed, setPlaybackSpeed,
@@ -2877,6 +2887,7 @@ export const useGraphVisualizer = () => {
         resetGraph,
         hardReset,
         clearCanvas,
+        importGraph,
         getCurrentFrame,
         activeTool, setActiveTool,
         selectedNode, setSelectedNode,

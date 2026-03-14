@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useGraphVisualizer } from '../hooks/useGraphVisualizer';
+import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
+import { CanvasHint } from '../components/ui/CanvasHint';
 import { GraphControls } from '../components/graph/GraphControls';
 import { GraphTabs } from '../components/graph/GraphTabs';
 import { GraphTools } from '../components/graph/GraphTools';
 import { Language } from '../data/GraphCode';
 import { useLayout } from '../context/LayoutContext';
-import { hasConfiguredAiCredentials } from '../services/aiService';
+import { hasConfiguredAiCredentials, resolveAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Graphs = () => {
@@ -35,6 +37,7 @@ const Graphs = () => {
     updateWeightsByDistance,
     adjustPhysicalDistance,
     loadExampleGraph,
+    importGraph,
     // Playback
     frames,
     currentStep, setCurrentStep,
@@ -74,6 +77,51 @@ const Graphs = () => {
 
   const currentFrame = getCurrentFrame();
 
+  const { apiKey } = resolveAiCredentials();
+  const {
+    isProcessing: isImporting,
+    error: importError,
+    result: importResult,
+    uploadImageFile,
+    reset: resetImport,
+  } = useImageToDataStructure(apiKey, 'Graph');
+
+  const [showCanvasHint, setShowCanvasHint] = useState(true);
+
+  const applyImportedGraph = useCallback((graph: { nodes: any[], edges: any[] }) => {
+    const idMap = new Map<string, number>();
+    const nodes = graph.nodes.map((node: any, idx: number) => {
+      idMap.set(node.id, idx);
+      return { id: idx, x: node.x, y: node.y, value: idx };
+    });
+
+    const edges = graph.edges
+      .map((edge: any) => {
+        const from = idMap.get(edge.source);
+        const to = idMap.get(edge.target);
+        if (from === undefined || to === undefined) return null;
+        return { from, to, weight: 1 };
+      })
+      .filter(Boolean) as { from: number; to: number; weight: number }[];
+
+    importGraph(nodes, edges, graph.edges.some((e: any) => e.directed), false);
+  }, [importGraph]);
+
+  useEffect(() => {
+    if (importResult) {
+      applyImportedGraph(importResult);
+      setShowCanvasHint(false);
+      resetImport();
+    }
+  }, [applyImportedGraph, importResult, resetImport]);
+
+  useEffect(() => {
+    // If an import attempt fails, keep the hint visible so the user can retry.
+    if (importError) {
+      setShowCanvasHint(true);
+    }
+  }, [importError]);
+
   // Ensure Left Sidebar is Closed
   useEffect(() => {
     setIsSidebarOpen(false);
@@ -90,6 +138,14 @@ const Graphs = () => {
   };
 
   // Canvas Interaction Handlers
+  const handleNarrationToggle = () => {
+    if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
+      window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
+      return;
+    }
+    setIsNarrationEnabled(!isNarrationEnabled);
+  };
+
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
     if (activeTool === 'node') {
       if (graphRef.current) {
@@ -209,12 +265,9 @@ const Graphs = () => {
     }
   };
 
-  const handleNarrationToggle = () => {
-    if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
-      window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
-      return;
-    }
-    setIsNarrationEnabled(!isNarrationEnabled);
+  const handleClearCanvas = () => {
+    clearCanvas();
+    setShowCanvasHint(true);
   };
 
 
@@ -252,15 +305,13 @@ const Graphs = () => {
       </div>
 
       <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
-        <div className="flex flex-col gap-1 items-end">
-          <button
-            onClick={handleNarrationToggle}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
-            title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
-          >
-            <span className="material-symbols-outlined text-[20px]">{isNarrationEnabled ? 'record_voice_over' : 'voice_over_off'}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleNarrationToggle}
+          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+          title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
+        >
+          <span className="material-symbols-outlined text-[20px]">psychology</span>
+        </button>
       </div>
 
       <div className="flex items-center gap-3 border-l border-gray-200 dark:border-[#272546] w-40 pl-6">
@@ -314,11 +365,12 @@ const Graphs = () => {
             >
 
               {/* Graph Canvas */}
-              <div ref={graphRef} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[600px] h-[400px] pointer-events-none">
+              <div className={showCanvasHint ? 'opacity-0 pointer-events-none' : ''}>
+                <div ref={graphRef} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }} className="relative w-[600px] h-[400px] pointer-events-none">
 
-                {/* SVG Edges */}
-                <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
-                  <defs>
+                  {/* SVG Edges */}
+                  <svg className="absolute inset-0 size-full overflow-visible pointer-events-none">
+                    <defs>
                     <marker id="arrowhead" markerHeight="7" markerWidth="10" orient="auto" refX="28" refY="3.5">
                       <polygon fill="#64748b" points="0 0, 10 3.5, 0 7"></polygon>
                     </marker>
@@ -466,6 +518,45 @@ const Graphs = () => {
                 })}
 
               </div>
+            </div>
+
+              {showCanvasHint && (
+                <CanvasHint
+                  title="Get started with graphs"
+                  description="Upload an image, use the toolbox to add nodes and edges, or load an example."
+                  error={importError}
+                  isProcessing={isImporting}
+                  onUpload={uploadImageFile}
+                  buttons={[
+                    {
+                      label: 'Upload an image',
+                      isUpload: true,
+                      variant: 'primary'
+                    },
+                    {
+                      label: 'Draw from toolbox',
+                      onClick: () => {
+                        setShowCanvasHint(false);
+                        clearCanvas();
+                        setIsToolboxExpanded(true);
+                      },
+                      variant: 'secondary'
+                    },
+                    {
+                      label: 'Load a prebuilt example',
+                      onClick: () => {
+                        setShowCanvasHint(false);
+                        loadExampleGraph('basics');
+                      },
+                      variant: 'secondary'
+                    }
+                  ]}
+                  onDismiss={() => {
+                    setShowCanvasHint(false);
+                    clearCanvas();
+                  }}
+                />
+              )}
 
               {/* AI Thinking Overlay */}
               {isGeneratingNarration && (
@@ -531,7 +622,7 @@ const Graphs = () => {
                   <GraphTools
                     activeTool={activeTool}
                     setActiveTool={setActiveTool}
-                    onClear={clearCanvas}
+                    onClear={handleClearCanvas}
                   />
                 </div>
               </div>

@@ -465,6 +465,17 @@ export const useArraysVisualizer = () => {
         setCurrentStep(0); setCreateStep('size');
     };
 
+    const handleImport = (arr: number[]) => {
+        const vals = arr.slice(0, MAX_CAPACITY);
+        setError(null);
+        setInitialArray(vals);
+        setCreateInput(vals.join(', '));
+        setCreateSize(vals.length.toString());
+        setFrames([createFrame(vals, [], [], 2, `Imported from image`, "create")]);
+        setCurrentStep(0); 
+        setCreateStep('size');
+    };
+
     const handleCreateRandom = () => {
         const size = parseInt(createSize) || 8;
         const vals = Array.from({ length: size }, () => Math.floor(Math.random() * 99) + 1).sort((a, b) => a - b);
@@ -649,6 +660,7 @@ export const useArraysVisualizer = () => {
         handleCreateCustom,
         handleCreateRandom,
         handleExample,
+        handleImport,
         handleSearch,
         handleInsert,
         handleRemove,

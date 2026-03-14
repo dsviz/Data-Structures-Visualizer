@@ -9,6 +9,9 @@ import { Language } from '../data/LinkedListCode';
 import { useLayout } from '../context/LayoutContext';
 import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
+import { CanvasHint } from '../components/ui/CanvasHint';
+import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
+import { resolveAiCredentials } from '../services/aiService';
 
 export default function LinkedList() {
     const {
@@ -41,11 +44,35 @@ export default function LinkedList() {
         // Handlers
         runAction,
         handleExample,
+        handleImport,
         handleCanvasAdd,
         handleCanvasDelete,
         handleCanvasUpdate,
         handleCanvasClear
     } = useLinkedListVisualizer();
+
+    const { apiKey } = resolveAiCredentials();
+    const {
+        isProcessing: isImporting,
+        error: importError,
+        result: importResult,
+        uploadImageFile,
+        reset: resetImport,
+    } = useImageToDataStructure(apiKey, 'LinkedList');
+
+    useEffect(() => {
+        if (importResult?.array) {
+            handleImport(importResult.array);
+            setShowCanvasHint(false);
+            resetImport();
+        }
+    }, [importResult, resetImport, handleImport]);
+
+    useEffect(() => {
+        if (importError) {
+            setShowCanvasHint(true);
+        }
+    }, [importError]);
 
     const [activeTool, setActiveTool] = useState<LinkedListTool>(null);
     const [editPopup, setEditPopup] = useState<{ index: number, val: number, x: number, y: number } | null>(null);
@@ -55,6 +82,7 @@ export default function LinkedList() {
     const [isOpsExpanded, setIsOpsExpanded] = useState(false);
     const [isToolboxExpanded, setIsToolboxExpanded] = useState(false);
     const [isCurrentOpExpanded, setIsCurrentOpExpanded] = useState(false);
+    const [showCanvasHint, setShowCanvasHint] = useState(true);
 
     // Auto-collapse logic when algorithm starts playing
     useEffect(() => {
@@ -144,6 +172,7 @@ export default function LinkedList() {
             <div className="flex items-center gap-4">
                 <button onClick={() => setCurrentStep(0)} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[24px]">skip_previous</span></button>
                 <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-[28px]">fast_rewind</span></button>
+                
                 <button
                     onClick={() => setIsPlaying(!isPlaying)}
                     className="rounded-full flex items-center justify-center text-white bg-primary size-12 shadow-lg shadow-primary/30 transition-transform hover:scale-105 active:scale-95"
@@ -174,13 +203,13 @@ export default function LinkedList() {
                 <button
                     onClick={handleNarrationToggle}
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
-                    title={isNarrationEnabled ? "Disable Narration" : "Enable Narration"}
+                    title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
                 >
-                    <span className="material-symbols-outlined text-[22px]">{isNarrationEnabled ? 'volume_up' : 'volume_off'}</span>
+                    <span className="material-symbols-outlined text-[20px]">psychology</span>
                 </button>
+            </div>
 
-                <div className="h-8 w-[1px] bg-gray-200 dark:bg-[#272546]"></div>
-
+            <div className="flex items-center gap-4 border-l border-gray-200 dark:border-[#272546] pl-6">
                 <div className="flex items-center gap-3 w-40">
                     <span className="material-symbols-outlined text-gray-400 text-sm">speed</span>
                     <input
@@ -221,13 +250,14 @@ export default function LinkedList() {
                             }}
                             onMouseUp={() => setIsDragging(false)} onMouseLeave={() => setIsDragging(false)}
                             onWheel={handleWheel}
-                            onClick={() => { if (activeTool) setEditPopup(null); }}
+                            onClick={() => { if (activeTool) setEditPopup(null); if (showCanvasHint) setShowCanvasHint(false); }}
                         >
-                            <div className="flex items-center transition-transform duration-100 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
-                                {currentFrame.nodes.length === 0 && (!currentFrame.tempNodes || currentFrame.tempNodes.length === 0) ? <div className="opacity-30 text-2xl font-bold uppercase text-gray-400">Empty List</div> : (
-                                    currentFrame.nodes.map((node, i) => {
-                                        const isHighlight = currentFrame.highlights.includes(node.id);
-                                        let nodePointers = currentFrame.pointers.filter(p => p.id === node.id);
+                            <div className={showCanvasHint ? 'opacity-0 pointer-events-none' : ''}>
+                                <div className="flex items-center transition-transform duration-100 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
+                                    {currentFrame.nodes.length === 0 && (!currentFrame.tempNodes || currentFrame.tempNodes.length === 0) ? <div className="opacity-30 text-2xl font-bold uppercase text-gray-400">Empty List</div> : (
+                                        currentFrame.nodes.map((node, i) => {
+                                            const isHighlight = currentFrame.highlights.includes(node.id);
+                                            let nodePointers = currentFrame.pointers.filter(p => p.id === node.id);
 
                                         // Persistent Head/Tail logic
                                         if (i === 0 && !nodePointers.some(p => p.label === 'HEAD')) {
@@ -359,6 +389,8 @@ export default function LinkedList() {
                                     })}
                                 </svg>
                             </div>
+                        </div>
+                        </div>
 
                             {/* Description Overlay (Bottom Right) is moved to the dock */}
 
@@ -375,7 +407,44 @@ export default function LinkedList() {
                                 </div>
                             )}
                         </div>
-                    </div>
+
+                        {showCanvasHint && (
+                            <CanvasHint
+                                title="Get started with linked lists"
+                                description="Upload an image, use the toolbox to add/remove nodes, or load an example."
+                                error={importError}
+                                isProcessing={isImporting}
+                                onUpload={uploadImageFile}
+                                buttons={[
+                                    {
+                                        label: 'Upload an image',
+                                        isUpload: true,
+                                        variant: 'primary'
+                                    },
+                                    {
+                                        label: 'Draw from toolbox',
+                                        onClick: () => {
+                                            setShowCanvasHint(false);
+                                            handleCanvasClear();
+                                            setIsToolboxExpanded(true);
+                                        },
+                                        variant: 'secondary'
+                                    },
+                                    {
+                                        label: 'Load a prebuilt example',
+                                        onClick: () => {
+                                            setShowCanvasHint(false);
+                                            handleExample();
+                                        },
+                                        variant: 'secondary'
+                                    }
+                                ]}
+                                onDismiss={() => {
+                                    setShowCanvasHint(false);
+                                    handleCanvasClear();
+                                }}
+                            />
+                        )}
 
                     {/* Canvas Edit Popup */}
                     {editPopup && (

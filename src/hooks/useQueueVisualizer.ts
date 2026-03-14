@@ -374,6 +374,23 @@ export const useQueueVisualizer = () => {
         setIsPlaying(false);
     };
 
+    const handleImport = (arr: QueueItem[]) => {
+        const vals = arr.slice(0, MAX_CAPACITY);
+        setInitialQueue(vals);
+        setCreateInput(vals.join(', '));
+        setCreateSize(vals.length.toString());
+
+        const front = vals.length > 0 ? 0 : -1;
+        const rear = vals.length > 0 ? vals.length - 1 : -1;
+        const pointers: Pointer[] = [];
+        if (front !== -1) pointers.push({ index: front, label: 'front', color: 'primary' });
+        if (rear !== -1) pointers.push({ index: rear, label: 'rear', color: 'primary' });
+
+        setFrames([createFrame(vals, [], pointers, 2, `Queue Imported from image`, "IMPORT")]);
+        setCurrentStep(0);
+        setIsPlaying(false);
+    };
+
     const handleCanvasEnqueue = () => {
         if (initialQueue.length >= MAX_CAPACITY) { setError("Queue Overflow"); return; }
         const newVal = Math.floor(Math.random() * 99) + 1;
@@ -635,6 +652,7 @@ export const useQueueVisualizer = () => {
         handlePeek,
         handleCreateCustom,
         handleExample,
+        handleImport,
         handleCanvasEnqueue,
         handleCanvasDequeue,
         handleCanvasClear,

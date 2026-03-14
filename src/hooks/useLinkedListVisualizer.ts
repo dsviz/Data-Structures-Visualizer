@@ -1814,6 +1814,13 @@ export const useLinkedListVisualizer = () => {
         }
     };
 
+    const handleImport = (arr: number[]) => {
+        const vals = arr.slice(0, MAX_NODES);
+        const result = generateCreateFrames(vals);
+        dispatchAnimation(result);
+        setIsPlaying(false);
+    };
+
     const handleCanvasAdd = () => {
         if (initialNodes.length >= MAX_NODES) { setError(`Max capacity ${MAX_NODES} reached`); return; }
         const newNode: ListNode = { id: generateId(), val: Math.floor(Math.random() * 99) + 1 };
@@ -1964,6 +1971,7 @@ export const useLinkedListVisualizer = () => {
         // Handlers
         runAction,
         handleExample,
+        handleImport,
         handleCanvasAdd,
         handleCanvasDelete,
         handleCanvasUpdate,

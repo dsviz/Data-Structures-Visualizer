@@ -8,6 +8,9 @@ import { useArraysVisualizer } from '../hooks/useArraysVisualizer';
 import { useAiContextStore } from '../store/aiContextStore';
 import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
+import { CanvasHint } from '../components/ui/CanvasHint';
+import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
+import { resolveAiCredentials } from '../services/aiService';
 
 const Arrays = () => {
     // --- Hook State ---
@@ -59,11 +62,35 @@ const Arrays = () => {
         handleTwoSum,
         handleCycleDetection,
         handleExample,
+        handleImport,
         handleCanvasAdd,
         handleCanvasDelete,
         handleCanvasUpdate,
         handleCanvasClear
     } = useArraysVisualizer();
+
+    const { apiKey } = resolveAiCredentials();
+    const {
+        isProcessing: isImporting,
+        error: importError,
+        result: importResult,
+        uploadImageFile,
+        reset: resetImport,
+    } = useImageToDataStructure(apiKey, 'Array');
+
+    useEffect(() => {
+        if (importResult?.array) {
+            handleImport(importResult.array);
+            setShowCanvasHint(false);
+            resetImport();
+        }
+    }, [importResult, resetImport, handleImport]);
+
+    useEffect(() => {
+        if (importError) {
+            setShowCanvasHint(true);
+        }
+    }, [importError]);
 
     const setDataStructure = useAiContextStore(state => state.setDataStructure);
     const setCurrentFrameInStore = useAiContextStore(state => state.setCurrentFrame);
@@ -110,6 +137,7 @@ const Arrays = () => {
 
     // --- Layout State ---
     const [activeTab, setActiveTab] = useState<'code' | 'pseudo' | 'info'>('pseudo');
+    const [showCanvasHint, setShowCanvasHint] = useState(true);
 
     // --- Floating Card State ---
     const [isCodeExpanded, setIsCodeExpanded] = useState(false);
@@ -214,16 +242,6 @@ const Arrays = () => {
                         <div className="flex items-center gap-2" >
                             <button onClick={() => setCurrentStep(0)} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Start"><span className="material-symbols-outlined text-[20px]">skip_previous</span></button>
                             <button onClick={() => setCurrentStep(s => Math.max(0, s - 1))} className="size-8 rounded-full flex items-center justify-center text-gray-500 hover:text-white transition-colors hover:bg-white/5" title="Prev"><span className="material-symbols-outlined text-[20px]">fast_rewind</span></button>
-
-                            {/* AI Narration Toggle */}
-                            <button
-                                onClick={handleNarrationToggle}
-                                className={`size-8 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'text-primary bg-primary/10' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-                                title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
-                            >
-                                <span className="material-symbols-outlined text-[18px]">psychology</span>
-                            </button>
-
                             <button onClick={() => setIsPlaying(!isPlaying)} className={`size-10 rounded-full flex items-center justify-center text-white shadow-lg transition-transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-red-500' : 'bg-primary'}`}>
                                 <span className="material-symbols-outlined text-[24px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
                             </button>
@@ -243,7 +261,17 @@ const Arrays = () => {
                                 <div className="h-full bg-primary relative rounded-full" style={{ width: `${((currentStep + 1) / (frames.length || 1)) * 100}%` }}></div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3 w-40 border-l border-[#272546] pl-4" >
+                        <div className="flex items-center gap-4 border-l border-[#272546] pl-6">
+                            <button
+                                onClick={handleNarrationToggle}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+                                title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
+                            >
+                                <span className="material-symbols-outlined text-[20px]">psychology</span>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-4 border-l border-[#272546] pl-6">
                             <span className="material-symbols-outlined text-gray-500 text-sm">speed</span>
                             <input type="range" min="0.5" max="3" step="0.5" value={playbackSpeed} onChange={e => setPlaybackSpeed(parseFloat(e.target.value))} className="w-full h-1 bg-[#272546] rounded-lg appearance-none cursor-pointer accent-primary" />
                             <span className="text-xs font-mono text-gray-400 w-7 text-right shrink-0">{playbackSpeed}x</span>
@@ -256,28 +284,69 @@ const Arrays = () => {
                     {/* === CENTRAL CANVAS === */}
                     <div className="absolute inset-0 z-0 flex flex-col overflow-hidden">
                         <div className="absolute inset-0 z-0 opacity-[0.03] dark:opacity-[0.1]" style={{ backgroundImage: 'radial-gradient(#4236e7 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                        <div ref={containerRef} className={`absolute inset-0 flex flex-col items-center justify-center ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${activeTool ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} onClick={() => { if (activeTool) setEditPopup(null); }}>
-                            <div ref={contentRef} className="flex flex-col items-start gap-2 transition-transform duration-75 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
-                                <div className="flex gap-1 ml-1 select-none">{(currentFrame.array).map((_, i) => <div key={i} className="w-14 text-center text-xs font-mono text-gray-500">{i}</div>)}</div>
-                                <div className="flex gap-1">
-                                    {currentFrame.array.map((val, i) => {
-                                        const highlight = currentFrame.highlights.indexOf(i) !== -1;
-                                        const pointers = currentFrame.pointers.filter(p => p.index === i);
-                                        return (
-                                            <div key={i} onClick={(e) => handleElementClick(i, val === null ? 0 : val, e)} className={`w-14 h-14 rounded flex items-center justify-center text-lg font-mono font-medium shadow-sm relative group transition-all duration-300 ${highlight ? 'bg-primary text-white border-2 border-primary scale-110 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]' : 'bg-white dark:bg-[#1c1a32] border border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'} ${val === null ? 'border-dashed opacity-50' : ''} ${activeTool ? 'hover:border-primary hover:shadow-md cursor-pointer' : ''}`}>
-                                                {val === null ? 'null' : val}
-                                                {pointers.map((p, pIdx) => (
-                                                    <div key={p.label} className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ marginTop: `-${pIdx * 24}px` }}>
-                                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded border mb-1 ${p.color === 'primary' ? 'text-primary bg-[#121121] border-primary/30' : p.color === 'green' ? 'text-emerald-400 bg-[#121121] border-emerald-400/30' : 'text-red-400 bg-[#121121] border-red-400/30'}`}>{p.label}</span>
-                                                        {pIdx === 0 && <span className={`material-symbols-outlined text-xl font-bold animate-bounce ${p.color === 'primary' ? 'text-primary' : p.color === 'green' ? 'text-emerald-400' : 'text-red-400'}`}>arrow_downward</span>}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
+                        <div ref={containerRef} className={`absolute inset-0 flex flex-col items-center justify-center ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} ${activeTool ? 'cursor-crosshair' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onWheel={handleWheel} onClick={() => { if (activeTool) setEditPopup(null); if (showCanvasHint) setShowCanvasHint(false); }}>
+                            <div className={showCanvasHint ? 'opacity-0 pointer-events-none' : ''}>
+                                <div ref={contentRef} className="flex flex-col items-start gap-2 transition-transform duration-75 ease-out origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale * 1.1})` }}>
+                                    <div className="flex gap-1 ml-1 select-none">{(currentFrame.array).map((_, i) => <div key={i} className="w-14 text-center text-xs font-mono text-gray-500">{i}</div>)}</div>
+                                    <div className="flex gap-1">
+                                        {currentFrame.array.map((val, i) => {
+                                            const highlight = currentFrame.highlights.indexOf(i) !== -1;
+                                            const pointers = currentFrame.pointers.filter(p => p.index === i);
+                                            return (
+                                                <div key={i} onClick={(e) => handleElementClick(i, val === null ? 0 : val, e)} className={`w-14 h-14 rounded flex items-center justify-center text-lg font-mono font-medium shadow-sm relative group transition-all duration-300 ${highlight ? 'bg-primary text-white border-2 border-primary scale-110 z-10 shadow-[0_0_20px_rgba(66,54,231,0.4)]' : 'bg-white dark:bg-[#1c1a32] border border-gray-300 dark:border-[#383564] text-slate-900 dark:text-white'} ${val === null ? 'border-dashed opacity-50' : ''} ${activeTool ? 'hover:border-primary hover:shadow-md cursor-pointer' : ''}`}>
+                                                    {val === null ? 'null' : val}
+                                                    {pointers.map((p, pIdx) => (
+                                                        <div key={p.label} className="absolute -top-10 left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ marginTop: `-${pIdx * 24}px` }}>
+                                                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded border mb-1 ${p.color === 'primary' ? 'text-primary bg-[#121121] border-primary/30' : p.color === 'green' ? 'text-emerald-400 bg-[#121121] border-emerald-400/30' : 'text-red-400 bg-[#121121] border-red-400/30'}`}>{p.label}</span>
+                                                            {pIdx === 0 && <span className={`material-symbols-outlined text-xl font-bold animate-bounce ${p.color === 'primary' ? 'text-primary' : p.color === 'green' ? 'text-emerald-400' : 'text-red-400'}`}>arrow_downward</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        {showCanvasHint && (
+                            <CanvasHint
+                                title="Get started with arrays"
+                                description="Upload an image, use the controls to run algorithms, or load an example to begin."
+                                error={importError}
+                                isProcessing={isImporting}
+                                onUpload={uploadImageFile}
+                                buttons={[
+                                    {
+                                        label: 'Upload an image',
+                                        isUpload: true,
+                                        variant: 'primary'
+                                    },
+                                    {
+                                        label: 'Draw from toolbox',
+                                        onClick: () => {
+                                            setShowCanvasHint(false);
+                                            handleCanvasClear();
+                                            setIsToolboxExpanded(true);
+                                        },
+                                        variant: 'secondary'
+                                    },
+                                    {
+                                        label: 'Load a prebuilt example',
+                                        onClick: () => {
+                                            setShowCanvasHint(false);
+                                            handleExample();
+                                        },
+                                        variant: 'secondary'
+                                    }
+                                ]}
+                                onDismiss={() => {
+                                    setShowCanvasHint(false);
+                                    handleCanvasClear();
+                                }}
+                            />
+                        )}
+
                     </div>
 
                     {/* === CORNER DOCKS === */}

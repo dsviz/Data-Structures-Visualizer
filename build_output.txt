@@ -1,0 +1,6 @@
+
+> dsa-visualizer@1.0.0 build
+> tsc && vite build
+
+src/pages/Queue.tsx(207,18): error TS17008: JSX element 'div' has no corresponding closing tag.
+src/pages/Stack.tsx(214,18): error TS17008: JSX element 'div' has no corresponding closing tag.

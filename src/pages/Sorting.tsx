@@ -3,6 +3,9 @@ import { Helmet } from 'react-helmet-async';
 import VisualizationLayout from '../components/layout/VisualizationLayout';
 import { useLayout } from '../context/LayoutContext';
 import PageTour, { TourStep } from '../components/ui/PageTour';
+import { CanvasHint } from '../components/ui/CanvasHint';
+import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
+import { hasConfiguredAiCredentials, resolveAiCredentials, generateNarrationBatch } from '../services/aiService';
 import { SORTING_CODE, Language } from '../data/SortingCode';
 import { SORTING_INFO } from '../data/SortingData';
 import { playSortingSound } from '../utils/soundUtils';
@@ -46,6 +49,8 @@ const Sorting = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+  const [isNarrationEnabled, setIsNarrationEnabled] = useState(false);
+  const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
 
   // UI State
   const { setIsSidebarOpen } = useLayout();
@@ -55,8 +60,18 @@ const Sorting = () => {
   const [showControls, setShowControls] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTraceOpen, setIsTraceOpen] = useState(true);
+  const [showCanvasHint, setShowCanvasHint] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
+
+  const { apiKey } = resolveAiCredentials();
+  const {
+      isProcessing: isImporting,
+      error: importError,
+      result: importResult,
+      uploadImageFile,
+      reset: resetImport,
+  } = useImageToDataStructure(apiKey, 'Array');
 
   // Initial Array
   useEffect(() => {
@@ -125,6 +140,14 @@ const Sorting = () => {
     setIsPlaying(false);
   };
 
+  const handleNarrationToggle = () => {
+    if (!isNarrationEnabled && !hasConfiguredAiCredentials()) {
+      window.alert('Please add your AI API key in Profile -> AI Settings before enabling narration.');
+      return;
+    }
+    setIsNarrationEnabled(!isNarrationEnabled);
+  };
+
   // Playback Loop
   useEffect(() => {
     if (isPlaying && frames.length > 0) {
@@ -135,9 +158,46 @@ const Sorting = () => {
           return prev;
         });
       }, 1000 / playbackSpeed);
+
+      if (isNarrationEnabled && frames.length > 0 && !isGeneratingNarration && !frames[0].narration) {
+        // Trigger narration generation when playback starts if not already generated
+        const runNarrationGen = async () => {
+          setIsGeneratingNarration(true);
+          try {
+            const descriptions = frames.map(f => f.description);
+            const narrations = await generateNarrationBatch(descriptions, 'Sorting');
+            const narratedFrames = frames.map((frame, i) => ({
+              ...frame,
+              narration: narrations[i]?.narrated || frame.description
+            }));
+            setFrames(narratedFrames);
+          } catch (err) {
+            console.error("Narration error:", err);
+          } finally {
+            setIsGeneratingNarration(false);
+          }
+        };
+        runNarrationGen();
+      }
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isPlaying, frames.length, playbackSpeed]);
+
+  useEffect(() => {
+    if (importResult?.array) {
+      const arr = importResult.array.slice(0, 30);
+      setArray(arr);
+      generateFrames(arr, algoKey);
+      setShowCanvasHint(false);
+      resetImport();
+    }
+  }, [importResult, resetImport, algoKey]);
+
+  useEffect(() => {
+    if (importError) {
+      setShowCanvasHint(true);
+    }
+  }, [importError]);
 
   // Sound Effect Hook
   useEffect(() => {
@@ -156,6 +216,62 @@ const Sorting = () => {
       }
     }
   }, [currentStep, isSoundEnabled, frames]);
+
+  // AI Narration Effect
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (isPlaying && isNarrationEnabled && currentStep < frames.length) {
+      const frame = frames[currentStep];
+      const textToSpeak = frame?.narration || frame?.description;
+
+      if (textToSpeak && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          let validVoices = voices.filter(v => v.lang === 'en-GB');
+          if (validVoices.length === 0) validVoices = voices.filter(v => v.lang.startsWith('en'));
+          if (validVoices.length === 0) validVoices = voices;
+
+          const maleKeywords = ['male', 'man', 'boy', 'david', 'mark', 'daniel', 'george', 'arthur', 'ryan'];
+          let selectedVoice = validVoices.find(v => maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+
+          if (!selectedVoice) {
+            const femaleKeywords = ['female', 'woman', 'girl', 'zira', 'samantha', 'victoria', 'karen', 'tessa', 'melina', 'monica', 'paulina', 'luciana', 'amelie', 'marie', 'anna', 'helena', 'veena', 'lekha', 'hazel'];
+            selectedVoice = validVoices.find(v => !femaleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
+          }
+
+          if (selectedVoice) {
+            utterance.voice = selectedVoice;
+          } else if (validVoices.length > 0) {
+            utterance.voice = validVoices[0];
+          }
+        }
+
+        utterance.lang = 'en-GB';
+        utterance.rate = Math.min(2.0, playbackSpeed * 0.9);
+
+        utterance.onend = () => {
+          if (!isCancelled && isPlaying) {
+            // No need to advance step here as the interval handles it
+          }
+        };
+
+        if (!isCancelled) {
+          window.speechSynthesis.speak(utterance);
+        }
+      }
+    } else if (!isPlaying) {
+      window.speechSynthesis?.cancel();
+    }
+
+    return () => {
+      isCancelled = true;
+      window.speechSynthesis?.cancel();
+    };
+  }, [isPlaying, isNarrationEnabled, currentStep, frames, playbackSpeed]);
 
 
   const currentFrame = frames[currentStep] || {
@@ -586,6 +702,17 @@ const Sorting = () => {
           </div>
         </div>
 
+        {/* AI Narration Toggle */}
+        <div className="flex items-center gap-4 border-l border-gray-100 dark:border-[#272546] pl-6">
+          <button
+            onClick={handleNarrationToggle}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isNarrationEnabled ? 'bg-indigo-500/20 text-indigo-500 hover:bg-indigo-500/30' : 'bg-gray-100 dark:bg-[#1c1a32] text-gray-400 hover:text-gray-300'}`}
+            title={isNarrationEnabled ? "Disable AI Narration" : "Enable AI Narration"}
+          >
+            <span className="material-symbols-outlined text-[20px]">psychology</span>
+          </button>
+        </div>
+
         {/* Sound Toggle */}
         <div className="flex items-center gap-2 border-l border-gray-100 dark:border-[#272546] pl-6">
           <button
@@ -660,8 +787,10 @@ const Sorting = () => {
 
 
         {/* Visualization Canvas */}
-        {
-          (activeAlgorithm === 'Merge Sort' || activeAlgorithm === 'Quick Sort') && currentFrame.mergeLevels ? (
+        <div className="relative flex-1" onClick={() => { if (showCanvasHint) setShowCanvasHint(false); }}>
+          <div className={showCanvasHint ? 'opacity-0 pointer-events-none' : ''}>
+            {
+              (activeAlgorithm === 'Merge Sort' || activeAlgorithm === 'Quick Sort') && currentFrame.mergeLevels ? (
             <div className="absolute inset-0 top-0 bottom-0 px-4 py-12 pt-24 overflow-y-auto flex flex-col items-center">
               <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto">
                 {currentFrame.mergeLevels.map((level, levelIdx) => (
@@ -766,6 +895,51 @@ const Sorting = () => {
               })}
             </div>
           )}
+          </div>
+
+          {showCanvasHint && (
+            <CanvasHint
+              title="Get started with sorting"
+              description="Upload an image, use the controls to generate an array and choose an algorithm."
+              error={importError}
+              isProcessing={isImporting}
+              onUpload={uploadImageFile}
+              buttons={[
+                {
+                  label: 'Upload an image',
+                  isUpload: true,
+                  variant: 'primary'
+                },
+                {
+                  label: 'Draw from toolbox',
+                  onClick: () => {
+                    setShowCanvasHint(false);
+                    setArray([]);
+                    setFrames([]);
+                    setCurrentStep(0);
+                    setShowControls(true);
+                  },
+                  variant: 'secondary'
+                },
+                {
+                  label: 'Load a prebuilt example',
+                  onClick: () => {
+                    setShowCanvasHint(false);
+                    handleGenerateArray();
+                  },
+                  variant: 'secondary'
+                }
+              ]}
+              onDismiss={() => {
+                setShowCanvasHint(false);
+                setArray([]);
+                setFrames([]);
+                setCurrentStep(0);
+              }}
+            />
+          )}
+
+        </div>
       </VisualizationLayout>
       <PageTour steps={SORTING_TOUR_STEPS} tourKey="tour_sorting_v1" />
     </>
