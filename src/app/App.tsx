@@ -3,6 +3,9 @@ import { useEffect } from 'react'
 import Navbar from '../components/layout/Navbar'
 import MobileWarning from '../components/ui/MobileWarning'
 import Home from '../pages/Home'
+import LeetCode from '../pages/LeetCode'
+import LeetCodeProblemDetails from '../pages/LeetCodeProblemDetails'
+import LeetCodeProblemVisualizer from '../pages/LeetCodeProblemVisualizer'
 import Arrays from '../pages/Arrays'
 import Graphs from '../pages/Graphs'
 import LinkedList from '../pages/LinkedList'
@@ -22,6 +25,7 @@ import VerifyOtp from '../pages/VerifyOtp'
 import Profile from '../pages/Profile'
 import { useLayout } from '../context/LayoutContext'
 import { AiTutorPanel } from '../components/ui/AiTutorPanel'
+import { LeetcodeProblemsPanel } from '../components/ui/LeetcodeProblemsPanel'
 
 const VISUALIZATION_ROUTES = new Set([
   '/arrays',
@@ -53,6 +57,9 @@ function AppContent() {
       <main className={`flex-1 overflow-auto ${!isNavbarVisible ? 'h-full' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/leetcode" element={<LeetCode />} />
+          <Route path="/leetcode/problem/:problemKey" element={<LeetCodeProblemDetails />} />
+          <Route path="/leetcode/visualize/:problemKey" element={<LeetCodeProblemVisualizer />} />
           <Route path="/arrays" element={<Arrays />} />
           <Route path="/graphs" element={<Graphs />} />
           <Route path="/linked-list" element={<LinkedList />} />
@@ -72,6 +79,7 @@ function AppContent() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
         {showAiTutorPanel && <AiTutorPanel />}
+        {showAiTutorPanel && <LeetcodeProblemsPanel />}
       </main>
     </div>
   );

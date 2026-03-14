@@ -16,7 +16,7 @@ const MobileWarning: React.FC = () => {
         const checkOrientation = () => {
             const isMobile = window.innerWidth < 1024; // Using 1024 to cover smaller tablets
             const isPortrait = window.innerHeight > window.innerWidth;
-            const isVisualizerPage = visualizerPaths.includes(location.pathname);
+            const isVisualizerPage = visualizerPaths.includes(location.pathname) || location.pathname.startsWith('/leetcode/visualize/');
             const hasDismissed = sessionStorage.getItem('rotateWarningDismissed');
 
             if (isMobile && isPortrait && isVisualizerPage && !hasDismissed) {

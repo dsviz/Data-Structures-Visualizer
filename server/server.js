@@ -349,6 +349,222 @@ For "next step" return {"action": "step_forward", "value": null}.
     }
 });
 
+// ==================== LEETCODE GITHUB PROXY CACHE ====================
+
+// In-memory cache with TTL
+const cache = {
+    catalog: null,
+    catalogTimestamp: null,
+    readmes: {} // { 'problem-key': { data, timestamp } }
+};
+
+const CATALOG_CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+const README_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const GITHUB_TREE_API = 'https://api.github.com/repos/shubhamkumarsharma03/leetcode/git/trees/master?recursive=1';
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/shubhamkumarsharma03/leetcode/master';
+
+function isCacheValid(timestamp, ttl) {
+    if (!timestamp) return false;
+    return Date.now() - timestamp < ttl;
+}
+
+async function fetchGitHubTree() {
+    // Check cache first
+    if (isCacheValid(cache.catalogTimestamp, CATALOG_CACHE_TTL_MS)) {
+        console.log('[LeetCode Cache] Using cached tree (age: ' + Math.round((Date.now() - cache.catalogTimestamp) / 1000) + 's)');
+        return cache.catalog;
+    }
+
+    console.log('[LeetCode Cache] Fetching fresh tree from GitHub...');
+    try {
+        const response = await fetch(GITHUB_TREE_API, {
+            headers: { 'Accept': 'application/vnd.github.v3+json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Cache the result
+        cache.catalog = data;
+        cache.catalogTimestamp = Date.now();
+        console.log('[LeetCode Cache] Cached tree with ' + (data.tree ? data.tree.length : 0) + ' items');
+        
+        return data;
+    } catch (error) {
+        console.error('[LeetCode Cache] Error fetching GitHub tree:', error.message);
+        
+        // If we have stale cache, return it anyway as fallback
+        if (cache.catalog) {
+            console.log('[LeetCode Cache] Using stale cache as fallback');
+            return cache.catalog;
+        }
+        
+        throw error;
+    }
+}
+
+async function fetchGitHubReadme(problemKey) {
+    // Check cache first
+    if (cache.readmes[problemKey] && isCacheValid(cache.readmes[problemKey].timestamp, README_CACHE_TTL_MS)) {
+        console.log('[LeetCode Cache] Using cached README for ' + problemKey);
+        return cache.readmes[problemKey].data;
+    }
+
+    console.log('[LeetCode Cache] Fetching fresh README for ' + problemKey + ' from GitHub...');
+    try {
+        // Try multiple URL candidates (Similar to frontend fallback)
+        const urlCandidates = [
+            `${GITHUB_RAW_BASE}/solutions/${getProblemRangeFolder(problemKey)}/${problemKey}/README.md`,
+            `${GITHUB_RAW_BASE}/solutions/${getProblemRangeFolder(problemKey)}/${problemKey}/Solution/README.md`,
+            `${GITHUB_RAW_BASE}/solutions/${getProblemRangeFolder(problemKey)}/${problemKey}/Solution2/README.md`,
+        ];
+
+        let lastError = null;
+        for (const url of urlCandidates) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const content = await response.text();
+                    
+                    // Cache the result
+                    if (!cache.readmes[problemKey]) {
+                        cache.readmes[problemKey] = {};
+                    }
+                    cache.readmes[problemKey].data = content;
+                    cache.readmes[problemKey].timestamp = Date.now();
+                    console.log('[LeetCode Cache] Cached README for ' + problemKey);
+                    
+                    return content;
+                }
+            } catch (e) {
+                lastError = e;
+            }
+        }
+
+        throw lastError || new Error('All README URL candidates failed');
+    } catch (error) {
+        console.error('[LeetCode Cache] Error fetching README for ' + problemKey + ':', error.message);
+        
+        // If we have stale cache, return it anyway as fallback
+        if (cache.readmes[problemKey]) {
+            console.log('[LeetCode Cache] Using stale README cache as fallback for ' + problemKey);
+            return cache.readmes[problemKey].data;
+        }
+        
+        throw error;
+    }
+}
+
+function getProblemRangeFolder(problemKey) {
+    // Extract problem ID from key like "0876.middle-of-the-linked-list"
+    const id = parseInt(problemKey.split('.')[0], 10);
+    const rangeStart = Math.floor(id / 100) * 100;
+    const rangeEnd = rangeStart + 99;
+    return `${String(rangeStart).padStart(4, '0')}-${String(rangeEnd).padStart(4, '0')}`;
+}
+
+// GET /api/leetcode/catalog - Fetch all LeetCode problems from GitHub tree, server-side cached
+app.get('/api/leetcode/catalog', async (req, res) => {
+    try {
+        const treeData = await fetchGitHubTree();
+        
+        if (!treeData.tree || !Array.isArray(treeData.tree)) {
+            return res.status(500).json({ error: 'Invalid GitHub tree response' });
+        }
+
+        // Parse tree into problems (same logic as frontend but server-owned now)
+        const problems = [];
+        const problemMap = new Map();
+
+        for (const item of treeData.tree) {
+            const path = item.path;
+            
+            // Look for solutions/{range}/{id.slug}/README.md
+            const match = path.match(/^solutions\/(\d{4})-(\d{4})\/(\d+)\.([a-z0-9\-]+)\/README\.md$/i);
+            if (!match) continue;
+
+            const id = parseInt(match[3], 10);
+            const slug = match[4];
+            const problemKey = `${String(id).padStart(4, '0')}.${slug}`;
+
+            if (!problemMap.has(problemKey)) {
+                problemMap.set(problemKey, {
+                    id,
+                    title: slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
+                    slug,
+                    difficulty: 'Medium', // Default, will be updated via README frontmatter
+                    tags: [],
+                    topics: [],
+                    languages: [],
+                    visualizerPath: '/arrays' // Default fallback
+                });
+            }
+        }
+
+        const problemsList = Array.from(problemMap.values()).sort((a, b) => a.id - b.id);
+        
+        res.json({
+            success: true,
+            count: problemsList.length,
+            problems: problemsList,
+            cached: !isCacheValid(cache.catalogTimestamp, CATALOG_CACHE_TTL_MS), // true if using cache
+            cacheAge: cache.catalogTimestamp ? Date.now() - cache.catalogTimestamp : null
+        });
+    } catch (error) {
+        console.error('Error in /api/leetcode/catalog:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch LeetCode catalog',
+            details: error.message
+        });
+    }
+});
+
+// GET /api/leetcode/readme/:problemKey - Fetch individual problem README, server-side cached
+app.get('/api/leetcode/readme/:problemKey', async (req, res) => {
+    try {
+        const { problemKey } = req.params;
+        
+        // Validate problemKey format (e.g., "0876.middle-of-the-linked-list")
+        if (!problemKey.match(/^\d{4}\.[a-z0-9\-]+$/i)) {
+            return res.status(400).json({ error: 'Invalid problem key format' });
+        }
+
+        const content = await fetchGitHubReadme(problemKey);
+        
+        res.json({
+            success: true,
+            problemKey,
+            content,
+            cached: cache.readmes[problemKey] && isCacheValid(cache.readmes[problemKey].timestamp, README_CACHE_TTL_MS),
+            cacheAge: cache.readmes[problemKey] ? Date.now() - cache.readmes[problemKey].timestamp : null
+        });
+    } catch (error) {
+        console.error('Error in /api/leetcode/readme:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch README',
+            details: error.message
+        });
+    }
+});
+
+// GET /api/leetcode/cache-status - Check cache status (for debugging)
+app.get('/api/leetcode/cache-status', (req, res) => {
+    res.json({
+        catalog: {
+            cached: !!cache.catalog,
+            age: cache.catalogTimestamp ? Date.now() - cache.catalogTimestamp : null,
+            items: cache.catalog ? cache.catalog.tree.length : 0
+        },
+        readmes: {
+            count: Object.keys(cache.readmes).length,
+            keys: Object.keys(cache.readmes).slice(0, 20)
+        }
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`AI Narration Backend running on http://localhost:${PORT}`);
 });
