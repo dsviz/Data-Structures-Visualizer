@@ -10,7 +10,6 @@ import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 import { CanvasHint } from '../components/ui/CanvasHint';
 import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
-import { resolveAiCredentials } from '../services/aiService';
 
 const Stack = () => {
     const {
@@ -63,14 +62,13 @@ const Stack = () => {
         isGeneratingNarration
     } = useStackVisualizer();
 
-    const { apiKey } = resolveAiCredentials();
     const {
         isProcessing: isImporting,
         error: importError,
         result: importResult,
         uploadImageFile,
         reset: resetImport,
-    } = useImageToDataStructure(apiKey, 'Stack/Queue');
+    } = useImageToDataStructure('Stack/Queue');
 
     useEffect(() => {
         if (importResult?.array) {

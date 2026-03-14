@@ -5,7 +5,7 @@ import { useLayout } from '../context/LayoutContext';
 import PageTour, { TourStep } from '../components/ui/PageTour';
 import { CanvasHint } from '../components/ui/CanvasHint';
 import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
-import { hasConfiguredAiCredentials, resolveAiCredentials, generateNarrationBatch } from '../services/aiService';
+import { hasConfiguredAiCredentials, generateNarrationBatch } from '../services/aiService';
 import { SORTING_CODE, Language } from '../data/SortingCode';
 import { SORTING_INFO } from '../data/SortingData';
 import { playSortingSound } from '../utils/soundUtils';
@@ -64,14 +64,13 @@ const Sorting = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
 
-  const { apiKey } = resolveAiCredentials();
   const {
       isProcessing: isImporting,
       error: importError,
       result: importResult,
       uploadImageFile,
       reset: resetImport,
-  } = useImageToDataStructure(apiKey, 'Array');
+  } = useImageToDataStructure('Sorting');
 
   // Initial Array
   useEffect(() => {

@@ -10,7 +10,6 @@ import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 import { CanvasHint } from '../components/ui/CanvasHint';
 import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
-import { resolveAiCredentials } from '../services/aiService';
 
 const Arrays = () => {
     // --- Hook State ---
@@ -69,14 +68,13 @@ const Arrays = () => {
         handleCanvasClear
     } = useArraysVisualizer();
 
-    const { apiKey } = resolveAiCredentials();
     const {
         isProcessing: isImporting,
         error: importError,
         result: importResult,
         uploadImageFile,
         reset: resetImport,
-    } = useImageToDataStructure(apiKey, 'Array');
+    } = useImageToDataStructure('Array');
 
     useEffect(() => {
         if (importResult?.array) {

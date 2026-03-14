@@ -136,6 +136,34 @@ export const sendChatMessage = async (
     }
 };
 
+export const extractDataFromImage = async (
+    prompt: string,
+    image: string,
+    mimeType: string,
+    provider?: AiProvider,
+    apiKey?: string
+): Promise<{ text: string }> => {
+    const credentials = getResolvedAiCredentials(provider, apiKey);
+    const response = await fetch(aiApiUrl('/api/extract'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            prompt,
+            image,
+            mimeType,
+            provider: credentials.provider,
+            apiKey: credentials.apiKey
+        })
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.details || errorData.error || `Server error (${response.status})`);
+    }
+
+    return await response.json();
+};
+
 export const parseNaturalLanguageIntent = async (
     command: string,
     provider?: AiProvider,

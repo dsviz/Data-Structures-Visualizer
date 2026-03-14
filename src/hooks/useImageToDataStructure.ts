@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { extractDataFromImage } from "../services/aiService";
 
 export type ImageToDSData = any;
 
@@ -10,12 +11,12 @@ type UseImageToDSReturn<T = any> = {
   uploadImageFile: (file: File | null) => Promise<void>;
 };
 
-export type DSType = 'Graph' | 'Array' | 'Tree' | 'LinkedList' | 'Stack/Queue';
+export type DSType = 'Graph' | 'Array' | 'Tree' | 'LinkedList' | 'Stack/Queue' | 'Sorting';
 
 /**
- * Hook that converts an uploaded image file into a data structure by calling Gemini.
+ * Hook that converts an uploaded image file into a data structure by calling our backend AI service.
  */
-export function useImageToDataStructure<T = ImageToDSData>(userApiKey: string | null | undefined, dsType: DSType): UseImageToDSReturn<T> {
+export function useImageToDataStructure<T = ImageToDSData>(dsType: DSType): UseImageToDSReturn<T> {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<T | null>(null);
@@ -31,11 +32,11 @@ export function useImageToDataStructure<T = ImageToDSData>(userApiKey: string | 
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        const commaIndex = dataUrl.indexOf(",");
-        if (commaIndex === -1) {
-          return reject(new Error("Invalid file data URL"));
+        const base64 = dataUrl.split(',')[1];
+        if (!base64) {
+          return reject(new Error("Invalid file content."));
         }
-        resolve(dataUrl.slice(commaIndex + 1));
+        resolve(base64);
       };
       reader.onerror = () => reject(reader.error);
       reader.readAsDataURL(file);
@@ -47,6 +48,7 @@ export function useImageToDataStructure<T = ImageToDSData>(userApiKey: string | 
       case 'Graph':
         return `You are an expert graph extraction tool. Analyze this image and extract all nodes and their approximate relative X and Y coordinates. Extract all edges connecting them, noting the source, target, and if it is directed. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "nodes": [ { "id": "A", "x": 100, "y": 100 } ], "edges": [ { "source": "A", "target": "B", "directed": true } ] }`;
       case 'Array':
+      case 'Sorting':
       case 'Stack/Queue':
         return `You are an expert array extraction tool. Analyze this image and extract the sequence of numbers shown. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
       case 'LinkedList':
@@ -58,76 +60,26 @@ export function useImageToDataStructure<T = ImageToDSData>(userApiKey: string | 
     }
   };
 
-  const callGeminiVision = useCallback(
-    async (base64Image: string) => {
-      if (!userApiKey) {
-        throw new Error("Missing Gemini API key from settings.");
-      }
-
-      const model = "gemini-2.5-flash";
-      const prompt = getPromptForDS(dsType);
-
-      const body = {
-        model,
-        input: {
-          text: prompt,
-          image: [
-            {
-              type: "image",
-              image: base64Image,
-            },
-          ],
-        },
-        temperature: 0.0,
-        maxOutputTokens: 2048,
-      } as const;
-
-      const response = await fetch(
-        `https://api.generative.ai/v1beta2/models/${encodeURIComponent(model)}:generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userApiKey}`,
-          },
-          body: JSON.stringify(body),
-        }
-      );
-
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(
-          `Gemini request failed (${response.status}): ${text || response.statusText}`
-        );
-      }
-
-      const json = (await response.json()) as any;
-      const candidateText =
-        json.output?.candidates?.[0]?.content?.[0]?.text ||
-        json.output?.candidates?.[0]?.text ||
-        json.output?.text ||
-        json.output?.results?.[0]?.output?.text ||
-        json.output?.results?.[0]?.content?.[0]?.text;
-
-      if (typeof candidateText !== "string") {
-        throw new Error("Could not find text output in Gemini response.");
-      }
-
-      return candidateText;
-    },
-    [userApiKey, dsType]
-  );
-
   const uploadImageFile = useCallback(
     async (file: File | null) => {
       reset();
       if (!file) return;
 
       setIsProcessing(true);
+      setError(null);
       try {
+        console.log("Starting image upload via backend...", { dsType, mimeType: file.type });
         const base64 = await readFileAsBase64(file);
-        const rawText = await callGeminiVision(base64);
+        
+        const prompt = getPromptForDS(dsType);
+        
+        const { text: rawText } = await extractDataFromImage(
+          prompt,
+          base64,
+          file.type
+        );
 
+        console.log("Response received from backend.");
         const trimmed = rawText.trim();
         const cleaned = trimmed
           .replace(/^```(?:json)?\s*/i, "")
@@ -136,14 +88,15 @@ export function useImageToDataStructure<T = ImageToDSData>(userApiKey: string | 
         const parsed = JSON.parse(cleaned) as T;
         setResult(parsed);
       } catch (err) {
+        console.error("Extraction Error:", err);
         const message = err instanceof Error ? err.message : String(err);
-        setError(message);
+        setError(`Extraction Error: ${message}`);
         setResult(null);
       } finally {
         setIsProcessing(false);
       }
     },
-    [callGeminiVision, readFileAsBase64, reset]
+    [dsType, readFileAsBase64, reset]
   );
 
   return { isProcessing, error, result, reset, uploadImageFile };

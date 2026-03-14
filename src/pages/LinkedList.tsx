@@ -11,7 +11,6 @@ import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 import { CanvasHint } from '../components/ui/CanvasHint';
 import { useImageToDataStructure } from '../hooks/useImageToDataStructure';
-import { resolveAiCredentials } from '../services/aiService';
 
 export default function LinkedList() {
     const {
@@ -51,14 +50,13 @@ export default function LinkedList() {
         handleCanvasClear
     } = useLinkedListVisualizer();
 
-    const { apiKey } = resolveAiCredentials();
     const {
         isProcessing: isImporting,
         error: importError,
         result: importResult,
         uploadImageFile,
         reset: resetImport,
-    } = useImageToDataStructure(apiKey, 'LinkedList');
+    } = useImageToDataStructure('LinkedList');
 
     useEffect(() => {
         if (importResult?.array) {

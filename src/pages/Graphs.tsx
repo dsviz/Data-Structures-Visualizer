@@ -9,7 +9,7 @@ import { GraphTabs } from '../components/graph/GraphTabs';
 import { GraphTools } from '../components/graph/GraphTools';
 import { Language } from '../data/GraphCode';
 import { useLayout } from '../context/LayoutContext';
-import { hasConfiguredAiCredentials, resolveAiCredentials } from '../services/aiService';
+import { hasConfiguredAiCredentials } from '../services/aiService';
 import PageTour, { DOCK_TOUR_STEPS } from '../components/ui/PageTour';
 
 const Graphs = () => {
@@ -77,14 +77,13 @@ const Graphs = () => {
 
   const currentFrame = getCurrentFrame();
 
-  const { apiKey } = resolveAiCredentials();
   const {
     isProcessing: isImporting,
     error: importError,
     result: importResult,
     uploadImageFile,
     reset: resetImport,
-  } = useImageToDataStructure(apiKey, 'Graph');
+  } = useImageToDataStructure('Graph');
 
   const [showCanvasHint, setShowCanvasHint] = useState(true);
 
