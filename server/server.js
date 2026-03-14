@@ -360,12 +360,25 @@ const cache = {
 
 const CATALOG_CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 const README_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const GITHUB_TIMEOUT_MS = 10000; // 10 seconds
+const MAX_README_CACHE_SIZE = 200; // Evict oldest entries beyond this limit
 const GITHUB_TREE_API = 'https://api.github.com/repos/shubhamkumarsharma03/leetcode/git/trees/master?recursive=1';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/shubhamkumarsharma03/leetcode/master';
 
 function isCacheValid(timestamp, ttl) {
     if (!timestamp) return false;
     return Date.now() - timestamp < ttl;
+}
+
+function evictOldestReadmes() {
+    const keys = Object.keys(cache.readmes);
+    if (keys.length <= MAX_README_CACHE_SIZE) return;
+    const toEvict = keys.length - MAX_README_CACHE_SIZE;
+    keys
+        .sort((a, b) => (cache.readmes[a].timestamp || 0) - (cache.readmes[b].timestamp || 0))
+        .slice(0, toEvict)
+        .forEach(k => delete cache.readmes[k]);
+    console.log(`[LeetCode Cache] Evicted ${toEvict} stale READMEs`);
 }
 
 async function fetchGitHubTree() {
@@ -377,9 +390,12 @@ async function fetchGitHubTree() {
 
     console.log('[LeetCode Cache] Fetching fresh tree from GitHub...');
     try {
-        const response = await fetch(GITHUB_TREE_API, {
-            headers: { 'Accept': 'application/vnd.github.v3+json' }
-        });
+        const response = await fetchWithTimeout(GITHUB_TREE_API, {
+            headers: {
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'data-structures-visualizer-proxy/1.0'
+            }
+        }, GITHUB_TIMEOUT_MS);
 
         if (!response.ok) {
             throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
@@ -425,7 +441,7 @@ async function fetchGitHubReadme(problemKey) {
         let lastError = null;
         for (const url of urlCandidates) {
             try {
-                const response = await fetch(url);
+                const response = await fetchWithTimeout(url, {}, GITHUB_TIMEOUT_MS);
                 if (response.ok) {
                     const content = await response.text();
                     
@@ -435,6 +451,7 @@ async function fetchGitHubReadme(problemKey) {
                     }
                     cache.readmes[problemKey].data = content;
                     cache.readmes[problemKey].timestamp = Date.now();
+                    evictOldestReadmes();
                     console.log('[LeetCode Cache] Cached README for ' + problemKey);
                     
                     return content;
@@ -510,7 +527,7 @@ app.get('/api/leetcode/catalog', async (req, res) => {
             success: true,
             count: problemsList.length,
             problems: problemsList,
-            cached: !isCacheValid(cache.catalogTimestamp, CATALOG_CACHE_TTL_MS), // true if using cache
+            cached: isCacheValid(cache.catalogTimestamp, CATALOG_CACHE_TTL_MS),
             cacheAge: cache.catalogTimestamp ? Date.now() - cache.catalogTimestamp : null
         });
     } catch (error) {
@@ -556,7 +573,7 @@ app.get('/api/leetcode/cache-status', (req, res) => {
         catalog: {
             cached: !!cache.catalog,
             age: cache.catalogTimestamp ? Date.now() - cache.catalogTimestamp : null,
-            items: cache.catalog ? cache.catalog.tree.length : 0
+            items: cache.catalog?.tree?.length ?? 0
         },
         readmes: {
             count: Object.keys(cache.readmes).length,

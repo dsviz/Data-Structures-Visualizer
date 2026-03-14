@@ -26,6 +26,7 @@ export const LeetcodeProblemsPanel: React.FC = () => {
   const [filterDifficulty, setFilterDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [allRepoProblems, setAllRepoProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const dataStructure = useAiContextStore(state => state.dataStructure);
   const topicKey = dataStructure ? DS_TO_TOPIC[dataStructure] : null;
@@ -35,10 +36,13 @@ export const LeetcodeProblemsPanel: React.FC = () => {
 
     const load = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const all = await fetchAllLeetcodeRepoProblems();
         if (!alive) return;
         setAllRepoProblems(all);
+      } catch (e) {
+        if (alive) setLoadError(e instanceof Error ? e.message : 'Failed to load problems.');
       } finally {
         if (alive) setIsLoading(false);
       }
@@ -124,16 +128,20 @@ export const LeetcodeProblemsPanel: React.FC = () => {
           <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5 custom-scrollbar">
             {isLoading ? (
               <p className="text-center text-xs text-gray-400 dark:text-[#9794c7] mt-8">Loading problems...</p>
+            ) : loadError ? (
+              <p className="text-center text-xs text-red-400 mt-8 px-2">{loadError}</p>
             ) : problems.length === 0 ? (
               <p className="text-center text-xs text-gray-400 dark:text-[#9794c7] mt-8">No problems found.</p>
             ) : (
               problems.map(problem => (
-                <Link
+                <div
                   key={problem.id}
-                  to={getProblemDetailPath(problem)}
                   className="group flex flex-col gap-1.5 p-3 rounded-xl bg-gray-50 dark:bg-[#131221]/60 border border-gray-200 dark:border-[#272546] hover:border-orange-400/50 dark:hover:border-orange-400/30 transition-colors"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <Link
+                    to={getProblemDetailPath(problem)}
+                    className="flex items-start justify-between gap-2"
+                  >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="text-[10px] font-mono text-gray-400">#{problem.id}</span>
@@ -145,7 +153,7 @@ export const LeetcodeProblemsPanel: React.FC = () => {
                         {problem.title}
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   {problem.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
@@ -159,10 +167,7 @@ export const LeetcodeProblemsPanel: React.FC = () => {
 
                   <div className="flex gap-1.5">
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setActiveProblem(problem);
-                      }}
+                      onClick={() => setActiveProblem(problem)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">code</span>
@@ -171,7 +176,6 @@ export const LeetcodeProblemsPanel: React.FC = () => {
                     {problem && (
                       <Link
                         to={getProblemVisualizationPath(problem)}
-                        onClick={(e) => e.stopPropagation()}
                         className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
                       >
                         <span className="material-symbols-outlined text-[14px]">visibility</span>
@@ -179,7 +183,7 @@ export const LeetcodeProblemsPanel: React.FC = () => {
                       </Link>
                     )}
                   </div>
-                </Link>
+                </div>
               ))
             )}
           </div>

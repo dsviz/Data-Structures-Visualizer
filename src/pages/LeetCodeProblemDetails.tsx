@@ -68,7 +68,8 @@ const LeetCodeProblemDetails: React.FC = () => {
   }, [problemKey]);
 
   const title = useMemo(() => details?.title || problem?.title || 'LeetCode Problem', [details, problem]);
-  const difficulty = details?.difficulty || problem?.difficulty || 'Medium';
+  const rawDifficulty = details?.difficulty || problem?.difficulty || 'Medium';
+  const difficulty: LeetcodeDifficulty = rawDifficulty in DIFFICULTY_STYLES ? rawDifficulty as LeetcodeDifficulty : 'Medium';
   const tags = details?.tags || problem?.tags || [];
 
   return (
@@ -169,6 +170,7 @@ const LeetCodeProblemDetails: React.FC = () => {
                 <div className="markdown-body text-gray-800 dark:text-gray-200 leading-7">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     rehypePlugins={[rehypeRaw as any, rehypeKatex]}
                     components={{
                       h1: ({ children }) => <h1 className="text-3xl font-black mt-2 mb-5 text-gray-900 dark:text-white">{children}</h1>,

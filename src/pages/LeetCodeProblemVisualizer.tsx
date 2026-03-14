@@ -314,12 +314,12 @@ const LeetCodeProblemVisualizer: React.FC = () => {
         }
         return prev + 1;
       });
-    }, speed * 1000);
+    }, Math.round(1000 / speed));
 
     return () => window.clearTimeout(timeout);
   }, [isPlaying, speed, currentStep, steps.length]);
 
-  const progressPercent = steps.length > 1 ? ((currentStep + 1) / steps.length) * 100 : 0;
+  const progressPercent = steps.length === 0 ? 0 : steps.length === 1 ? 100 : ((currentStep + 1) / steps.length) * 100;
   const topic = problem?.topics[0] || 'arrays';
   const familyLabel = activeStep ? FAMILY_LABELS[activeStep.family] : 'Execution';
   const executionSourceLabel = executionPlan.source === 'specific' ? 'Specific Executor' : 'Family Executor';

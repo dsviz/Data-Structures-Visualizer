@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LeetcodeProblem,
@@ -26,6 +26,7 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, onClose
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const fetchSolution = useCallback(async (lang: SolutionLanguage) => {
     setIsLoading(true);
@@ -74,11 +75,15 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, onClose
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       // clipboard not available
     }
   };
+
+  // Cleanup pending copy timer on unmount
+  useEffect(() => () => clearTimeout(copyTimeoutRef.current), []);
 
   return (
     <div
