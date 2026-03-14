@@ -1,8 +1,0 @@
-src/pages/Queue.tsx(196,13): error TS17014: JSX fragment has no corresponding closing tag.
-src/pages/Queue.tsx(202,14): error TS17008: JSX element 'VisualizationLayout' has no corresponding closing tag.
-src/pages/Queue.tsx(207,18): error TS17008: JSX element 'div' has no corresponding closing tag.
-src/pages/Queue.tsx(452,15): error TS17002: Expected corresponding JSX closing tag for 'div'.
-src/pages/Queue.tsx(454,11): error TS1003: Identifier expected.
-src/pages/Queue.tsx(456,1): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
-src/pages/Queue.tsx(459,1): error TS1005: '</' expected.
-src/pages/Stack.tsx(214,18): error TS17008: JSX element 'div' has no corresponding closing tag.
