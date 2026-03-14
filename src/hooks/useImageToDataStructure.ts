@@ -50,11 +50,22 @@ export function useImageToDataStructure<T = ImageToDSData>(dsType: DSType): UseI
       case 'Array':
       case 'Sorting':
       case 'Stack/Queue':
-        return `You are an expert array extraction tool. Analyze this image and extract the sequence of numbers shown. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
+        return `You are a computer vision expert analyzing hand-drawn data structure diagrams. Analyze this image and extract the sequence of numbers shown. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
       case 'LinkedList':
-        return `You are an expert linked list extraction tool. Analyze this image and strictly follow the connected arrows sequentially from the first node (head) to the last node (tail). Extract the sequence of numbers strictly in the order they are connected by arrows. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
+        return `You are a computer vision expert analyzing hand-drawn data structure diagrams. This is an image of a Linked List.
+Task:
+1. Identify the starting node (usually on the left or top).
+2. Follow the arrows sequentially from one node to the next.
+3. Extract the sequence of numbers strictly in the order they are connected by arrows.
+Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
       case 'Tree':
-        return `You are an expert tree extraction tool. Analyze this image of a Binary Tree. Extract all nodes with their IDs and numeric values. CRITICALLY, you must also determine and include the IDs of their left and right children based on the visual layout (if they exist). Also extract edges from parent to child. Return ONLY a valid JSON object matching exactly this schema, with no markdown: { "nodes": [ { "id": 0, "value": 50, "left": 1, "right": 2 }, { "id": 1, "value": 30 } ], "edges": [ { "from": 0, "to": 1 }, { "from": 0, "to": 2 } ] }`;
+        return `You are a computer vision expert analyzing hand-drawn data structure diagrams. This is an image of a Binary Tree.
+Task:
+1. Identify EVERY single circle/node in the image. Do not miss any. Assign each a unique ID (0, 1, 2...).
+2. Read the number inside each node (this is the 'value').
+3. Identify all lines (edges) connecting the nodes.
+4. For each node, figure out which node is its left child (connected below and to the left) and right child (connected below and to the right). Include their IDs in the 'left' and 'right' properties if they exist.
+Return ONLY a valid JSON object matching exactly this schema, with no markdown formatting: { "nodes": [ { "id": 0, "value": 50, "left": 1, "right": 2 }, { "id": 1, "value": 30 } ], "edges": [ { "from": 0, "to": 1 }, { "from": 0, "to": 2 } ] }`;
       default:
         return "You are a data extraction tool. Extract the numeric values shown in the image as a JSON array.";
     }

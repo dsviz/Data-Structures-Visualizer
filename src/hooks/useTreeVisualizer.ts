@@ -2648,21 +2648,40 @@ export const useTreeVisualizer = () => {
         const newNodes = importedTree.nodes;
         const newEdges = importedTree.edges || [];
         
-        // Let's assume the first node is root if not explicitly set
-        const root = newNodes[0].id;
-        if (root !== null) {
-            // Recalculate layout
-            const layoutNodes = calculateLayout(newNodes, root);
-            setNodes(layoutNodes);
-            setEdges(newEdges);
-            
-            // Generate single frame indicating imported tree
-            setFrames([{
-                nodes: layoutNodes, edges: newEdges, highlights: [],
-                codeLine: 0, pseudoLines: [], description: "Imported tree structure from image."
-            }]);
-            setCurrentStep(0);
-        }
+        // Determine the root: a node that is not a child (no incoming edges, not a left/right child)
+        const childIds = new Set<number>();
+        newEdges.forEach(e => childIds.add(e.to));
+        newNodes.forEach(n => {
+            if (n.left !== undefined) childIds.add(n.left);
+            if (n.right !== undefined) childIds.add(n.right);
+        });
+
+        let root = newNodes.find(n => !childIds.has(n.id))?.id;
+        if (root === undefined) root = newNodes[0].id; // Fallback
+
+        // Reconstruct parentIds for completeness
+        newNodes.forEach(node => {
+            const parentEdge = newEdges.find(e => e.to === node.id);
+            if (parentEdge) {
+                 node.parentId = parentEdge.from;
+            } else {
+                 const parentNode = newNodes.find(n => n.left === node.id || n.right === node.id);
+                 if (parentNode) node.parentId = parentNode.id;
+            }
+        });
+
+        // Recalculate layout
+        const layoutNodes = calculateLayout(newNodes, root);
+        setNodes(layoutNodes);
+        setEdges(newEdges);
+        setRootId(root);
+        
+        // Generate single frame indicating imported tree
+        setFrames([{
+            nodes: layoutNodes, edges: newEdges, highlights: [],
+            codeLine: 0, pseudoLines: [], description: "Imported tree structure from image."
+        }]);
+        setCurrentStep(0);
     };
 
     return {
