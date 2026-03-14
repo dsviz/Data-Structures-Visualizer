@@ -52,9 +52,9 @@ export function useImageToDataStructure<T = ImageToDSData>(dsType: DSType): UseI
       case 'Stack/Queue':
         return `You are an expert array extraction tool. Analyze this image and extract the sequence of numbers shown. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
       case 'LinkedList':
-        return `You are an expert linked list extraction tool. Analyze this image and extract the nodes sequentially. Return ONLY a valid JSON object matching this schema, with no markdown: { "nodes": [ { "id": 1, "value": 10 }, { "id": 2, "value": 20 } ] }`;
+        return `You are an expert linked list extraction tool. Analyze this image and strictly follow the connected arrows sequentially from the first node (head) to the last node (tail). Extract the sequence of numbers strictly in the order they are connected by arrows. Return ONLY a valid JSON object matching this exact schema, with no markdown formatting: { "array": [10, 20, 30, 40] }`;
       case 'Tree':
-        return `You are an expert tree extraction tool. Analyze this image of a tree. Extract nodes (with their IDs and numeric values) and edges (from parent to child). Return ONLY a valid JSON object matching this schema, with no markdown: { "nodes": [ { "id": 0, "value": 50 }, { "id": 1, "value": 30 } ], "edges": [ { "from": 0, "to": 1 } ] }`;
+        return `You are an expert tree extraction tool. Analyze this image of a Binary Tree. Extract all nodes with their IDs and numeric values. CRITICALLY, you must also determine and include the IDs of their left and right children based on the visual layout (if they exist). Also extract edges from parent to child. Return ONLY a valid JSON object matching exactly this schema, with no markdown: { "nodes": [ { "id": 0, "value": 50, "left": 1, "right": 2 }, { "id": 1, "value": 30 } ], "edges": [ { "from": 0, "to": 1 }, { "from": 0, "to": 2 } ] }`;
       default:
         return "You are a data extraction tool. Extract the numeric values shown in the image as a JSON array.";
     }
