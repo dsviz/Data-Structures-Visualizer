@@ -1,9 +1,6 @@
 import {
-  LEETCODE_PROBLEMS,
   LeetcodeDifficulty,
   LeetcodeProblem,
-  LeetcodeTopic,
-  TOPIC_LABELS,
 } from '../data/LeetcodeProblems';
 
 const OWNER = 'shubhamkumarsharma03';
@@ -35,54 +32,8 @@ export interface RepoReadmeDetails {
 let inMemoryProblems: RepoLeetcodeProblem[] | null = null;
 let inFlightProblems: Promise<RepoLeetcodeProblem[]> | null = null;
 
-const KEYWORD_TOPIC_RULES: Array<{ topic: LeetcodeTopic; keywords: string[] }> = [
-  { topic: 'linked-list', keywords: ['linked-list', 'list-node', 'listnode', 'linked'] },
-  { topic: 'trees', keywords: ['tree', 'bst', 'binary-tree', 'trie'] },
-  { topic: 'graphs', keywords: ['graph', 'topological', 'union-find', 'bfs', 'dfs', 'island'] },
-  { topic: 'stack', keywords: ['stack', 'parentheses', 'monotonic'] },
-  { topic: 'queue', keywords: ['queue', 'deque', 'sliding-window-maximum'] },
-  { topic: 'sorting', keywords: ['sort', 'merge-interval', 'interval', 'quickselect'] },
-  { topic: 'recursion', keywords: ['recursion', 'backtracking', 'subsets', 'permutation'] },
-  { topic: 'arrays', keywords: ['array', 'matrix', 'sum', 'subarray', 'prefix'] },
-];
-
-function normalizeText(input: string): string {
-  return input.trim().toLowerCase().replace(/\s+/g, '-');
-}
-
-function parseTopicFromText(values: string[]): LeetcodeTopic[] {
-  const haystack = normalizeText(values.join(' '));
-  const topics = new Set<LeetcodeTopic>();
-
-  for (const rule of KEYWORD_TOPIC_RULES) {
-    if (rule.keywords.some(keyword => haystack.includes(keyword))) {
-      topics.add(rule.topic);
-    }
-  }
-
-  if (topics.size === 0) topics.add('arrays');
-  return Array.from(topics);
-}
-
-function inferVisualizerPath(topics: LeetcodeTopic[]): string | undefined {
-  const priority: Array<{ topic: LeetcodeTopic; path: string }> = [
-    { topic: 'arrays', path: '/arrays' },
-    { topic: 'linked-list', path: '/linked-list' },
-    { topic: 'stack', path: '/stack' },
-    { topic: 'queue', path: '/queue' },
-    { topic: 'trees', path: '/trees' },
-    { topic: 'graphs', path: '/graphs' },
-    { topic: 'sorting', path: '/sorting' },
-    { topic: 'recursion', path: '/recursion' },
-  ];
-
-  for (const item of priority) {
-    if (topics.includes(item.topic)) return item.path;
-  }
-
-  return '/arrays';
-}
-
+// The topic rules and path inference logic have been moved completely to the Node.js build script `scripts/generate-leetcode-data.ts`.
+// The React client now just consumes the precalculated values without blocking the main thread.
 
 
 function getDetailPath(id: number, slug: string): string {
@@ -171,30 +122,22 @@ export async function fetchAllLeetcodeRepoProblems(forceRefresh = false): Promis
   }
 }
 
-function enrichProblemsWithMetadata(serverProblems: Array<{ id: number; slug: string; difficulty?: string; tags?: string[] }>): RepoLeetcodeProblem[] {
-  const staticById = new Map<number, LeetcodeProblem>(LEETCODE_PROBLEMS.map(p => [p.id, p]));
-  
+function enrichProblemsWithMetadata(serverProblems: any[]): RepoLeetcodeProblem[] {
   return serverProblems.map(sp => {
-    const baseMeta = staticById.get(sp.id);
-    const fallbackTitle = sp.slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    const topicSource = [sp.slug, ...(baseMeta?.tags ?? []), ...(baseMeta?.topics ?? []).map(t => TOPIC_LABELS[t])];
-    const topics = baseMeta?.topics?.length ? baseMeta.topics : parseTopicFromText(topicSource);
-    
-    const range = `${String(Math.floor(sp.id / 100) * 100).padStart(4, '0')}-${String(Math.floor(sp.id / 100) * 100 + 99).padStart(4, '0')}`;
+    // Rely solely on the metrics pre-calculated via scripts/generate-leetcode-data.ts
     const idStr = String(sp.id).padStart(4, '0');
-
     return {
       id: sp.id,
       slug: sp.slug,
-      title: baseMeta?.title || fallbackTitle,
-      difficulty: (sp.difficulty as LeetcodeDifficulty) || baseMeta?.difficulty || 'Medium',
-      tags: sp.tags && sp.tags.length > 0 ? sp.tags : baseMeta?.tags || [],
-      topics,
-      visualizerPath: baseMeta?.visualizerPath || inferVisualizerPath(topics),
-      range,
-      folderName: `${idStr}.${sp.slug}`,
-      readmeUrl: `${RAW_BASE}/${idStr}.${sp.slug}`,
-      githubFolderUrl: `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}/solutions/${range}/${idStr}.${sp.slug}`,
+      title: sp.title || sp.slug,
+      difficulty: sp.difficulty || 'Medium',
+      tags: sp.tags || [],
+      topics: sp.topics || ['arrays'],
+      visualizerPath: sp.visualizerPath || '/arrays',
+      range: sp.range,
+      folderName: sp.folderName || `${idStr}.${sp.slug}`,
+      readmeUrl: `${RAW_BASE}/${sp.folderName || `${idStr}.${sp.slug}`}`,
+      githubFolderUrl: `https://github.com/${OWNER}/${REPO}/tree/${BRANCH}/solutions/${sp.range}/${sp.folderName || `${idStr}.${sp.slug}`}`,
       detailPath: getDetailPath(sp.id, sp.slug),
     };
   }).sort((a, b) => a.id - b.id);
