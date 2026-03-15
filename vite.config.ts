@@ -64,7 +64,16 @@ export default defineConfig(({ mode }) => {
     base: "/",
     build: {
       outDir: 'dist',
-      sourcemap: true
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'state-vendor': ['zustand'],
+            'markdown-vendor': ['react-markdown', 'remark-gfm', 'remark-math', 'rehype-katex', 'rehype-raw']
+          }
+        }
+      }
     }
   }
 })
