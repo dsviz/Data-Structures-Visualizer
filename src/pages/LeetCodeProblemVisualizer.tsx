@@ -6,7 +6,6 @@ import {
   ALL_LANGUAGES,
   LANGUAGE_LABELS,
   SolutionLanguage,
-  getSolutionUrlCandidates,
   LeetcodeTopic,
 } from '../data/LeetcodeProblems';
 import {
@@ -256,34 +255,60 @@ const LeetCodeProblemVisualizer: React.FC = () => {
   }, [problemKey]);
 
   useEffect(() => {
-    if (!problem) return;
-    let alive = true;
+    if (!problem || !details?.markdown) {
+      if (!problem) {
+        setCode('');
+      }
+      return;
+    }
 
-    const loadCode = async () => {
-      setCode('');
+    const loadCodeFromMarkdown = () => {
       setCodeError(null);
-      try {
-        for (const url of getSolutionUrlCandidates(problem, language)) {
-          const response = await fetch(url);
-          if (!response.ok) continue;
-          const text = await response.text();
-          if (text.trim()) {
-            if (!alive) return;
-            setCode(text);
-            return;
+      setCode('');
+
+      const langMarkdownMap: Record<SolutionLanguage, string[]> = {
+        py: ['Python3', 'Python'],
+        js: ['JavaScript'],
+        ts: ['TypeScript'],
+        java: ['Java'],
+        cpp: ['C++'],
+        go: ['Go'],
+        rs: ['Rust'],
+        cs: ['C#'],
+        kt: ['Kotlin'],
+        swift: ['Swift'],
+        rb: ['Ruby'],
+      };
+
+      const targetLabels = langMarkdownMap[language] || [];
+      let foundCode = '';
+
+      for (const label of targetLabels) {
+        const headerIndex = details.markdown.toLowerCase().indexOf(`#### ${label.toLowerCase()}`);
+        if (headerIndex !== -1) {
+          const codeBlockStart = details.markdown.indexOf('```', headerIndex);
+          if (codeBlockStart !== -1) {
+            const codeContentStart = details.markdown.indexOf('\n', codeBlockStart);
+            if (codeContentStart !== -1) {
+              const codeBlockEnd = details.markdown.indexOf('```', codeContentStart + 1);
+              if (codeBlockEnd !== -1) {
+                foundCode = details.markdown.substring(codeContentStart + 1, codeBlockEnd).trim();
+                break;
+              }
+            }
           }
         }
-        if (alive) setCodeError(`No ${LANGUAGE_LABELS[language]} solution found for this problem.`);
-      } catch {
-        if (alive) setCodeError('Unable to fetch solution code for execution view.');
+      }
+
+      if (!foundCode) {
+        setCodeError(`No ${LANGUAGE_LABELS[language]} solution found in problem description.`);
+      } else {
+        setCode(foundCode);
       }
     };
 
-    loadCode();
-    return () => {
-      alive = false;
-    };
-  }, [problem, language]);
+    loadCodeFromMarkdown();
+  }, [problem, details?.markdown, language]);
 
   const examples = useMemo(() => parseExamples(details?.markdown || ''), [details?.markdown]);
   const constraints = useMemo(() => parseConstraints(details?.markdown || ''), [details?.markdown]);

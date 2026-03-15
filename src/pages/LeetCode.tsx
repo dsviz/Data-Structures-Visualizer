@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useDeferredValue, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -10,7 +10,9 @@ import { SolutionViewer } from '../components/ui/SolutionViewer';
 import AuthBackground from '../components/auth/AuthBackground';
 import {
   RepoLeetcodeProblem,
+  RepoReadmeDetails,
   fetchAllLeetcodeRepoProblems,
+  fetchLeetcodeReadmeDetails,
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../services/leetcodeRepoService';
@@ -50,9 +52,16 @@ const LeetCode: React.FC = () => {
   const [activeDifficulty, setActiveDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
+  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [problems, setProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination State
+  const [displayCount, setDisplayCount] = useState(60);
+
+  // Debounced search to prevent UI freezing on typing over 3700 items
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     let alive = true;
@@ -86,7 +95,7 @@ const LeetCode: React.FC = () => {
     return problems.filter(p => {
       const matchTopic = activeTopic === 'all' || p.topics.includes(activeTopic as LeetcodeTopic);
       const matchDiff = activeDifficulty === 'All' || p.difficulty === activeDifficulty;
-      const q = searchQuery.trim().toLowerCase();
+      const q = deferredSearchQuery.trim().toLowerCase();
       const matchSearch = !q
         || p.title.toLowerCase().includes(q)
         || String(p.id).includes(q)
@@ -95,7 +104,12 @@ const LeetCode: React.FC = () => {
 
       return matchTopic && matchDiff && matchSearch;
     });
-  }, [problems, activeTopic, activeDifficulty, searchQuery]);
+  }, [problems, activeTopic, activeDifficulty, deferredSearchQuery]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayCount(60);
+  }, [activeTopic, activeDifficulty, deferredSearchQuery]);
 
   return (
     <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
@@ -260,23 +274,53 @@ const LeetCode: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map(problem => (
-                <ProblemCard
-                  key={problem.id}
-                  problem={problem}
-                  onViewSolution={() => setActiveProblem(problem)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filtered.slice(0, displayCount).map(problem => (
+                  <ProblemCard
+                    key={problem.id}
+                    problem={problem}
+                    onViewSolution={async () => {
+                      try {
+                        const details = await fetchLeetcodeReadmeDetails(problem);
+                        setActiveProblem(problem);
+                        setActiveProblemDetails(details);
+                      } catch (e) {
+                        console.error('Error fetching details for solution', e);
+                        alert('Could not load solution data.');
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+              
+              {displayCount < filtered.length && (
+                <div className="mt-12 flex justify-center">
+                  <button
+                    onClick={() => setDisplayCount(prev => prev + 60)}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] text-sm font-bold text-gray-900 dark:text-white hover:border-primary/50 hover:text-primary transition-all shadow-sm group"
+                  >
+                    <span className="material-symbols-outlined text-[20px] group-hover:animate-bounce">expand_more</span>
+                    Load More Exercises
+                    <span className="text-xs text-gray-500 dark:text-[#9794c7] font-mono ml-1">
+                      ({filtered.length - displayCount} remaining)
+                    </span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
 
-      {activeProblem && (
+      {activeProblem && activeProblemDetails && (
         <SolutionViewer
           problem={activeProblem}
-          onClose={() => setActiveProblem(null)}
+          details={activeProblemDetails}
+          onClose={() => {
+            setActiveProblem(null);
+            setActiveProblemDetails(null);
+          }}
         />
       )}
     </div>
@@ -285,10 +329,11 @@ const LeetCode: React.FC = () => {
 
 const ProblemCard: React.FC<{
   problem: RepoLeetcodeProblem;
-  onViewSolution: () => void;
-}> = ({ problem, onViewSolution }) => {
+  onViewSolution: () => Promise<void>;
+}> = memo(({ problem, onViewSolution }) => {
   const navigate = useNavigate();
   const primaryTopic = problem.topics[0] || 'arrays';
+  const [isOpeningSolution, setIsOpeningSolution] = useState(false);
 
   return (
     <div
@@ -336,14 +381,21 @@ const ProblemCard: React.FC<{
 
         <div className="mt-auto flex gap-2">
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              onViewSolution();
+              setIsOpeningSolution(true);
+              await onViewSolution();
+              setIsOpeningSolution(false);
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
+            disabled={isOpeningSolution}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-[14px]">code</span>
-            Solution
+            {isOpeningSolution ? (
+              <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-[14px]">code</span>
+            )}
+            {isOpeningSolution ? 'Loading...' : 'Solution'}
           </button>
 
           {problem && (
@@ -362,6 +414,6 @@ const ProblemCard: React.FC<{
       </div>
     </div>
   );
-};
+});
 
 export default LeetCode;

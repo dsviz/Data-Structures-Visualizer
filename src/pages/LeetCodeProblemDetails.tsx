@@ -227,9 +227,10 @@ const LeetCodeProblemDetails: React.FC = () => {
         )}
       </section>
 
-      {activeProblem && (
+      {activeProblem && details && (
         <SolutionViewer
           problem={activeProblem}
+          details={details}
           onClose={() => setActiveProblem(null)}
         />
       )}

@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, memo } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
 import AuthBackground from '../components/auth/AuthBackground'
 import { LEETCODE_PROBLEMS, LeetcodeProblem, LeetcodeTopic, LeetcodeDifficulty, TOPIC_LABELS } from '../data/LeetcodeProblems'
 import { SolutionViewer } from '../components/ui/SolutionViewer'
-import { getProblemVisualizationPath } from '../services/leetcodeRepoService'
+import { RepoReadmeDetails, fetchLeetcodeReadmeDetails, getProblemVisualizationPath } from '../services/leetcodeRepoService'
 
 type DashboardCardView = {
   title: string
@@ -35,6 +35,7 @@ const Home = () => {
   const [mode, setMode] = useState<'training' | 'visualizer'>('visualizer');
   const contentSectionRef = useRef<HTMLElement>(null);
   const [activeProblem, setActiveProblem] = useState<LeetcodeProblem | null>(null);
+  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [trainingDifficulty, setTrainingDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
 
   const dashboardCards: DashboardCardView[] = useMemo(() => {
@@ -331,55 +332,19 @@ const Home = () => {
                   const diffMatch = trainingDifficulty === 'All' || p.difficulty === trainingDifficulty;
                   return topicMatch && diffMatch;
                 }).map(problem => (
-                  <div
+                  <MemoizedHomeProblemCard
                     key={problem.id}
-                    className="group flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-orange-400/50 hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] transition-all duration-300 hover:-translate-y-0.5"
-                  >
-                    <div className="flex-1 p-4 flex flex-col gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="text-[11px] font-mono text-gray-400 dark:text-[#9794c7]">#{problem.id}</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                              problem.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              : problem.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                              : 'bg-red-500/10 text-red-400 border-red-500/20'
-                            }`}>
-                              {problem.difficulty}
-                            </span>
-                          </div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight line-clamp-2 group-hover:text-orange-500 transition-colors">
-                            {problem.title}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {problem.topics.map(t => (
-                          <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                            {TOPIC_LABELS[t]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 px-4 pb-4">
-                      <button
-                        onClick={() => setActiveProblem(problem)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">code</span>
-                        Solution
-                      </button>
-                      {problem && (
-                        <Link
-                          to={getProblemVisualizationPath(problem)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">visibility</span>
-                          Visualize
-                        </Link>
-                      )}
-                    </div>
-                  </div>
+                    problem={problem}
+                    onViewSolution={async () => {
+                      try {
+                        const details = await fetchLeetcodeReadmeDetails(problem as any);
+                        setActiveProblem(problem);
+                        setActiveProblemDetails(details);
+                      } catch (e) {
+                        console.error('Failed to load problem details', e);
+                      }
+                    }}
+                  />
                 ))}
               </div>
 
@@ -478,11 +443,75 @@ const Home = () => {
         <p>© 2026 Data Structure Visualizer. Made for students, by students.</p>
       </footer>
 
-      {activeProblem && (
-        <SolutionViewer problem={activeProblem} onClose={() => setActiveProblem(null)} />
+      {activeProblem && activeProblemDetails && (
+        <SolutionViewer 
+          problem={activeProblem as any} 
+          details={activeProblemDetails}
+          onClose={() => {
+            setActiveProblem(null);
+            setActiveProblemDetails(null);
+          }} 
+        />
       )}
     </div>
   )
 }
 
 export default Home
+
+const MemoizedHomeProblemCard = memo(({ 
+  problem, 
+  onViewSolution 
+}: { 
+  problem: LeetcodeProblem; 
+  onViewSolution: () => void; 
+}) => {
+  return (
+    <div className="group flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-orange-400/50 hover:shadow-lg dark:hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] transition-all duration-300 hover:-translate-y-0.5">
+      <div className="flex-1 p-4 flex flex-col gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[11px] font-mono text-gray-400 dark:text-[#9794c7]">#{problem.id}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                problem.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : problem.difficulty === 'Medium' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                : 'bg-red-500/10 text-red-400 border-red-500/20'
+              }`}>
+                {problem.difficulty}
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white leading-tight line-clamp-2 group-hover:text-orange-500 transition-colors">
+              {problem.title}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {problem.topics.map(t => (
+            <span key={t} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {TOPIC_LABELS[t]}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-2 px-4 pb-4">
+        <button
+          onClick={onViewSolution}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
+        >
+          <span className="material-symbols-outlined text-[14px]">code</span>
+          Solution
+        </button>
+        {problem && (
+          <Link
+            to={getProblemVisualizationPath(problem as any)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px]">visibility</span>
+            Visualize
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+});
