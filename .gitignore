@@ -38,3 +38,4 @@ server/.env*
 .git_status.txt
 *.lint_output.txt
 *.git_status.txt
+.leetcode-repo
