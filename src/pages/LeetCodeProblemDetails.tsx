@@ -7,7 +7,7 @@ import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import { LeetcodeDifficulty } from '../data/LeetcodeProblems';
-import { SolutionViewer } from '../components/ui/SolutionViewer';
+import { InlineSolutionCards } from '../components/ui/InlineSolutionCards';
 import {
   RepoLeetcodeProblem,
   RepoReadmeDetails,
@@ -29,7 +29,6 @@ const LeetCodeProblemDetails: React.FC = () => {
   const [details, setDetails] = useState<RepoReadmeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -72,8 +71,20 @@ const LeetCodeProblemDetails: React.FC = () => {
   const difficulty: LeetcodeDifficulty = rawDifficulty in DIFFICULTY_STYLES ? rawDifficulty as LeetcodeDifficulty : 'Medium';
   const tags = details?.tags || problem?.tags || [];
 
+  const { descriptionMarkdown, solutionsMarkdown } = useMemo(() => {
+    if (!details?.markdown) return { descriptionMarkdown: '', solutionsMarkdown: '' };
+    const match = details.markdown.match(/##\s+Solutions?/i);
+    if (!match) return { descriptionMarkdown: details.markdown, solutionsMarkdown: '' };
+    
+    const matchIndex = match.index !== undefined ? match.index : 0;
+    return {
+      descriptionMarkdown: details.markdown.substring(0, matchIndex),
+      solutionsMarkdown: details.markdown.substring(matchIndex)
+    };
+  }, [details?.markdown]);
+
   return (
-    <div className="flex-grow bg-background-light dark:bg-background-dark min-h-screen">
+    <div className="bg-background-light dark:bg-background-dark">
       <Helmet>
         <title>{title} | LeetCode Problem Details</title>
       </Helmet>
@@ -123,13 +134,6 @@ const LeetCodeProblemDetails: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => setActiveProblem(problem)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">code</span>
-                    View Solution
-                  </button>
                   <a
                     href={`https://leetcode.com/problems/${problem.slug}/`}
                     target="_blank"
@@ -165,8 +169,8 @@ const LeetCodeProblemDetails: React.FC = () => {
               )}
             </div>
 
-            <article className="rounded-2xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] p-6 md:p-8 overflow-hidden">
-              {details?.markdown ? (
+            <article className="rounded-2xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] p-6 md:p-8 overflow-visible">
+              {descriptionMarkdown ? (
                 <div className="markdown-body text-gray-800 dark:text-gray-200 leading-7">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
@@ -176,22 +180,22 @@ const LeetCodeProblemDetails: React.FC = () => {
                       h1: ({ children }: any) => <h1 className="text-3xl font-black mt-2 mb-5 text-gray-900 dark:text-white">{children}</h1>,
                       h2: ({ children }: any) => <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">{children}</h2>,
                       h3: ({ children }: any) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-900 dark:text-white">{children}</h3>,
-                      p: ({ children }: any) => <p className="mb-4 text-gray-700 dark:text-gray-300 whitespace-normal">{children}</p>,
+                      p: ({ children }: any) => <p className="mb-4 text-gray-700 dark:text-gray-300 break-words">{children}</p>,
                       li: ({ children }: any) => <li className="mb-1 ml-6">{children}</li>,
                       ul: ({ children }: any) => <ul className="list-disc mb-4 text-gray-700 dark:text-gray-300">{children}</ul>,
                       ol: ({ children }: any) => <ol className="list-decimal mb-4 ml-6 text-gray-700 dark:text-gray-300">{children}</ol>,
                       code: ({ className, children }: any) => {
-                        const isBlock = className?.includes('language-') || className?.includes('math-display');
-                        if (isBlock) {
-                          return (
-                            <code className="block whitespace-pre overflow-x-auto rounded-xl bg-[#0d0c1a] text-gray-200 p-4 text-xs leading-6">
-                              {children}
-                            </code>
-                          );
+                        const isInline = !className;
+                        if (isInline) {
+                          return <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-pink-500 text-sm font-mono">{children}</code>;
                         }
-                        return <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-pink-500 text-sm font-mono">{children}</code>;
+                        return <code className="text-gray-200 font-mono">{children}</code>;
                       },
-                      pre: ({ children }: any) => <pre className="mb-4">{children}</pre>,
+                      pre: ({ children }: any) => (
+                        <pre className="mb-4 overflow-x-auto rounded-xl bg-[#0d0c1a] text-gray-200 p-4 text-xs leading-6 scrollbar-hide">
+                          {children}
+                        </pre>
+                      ),
                       a: ({ href, children }: any) => (
                         <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                           {children}
@@ -216,8 +220,12 @@ const LeetCodeProblemDetails: React.FC = () => {
                       },
                     }}
                   >
-                    {details.markdown}
+                    {descriptionMarkdown}
                   </ReactMarkdown>
+                  
+                  {solutionsMarkdown && (
+                    <InlineSolutionCards solutionsMarkdown={solutionsMarkdown} />
+                  )}
                 </div>
               ) : (
                 <p className="text-gray-500 dark:text-[#9794c7]">README content not available.</p>
@@ -226,14 +234,6 @@ const LeetCodeProblemDetails: React.FC = () => {
           </>
         )}
       </section>
-
-      {activeProblem && details && (
-        <SolutionViewer
-          problem={activeProblem}
-          details={details}
-          onClose={() => setActiveProblem(null)}
-        />
-      )}
     </div>
   );
 };

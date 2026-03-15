@@ -27,7 +27,7 @@ const TOPIC_ICONS: Record<LeetcodeTopic, string> = {
   'arrays': 'data_array',
   'linked-list': 'link',
   'stack': 'layers',
-  'queue': 'queue_segment',
+  'queue': 'linear_scale',
   'trees': 'account_tree',
   'graphs': 'hub',
   'sorting': 'bar_chart',
@@ -112,29 +112,27 @@ const LeetCode: React.FC = () => {
   }, [activeTopic, activeDifficulty, deferredSearchQuery]);
 
   return (
-    <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
+    <div className="flex flex-col bg-background-light dark:bg-background-dark">
       <Helmet>
         <title>LeetCode Practice Hub | Data Structures Visualizer</title>
         <meta name="description" content="Browse all available LeetCode problems from repository, open README details, view multi-language solutions, and visualize concepts." />
       </Helmet>
 
-      <section className="relative py-14 px-6 overflow-hidden">
+      <section className="relative py-16 px-6 overflow-hidden">
         <AuthBackground isFixed={false} />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 blur-[100px] rounded-full pointer-events-none" />
-        <div className="relative max-w-4xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-bold">
-            <span className="material-symbols-outlined text-[18px]">local_library</span>
-            LeetCode Practice Hub
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="relative max-w-4xl mx-auto text-center space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-900/70 dark:from-white dark:to-white/70">
+              Solve, Read, and{' '}
+              <span className="text-slate-900 dark:text-white">
+                Visualize
+              </span>
+            </h1>
+            <p className="text-lg md:text-xl text-gray-500 dark:text-[#9794c7] max-w-2xl mx-auto font-light">
+              Live catalog from GitHub repository. Every card opens a problem detail page with README description, examples, constraints, and solutions.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
-            Solve, Read, and{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">
-              Visualize
-            </span>
-          </h1>
-          <p className="text-lg text-gray-500 dark:text-[#9794c7] max-w-2xl mx-auto">
-            Live catalog from GitHub repository. Every card opens a problem detail page with README description, examples, constraints, and solutions.
-          </p>
 
           <div className="flex flex-wrap justify-center gap-4 pt-2">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] shadow-sm">
@@ -346,71 +344,53 @@ const ProblemCard: React.FC<{
           navigate(getProblemDetailPath(problem));
         }
       }}
-      className="group flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
+      className="group flex flex-col bg-[#1e1d32] border border-[#272546] rounded-2xl p-4 gap-4 hover:border-primary/40 hover:shadow-xl hover:shadow-[0_0_30px_rgba(66,54,231,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer relative overflow-hidden"
       title="Open problem details"
     >
-      <div className={`h-1 w-full bg-gradient-to-r ${TOPIC_GRADIENT[primaryTopic]}`} />
-
-      <div className="flex flex-col flex-1 p-4 gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[11px] font-mono text-gray-400">#{problem.id}</span>
-              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFFICULTY_STYLES[problem.difficulty]}`}>
-                {problem.difficulty}
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-              {problem.title}
-            </h3>
+      <div className="flex items-start justify-between">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-400">#{problem.id}</span>
+            <span className={`text-xs font-bold px-2 py-0.5 rounded border bg-transparent ${DIFFICULTY_STYLES[problem.difficulty].split(' ')[1]} ${DIFFICULTY_STYLES[problem.difficulty].split(' ')[2]}`}>
+              {problem.difficulty}
+            </span>
           </div>
-          <div className={`shrink-0 size-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${TOPIC_GRADIENT[primaryTopic]}`}>
-            <span className="material-symbols-outlined text-white text-[16px]">{TOPIC_ICONS[primaryTopic]}</span>
-          </div>
+          <h3 className="text-[15px] font-bold text-[#807fe2] leading-snug pr-8 mt-1 group-hover:text-[#908ff2] transition-colors">
+            {problem.title}
+          </h3>
         </div>
+        <div className={`absolute top-4 right-4 shrink-0 size-9 rounded-[10px] flex items-center justify-center bg-gradient-to-br ${TOPIC_GRADIENT[primaryTopic]} shadow-lg`}>
+          <span className="material-symbols-outlined text-white text-[20px]">{TOPIC_ICONS[primaryTopic]}</span>
+        </div>
+      </div>
 
-        {problem.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {problem.tags.slice(0, 3).map(tag => (
-              <span key={tag} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] border border-gray-200 dark:border-[#323055]">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-auto flex gap-2">
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              setIsOpeningSolution(true);
-              await onViewSolution();
-              setIsOpeningSolution(false);
-            }}
-            disabled={isOpeningSolution}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-50"
-          >
-            {isOpeningSolution ? (
-              <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-            ) : (
-              <span className="material-symbols-outlined text-[14px]">code</span>
-            )}
-            {isOpeningSolution ? 'Loading...' : 'Solution'}
-          </button>
-
-          {problem && (
-            <Link
-              to={getProblemVisualizationPath(problem)}
-              onClick={(e) => e.stopPropagation()}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">visibility</span>
-              Visualize
-            </Link>
+      <div className="mt-2 flex gap-3">
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            setIsOpeningSolution(true);
+            await onViewSolution();
+            setIsOpeningSolution(false);
+          }}
+          disabled={isOpeningSolution}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl bg-[#362f3a] text-orange-500 hover:bg-[#463a43] hover:text-orange-400 transition-colors disabled:opacity-50"
+        >
+          {isOpeningSolution ? (
+            <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          ) : (
+            <span className="material-symbols-outlined text-[16px] font-bold">code</span>
           )}
-        </div>
+          Solution
+        </button>
 
-        <p className="text-[10px] text-gray-400 dark:text-[#9794c7] mt-1">Click card to open full README details</p>
+        <Link
+          to={getProblemVisualizationPath(problem)}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl bg-[#26254a] text-primary hover:bg-[#322f60] hover:text-[#807fe2] transition-colors"
+        >
+          <span className="material-symbols-outlined text-[16px]">visibility</span>
+          Visualize
+        </Link>
       </div>
     </div>
   );

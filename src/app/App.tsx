@@ -52,11 +52,13 @@ function AppContent() {
     setIsNavbarVisible(!isAuthPage);
   }, [location.pathname, setIsNavbarVisible]);
 
+  const isViz = showAiTutorPanel || location.pathname.startsWith('/leetcode/visualize/');
+
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className={`flex flex-col ${isViz ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <MobileWarning />
       {isNavbarVisible && <Navbar />}
-      <main className={`flex-1 overflow-auto ${!isNavbarVisible ? 'h-full' : ''}`}>
+      <main className={`flex-1 ${isViz ? 'overflow-auto' : ''} ${!isNavbarVisible && isViz ? 'h-full' : ''}`}>
         <Suspense fallback={
           <div className="flex h-full w-full items-center justify-center">
             <div className="flex flex-col items-center gap-3 text-gray-400 dark:text-[#9794c7]">
