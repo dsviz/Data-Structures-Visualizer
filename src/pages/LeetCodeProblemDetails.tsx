@@ -173,14 +173,14 @@ const LeetCodeProblemDetails: React.FC = () => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     rehypePlugins={[rehypeRaw as any, rehypeKatex]}
                     components={{
-                      h1: ({ children }) => <h1 className="text-3xl font-black mt-2 mb-5 text-gray-900 dark:text-white">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-900 dark:text-white">{children}</h3>,
-                      p: ({ children }) => <p className="mb-4 text-gray-700 dark:text-gray-300 whitespace-normal">{children}</p>,
-                      li: ({ children }) => <li className="mb-1 ml-6">{children}</li>,
-                      ul: ({ children }) => <ul className="list-disc mb-4 text-gray-700 dark:text-gray-300">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal mb-4 ml-6 text-gray-700 dark:text-gray-300">{children}</ol>,
-                      code: ({ className, children }) => {
+                      h1: ({ children }: any) => <h1 className="text-3xl font-black mt-2 mb-5 text-gray-900 dark:text-white">{children}</h1>,
+                      h2: ({ children }: any) => <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">{children}</h2>,
+                      h3: ({ children }: any) => <h3 className="text-xl font-bold mt-6 mb-3 text-gray-900 dark:text-white">{children}</h3>,
+                      p: ({ children }: any) => <p className="mb-4 text-gray-700 dark:text-gray-300 whitespace-normal">{children}</p>,
+                      li: ({ children }: any) => <li className="mb-1 ml-6">{children}</li>,
+                      ul: ({ children }: any) => <ul className="list-disc mb-4 text-gray-700 dark:text-gray-300">{children}</ul>,
+                      ol: ({ children }: any) => <ol className="list-decimal mb-4 ml-6 text-gray-700 dark:text-gray-300">{children}</ol>,
+                      code: ({ className, children }: any) => {
                         const isBlock = className?.includes('language-') || className?.includes('math-display');
                         if (isBlock) {
                           return (
@@ -191,24 +191,24 @@ const LeetCodeProblemDetails: React.FC = () => {
                         }
                         return <code className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-pink-500 text-sm font-mono">{children}</code>;
                       },
-                      pre: ({ children }) => <pre className="mb-4">{children}</pre>,
-                      a: ({ href, children }) => (
+                      pre: ({ children }: any) => <pre className="mb-4">{children}</pre>,
+                      a: ({ href, children }: any) => (
                         <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                           {children}
                         </a>
                       ),
-                      img: ({ src, alt }) => (
+                      img: ({ src, alt }: any) => (
                         <img src={src || ''} alt={alt || ''} className="rounded-xl border border-gray-200 dark:border-[#272546] my-4 max-w-full" />
                       ),
-                      table: ({ children }) => <div className="overflow-x-auto mb-4"><table className="w-full text-sm border-collapse">{children}</table></div>,
-                      thead: ({ children }) => <thead className="bg-gray-100 dark:bg-[#272546]">{children}</thead>,
-                      tbody: ({ children }) => <tbody>{children}</tbody>,
-                      tr: ({ children }) => <tr className="border-b border-gray-200 dark:border-[#383564]">{children}</tr>,
-                      th: ({ children }) => <th className="text-left px-3 py-2 font-bold text-gray-900 dark:text-white">{children}</th>,
-                      td: ({ children }) => <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{children}</td>,
-                      strong: ({ children }) => <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>,
-                      em: ({ children }) => <em className="italic text-gray-700 dark:text-gray-300">{children}</em>,
-                      span: ({ className, children }) => {
+                      table: ({ children }: any) => <div className="overflow-x-auto mb-4"><table className="w-full text-sm border-collapse">{children}</table></div>,
+                      thead: ({ children }: any) => <thead className="bg-gray-100 dark:bg-[#272546]">{children}</thead>,
+                      tbody: ({ children }: any) => <tbody>{children}</tbody>,
+                      tr: ({ children }: any) => <tr className="border-b border-gray-200 dark:border-[#383564]">{children}</tr>,
+                      th: ({ children }: any) => <th className="text-left px-3 py-2 font-bold text-gray-900 dark:text-white">{children}</th>,
+                      td: ({ children }: any) => <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{children}</td>,
+                      strong: ({ children }: any) => <strong className="font-bold text-gray-900 dark:text-white">{children}</strong>,
+                      em: ({ children }: any) => <em className="italic text-gray-700 dark:text-gray-300">{children}</em>,
+                      span: ({ className, children }: any) => {
                         if (className?.includes('katex')) {
                           return <span className={className}>{children}</span>;
                         }
