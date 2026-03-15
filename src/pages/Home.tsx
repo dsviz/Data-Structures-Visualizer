@@ -5,7 +5,7 @@ import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
 import AuthBackground from '../components/auth/AuthBackground'
 import { LEETCODE_PROBLEMS, LeetcodeProblem, LeetcodeTopic, LeetcodeDifficulty, TOPIC_LABELS } from '../data/LeetcodeProblems'
 import { SolutionViewer } from '../components/ui/SolutionViewer'
-import { getProblemVisualizationPath } from '../services/leetcodeRepoService'
+import { RepoReadmeDetails, fetchLeetcodeReadmeDetails, getProblemVisualizationPath } from '../services/leetcodeRepoService'
 
 type DashboardCardView = {
   title: string
@@ -35,6 +35,7 @@ const Home = () => {
   const [mode, setMode] = useState<'training' | 'visualizer'>('visualizer');
   const contentSectionRef = useRef<HTMLElement>(null);
   const [activeProblem, setActiveProblem] = useState<LeetcodeProblem | null>(null);
+  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [trainingDifficulty, setTrainingDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
 
   const dashboardCards: DashboardCardView[] = useMemo(() => {
@@ -363,7 +364,15 @@ const Home = () => {
                     </div>
                     <div className="flex gap-2 px-4 pb-4">
                       <button
-                        onClick={() => setActiveProblem(problem)}
+                        onClick={async () => {
+                          try {
+                            const details = await fetchLeetcodeReadmeDetails(problem as any);
+                            setActiveProblem(problem);
+                            setActiveProblemDetails(details);
+                          } catch (e) {
+                            console.error('Failed to load problem details', e);
+                          }
+                        }}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
                       >
                         <span className="material-symbols-outlined text-[14px]">code</span>
@@ -478,8 +487,15 @@ const Home = () => {
         <p>© 2026 Data Structure Visualizer. Made for students, by students.</p>
       </footer>
 
-      {activeProblem && (
-        <SolutionViewer problem={activeProblem} onClose={() => setActiveProblem(null)} />
+      {activeProblem && activeProblemDetails && (
+        <SolutionViewer 
+          problem={activeProblem as any} 
+          details={activeProblemDetails}
+          onClose={() => {
+            setActiveProblem(null);
+            setActiveProblemDetails(null);
+          }} 
+        />
       )}
     </div>
   )

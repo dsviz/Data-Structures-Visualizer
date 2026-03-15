@@ -10,7 +10,9 @@ import { SolutionViewer } from '../components/ui/SolutionViewer';
 import AuthBackground from '../components/auth/AuthBackground';
 import {
   RepoLeetcodeProblem,
+  RepoReadmeDetails,
   fetchAllLeetcodeRepoProblems,
+  fetchLeetcodeReadmeDetails,
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../services/leetcodeRepoService';
@@ -50,6 +52,7 @@ const LeetCode: React.FC = () => {
   const [activeDifficulty, setActiveDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
+  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [problems, setProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -265,7 +268,17 @@ const LeetCode: React.FC = () => {
                 <ProblemCard
                   key={problem.id}
                   problem={problem}
-                  onViewSolution={() => setActiveProblem(problem)}
+                  onViewSolution={async () => {
+                    try {
+                      // Fetch the local JSON first
+                      const details = await fetchLeetcodeReadmeDetails(problem);
+                      setActiveProblem(problem);
+                      setActiveProblemDetails(details);
+                    } catch (e) {
+                      console.error('Error fetching details for solution', e);
+                      alert('Could not load solution data.');
+                    }
+                  }}
                 />
               ))}
             </div>
@@ -273,10 +286,14 @@ const LeetCode: React.FC = () => {
         </div>
       </section>
 
-      {activeProblem && (
+      {activeProblem && activeProblemDetails && (
         <SolutionViewer
           problem={activeProblem}
-          onClose={() => setActiveProblem(null)}
+          details={activeProblemDetails}
+          onClose={() => {
+            setActiveProblem(null);
+            setActiveProblemDetails(null);
+          }}
         />
       )}
     </div>
@@ -285,10 +302,11 @@ const LeetCode: React.FC = () => {
 
 const ProblemCard: React.FC<{
   problem: RepoLeetcodeProblem;
-  onViewSolution: () => void;
+  onViewSolution: () => Promise<void>;
 }> = ({ problem, onViewSolution }) => {
   const navigate = useNavigate();
   const primaryTopic = problem.topics[0] || 'arrays';
+  const [isOpeningSolution, setIsOpeningSolution] = useState(false);
 
   return (
     <div
@@ -336,14 +354,21 @@ const ProblemCard: React.FC<{
 
         <div className="mt-auto flex gap-2">
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              onViewSolution();
+              setIsOpeningSolution(true);
+              await onViewSolution();
+              setIsOpeningSolution(false);
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
+            disabled={isOpeningSolution}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-50"
           >
-            <span className="material-symbols-outlined text-[14px]">code</span>
-            Solution
+            {isOpeningSolution ? (
+              <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-[14px]">code</span>
+            )}
+            {isOpeningSolution ? 'Loading...' : 'Solution'}
           </button>
 
           {problem && (

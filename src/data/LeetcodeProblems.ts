@@ -33,29 +33,7 @@ export interface LeetcodeProblem {
   visualizerPath?: string;
 }
 
-/** Builds the raw GitHub URL for a solution file */
-export function getSolutionUrl(problem: LeetcodeProblem, lang: SolutionLanguage): string {
-  return getSolutionUrlCandidates(problem, lang)[0];
-}
 
-/**
- * Returns candidate URLs in priority order to handle branch and filename variants.
- * The source repo currently serves solution files from the `master` branch.
- */
-export function getSolutionUrlCandidates(problem: LeetcodeProblem, lang: SolutionLanguage): string[] {
-  const rangeStart = Math.floor(problem.id / 100) * 100;
-  const range = `${String(rangeStart).padStart(4, '0')}-${String(rangeStart + 99).padStart(4, '0')}`;
-  const paddedId = String(problem.id).padStart(4, '0');
-  const basePath = `solutions/${range}/${paddedId}.${problem.slug}`;
-  const branches = ['master', 'main'];
-  const baseNames = ['Solution', 'Solution2'];
-
-  return branches.flatMap((branch) =>
-    baseNames.map((name) =>
-      `https://raw.githubusercontent.com/shubhamkumarsharma03/leetcode/${branch}/${basePath}/${name}.${lang}`
-    )
-  );
-}
 
 /** Returns a short readable label for each language */
 export const LANGUAGE_LABELS: Record<SolutionLanguage, string> = {

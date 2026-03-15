@@ -56,6 +56,9 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true
         }
+      },
+      watch: {
+        ignored: ['**/public/data/leetcode/**']
       }
     },
     base: "/",

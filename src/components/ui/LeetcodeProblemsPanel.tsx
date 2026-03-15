@@ -9,7 +9,9 @@ import {
 import { SolutionViewer } from './SolutionViewer';
 import {
   RepoLeetcodeProblem,
+  RepoReadmeDetails,
   fetchAllLeetcodeRepoProblems,
+  fetchLeetcodeReadmeDetails,
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../../services/leetcodeRepoService';
@@ -23,6 +25,7 @@ const DIFFICULTY_STYLES: Record<LeetcodeDifficulty, string> = {
 export const LeetcodeProblemsPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
+  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [filterDifficulty, setFilterDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [allRepoProblems, setAllRepoProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,7 +170,15 @@ export const LeetcodeProblemsPanel: React.FC = () => {
 
                   <div className="flex gap-1.5">
                     <button
-                      onClick={() => setActiveProblem(problem)}
+                      onClick={async () => {
+                        try {
+                          const details = await fetchLeetcodeReadmeDetails(problem);
+                          setActiveProblem(problem);
+                          setActiveProblemDetails(details);
+                        } catch (e) {
+                          console.error('Error fetching details for solution', e);
+                        }
+                      }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">code</span>
@@ -200,10 +211,14 @@ export const LeetcodeProblemsPanel: React.FC = () => {
         </div>
       )}
 
-      {activeProblem && (
+      {activeProblem && activeProblemDetails && (
         <SolutionViewer
           problem={activeProblem}
-          onClose={() => setActiveProblem(null)}
+          details={activeProblemDetails}
+          onClose={() => {
+            setActiveProblem(null);
+            setActiveProblemDetails(null);
+          }}
         />
       )}
     </>
