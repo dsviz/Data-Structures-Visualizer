@@ -103,6 +103,12 @@ flowchart LR
 ## What's New
 Recent updates included in this repository:
 
+- LeetCode Integration & Performance:
+  - Added a massive library of 3,700+ LeetCode problems with multi-language solutions fetched directly from a GitHub repository.
+  - Implemented a static data generation pipeline (`generate-leetcode-data.ts`) to pre-calculate topics and routing data offline inside `catalog.json`.
+  - Resolved main-thread rendering freezes by adding local slice pagination ("Load More" buttons).
+  - Eliminated UI blocking via strategic `React.memo` wrapping on problem cards and `useDeferredValue` on the search filters.
+
 - Persistent user AI key storage:
   - AI provider/key now persists in browser `localStorage` per user.
   - Key is no longer requested repeatedly on browser reopen.
@@ -327,6 +333,8 @@ The app includes retry handling and user guidance for transient speech network f
 - `npm run build` - type-check and production build.
 - `npm run preview` - preview production build locally.
 - `npm run lint` - run ESLint.
+- `npm run generate:leetcode` - Clone/pull the dataset repository and generate static JSON payloads for all 3,700+ LeetCode problems into `public/data/leetcode`.
+- `npm run generate:leetcode:batch <batch_number>` - Generate JSON payloads for a specific batch (e.g., batch 1 = first 500 problems).
 
 ### Backend (`server/`)
 - `npm start` - start Express server.
