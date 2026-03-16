@@ -36,15 +36,34 @@ export default defineConfig(({ mode }) => {
         dynamicRoutes,
       }),
       {
-        name: 'copy-index-to-404',
+        name: 'generate-static-subpages',
         writeBundle: () => {
           const distDir = path.resolve(__dirname, 'dist');
+          
+          // 1. Create 404.html for SPA fallback (handled by index.html script)
           if (fs.existsSync(path.join(distDir, 'index.html'))) {
             fs.copyFileSync(
               path.join(distDir, 'index.html'),
               path.join(distDir, '404.html')
             )
           }
+
+          // 2. Create physical directories for each route to give Crawler 200 OK
+          dynamicRoutes.forEach(route => {
+            if (route === '/') return; // Skip home page
+            const dirPath = path.join(distDir, route.replace(/^\//, ''));
+            
+            // Create directory if it doesn't exist
+            if (!fs.existsSync(dirPath)) {
+              fs.mkdirSync(dirPath, { recursive: true });
+            }
+            
+            // Copy index.html into the directory
+            fs.copyFileSync(
+              path.join(distDir, 'index.html'),
+              path.join(dirPath, 'index.html')
+            );
+          });
         }
       }
     ],
