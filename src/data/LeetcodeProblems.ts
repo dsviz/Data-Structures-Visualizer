@@ -6,7 +6,11 @@ export type LeetcodeTopic =
   | 'trees'
   | 'graphs'
   | 'sorting'
-  | 'recursion';
+  | 'recursion'
+  | 'backtracking'
+  | 'dynamic-programming'
+  | 'heap'
+  | 'hash-table';
 
 export type LeetcodeDifficulty = 'Easy' | 'Medium' | 'Hard';
 
@@ -69,6 +73,10 @@ export const DS_TO_TOPIC: Record<string, LeetcodeTopic> = {
   'Graph': 'graphs',
   'Sorting': 'sorting',
   'Recursion': 'recursion',
+  'Backtracking': 'backtracking',
+  'Dynamic Programming': 'dynamic-programming',
+  'Heap': 'heap',
+  'Hash Table': 'hash-table',
 };
 
 /** Maps LeetcodeTopic keys to human-readable labels */
@@ -81,13 +89,17 @@ export const TOPIC_LABELS: Record<LeetcodeTopic, string> = {
   'graphs': 'Graphs',
   'sorting': 'Sorting',
   'recursion': 'Recursion',
+  'backtracking': 'Backtracking',
+  'dynamic-programming': 'Dynamic Programming',
+  'heap': 'Heap',
+  'hash-table': 'Hash Table',
 };
 
 export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   // ─── ARRAYS ──────────────────────────────────────────────────────────────────
   {
     id: 1, title: 'Two Sum', slug: 'two-sum', difficulty: 'Easy',
-    topics: ['arrays'], tags: ['Hash Table', 'Array'],
+    topics: ['arrays', 'hash-table'], tags: ['Hash Table', 'Array'],
     visualizerPath: '/arrays',
   },
   {
@@ -112,7 +124,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 42, title: 'Trapping Rain Water', slug: 'trapping-rain-water', difficulty: 'Hard',
-    topics: ['arrays', 'stack'], tags: ['Two Pointers', 'Stack', 'DP'],
+    topics: ['arrays', 'stack'], tags: ['Two Pointers', 'Stack', 'dynamic-programming'],
     visualizerPath: '/arrays',
   },
   {
@@ -122,12 +134,12 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 49, title: 'Group Anagrams', slug: 'group-anagrams', difficulty: 'Medium',
-    topics: ['arrays', 'sorting'], tags: ['Hash Table', 'String', 'Sorting'],
+    topics: ['arrays', 'sorting', 'hash-table'], tags: ['Hash Table', 'String', 'Sorting'],
     visualizerPath: '/arrays',
   },
   {
     id: 53, title: 'Maximum Subarray', slug: 'maximum-subarray', difficulty: 'Medium',
-    topics: ['arrays'], tags: ["Kadane's Algorithm", 'DP'],
+    topics: ['arrays', 'dynamic-programming'], tags: ["Kadane's Algorithm", 'DP'],
     visualizerPath: '/arrays',
   },
   {
@@ -152,12 +164,12 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 121, title: 'Best Time to Buy and Sell Stock', slug: 'best-time-to-buy-and-sell-stock', difficulty: 'Easy',
-    topics: ['arrays'], tags: ['DP', 'Sliding Window'],
+    topics: ['arrays', 'dynamic-programming'], tags: ['DP', 'Sliding Window'],
     visualizerPath: '/arrays',
   },
   {
     id: 152, title: 'Maximum Product Subarray', slug: 'maximum-product-subarray', difficulty: 'Medium',
-    topics: ['arrays'], tags: ['DP'],
+    topics: ['arrays', 'dynamic-programming'], tags: ['DP'],
     visualizerPath: '/arrays',
   },
   {
@@ -167,7 +179,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 169, title: 'Majority Element', slug: 'majority-element', difficulty: 'Easy',
-    topics: ['arrays'], tags: ['Boyer-Moore Voting', 'Hash Table'],
+    topics: ['arrays', 'hash-table'], tags: ['Boyer-Moore Voting', 'Hash Table'],
     visualizerPath: '/arrays',
   },
   {
@@ -177,7 +189,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 217, title: 'Contains Duplicate', slug: 'contains-duplicate', difficulty: 'Easy',
-    topics: ['arrays'], tags: ['Hash Table', 'Sorting'],
+    topics: ['arrays', 'hash-table'], tags: ['Hash Table', 'Sorting'],
     visualizerPath: '/arrays',
   },
   {
@@ -209,7 +221,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 23, title: 'Merge k Sorted Lists', slug: 'merge-k-sorted-lists', difficulty: 'Hard',
-    topics: ['linked-list'], tags: ['Divide & Conquer', 'Heap'],
+    topics: ['linked-list', 'heap'], tags: ['Divide & Conquer', 'Heap'],
     visualizerPath: '/linked-list',
   },
   {
@@ -259,7 +271,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 160, title: 'Intersection of Two Linked Lists', slug: 'intersection-of-two-linked-lists', difficulty: 'Easy',
-    topics: ['linked-list'], tags: ['Two Pointers', 'Hash Table'],
+    topics: ['linked-list', 'hash-table'], tags: ['Two Pointers', 'Hash Table'],
     visualizerPath: '/linked-list',
   },
   {
@@ -296,7 +308,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 32, title: 'Longest Valid Parentheses', slug: 'longest-valid-parentheses', difficulty: 'Hard',
-    topics: ['stack'], tags: ['DP', 'String'],
+    topics: ['stack', 'dynamic-programming'], tags: ['DP', 'String'],
     visualizerPath: '/stack',
   },
   {
@@ -341,7 +353,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 496, title: 'Next Greater Element I', slug: 'next-greater-element-i', difficulty: 'Easy',
-    topics: ['stack'], tags: ['Monotonic Stack', 'Hash Table'],
+    topics: ['stack', 'hash-table'], tags: ['Monotonic Stack', 'Hash Table'],
     visualizerPath: '/stack',
   },
   {
@@ -395,7 +407,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 96, title: 'Unique Binary Search Trees', slug: 'unique-binary-search-trees', difficulty: 'Medium',
-    topics: ['trees'], tags: ['DP', 'BST'],
+    topics: ['trees', 'dynamic-programming'], tags: ['DP', 'BST'],
     visualizerPath: '/trees',
   },
   {
@@ -425,7 +437,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 105, title: 'Construct Binary Tree from Preorder and Inorder Traversal', slug: 'construct-binary-tree-from-preorder-and-inorder-traversal', difficulty: 'Medium',
-    topics: ['trees'], tags: ['Hash Table', 'Divide & Conquer'],
+    topics: ['trees', 'hash-table'], tags: ['Hash Table', 'Divide & Conquer'],
     visualizerPath: '/trees',
   },
   {
@@ -440,7 +452,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 124, title: 'Binary Tree Maximum Path Sum', slug: 'binary-tree-maximum-path-sum', difficulty: 'Hard',
-    topics: ['trees'], tags: ['DFS', 'DP'],
+    topics: ['trees', 'dynamic-programming'], tags: ['DFS', 'DP'],
     visualizerPath: '/trees',
   },
   {
@@ -487,7 +499,7 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   // ─── GRAPHS ──────────────────────────────────────────────────────────────────
   {
     id: 133, title: 'Clone Graph', slug: 'clone-graph', difficulty: 'Medium',
-    topics: ['graphs'], tags: ['BFS', 'DFS', 'Hash Table'],
+    topics: ['graphs', 'hash-table'], tags: ['BFS', 'DFS', 'Hash Table'],
     visualizerPath: '/graphs',
   },
   {
@@ -532,12 +544,12 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 743, title: 'Network Delay Time', slug: 'network-delay-time', difficulty: 'Medium',
-    topics: ['graphs'], tags: ["Dijkstra's", 'Heap'],
+    topics: ['graphs', 'heap'], tags: ["Dijkstra's", 'Heap'],
     visualizerPath: '/graphs',
   },
   {
     id: 787, title: 'Cheapest Flights Within K Stops', slug: 'cheapest-flights-within-k-stops', difficulty: 'Medium',
-    topics: ['graphs'], tags: ['Bellman-Ford', 'BFS', 'DP'],
+    topics: ['graphs', 'dynamic-programming'], tags: ['Bellman-Ford', 'BFS', 'DP'],
     visualizerPath: '/graphs',
   },
   {
@@ -569,17 +581,17 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 215, title: 'Kth Largest Element in an Array', slug: 'kth-largest-element-in-an-array', difficulty: 'Medium',
-    topics: ['sorting'], tags: ['Quick Select', 'Heap'],
+    topics: ['sorting', 'heap'], tags: ['Quick Select', 'Heap'],
     visualizerPath: '/sorting',
   },
   {
     id: 242, title: 'Valid Anagram', slug: 'valid-anagram', difficulty: 'Easy',
-    topics: ['sorting'], tags: ['Hash Table', 'String'],
+    topics: ['sorting', 'hash-table'], tags: ['Hash Table', 'String'],
     visualizerPath: '/sorting',
   },
   {
     id: 347, title: 'Top K Frequent Elements', slug: 'top-k-frequent-elements', difficulty: 'Medium',
-    topics: ['sorting'], tags: ['Heap', 'Bucket Sort', 'Hash Table'],
+    topics: ['sorting', 'heap', 'hash-table'], tags: ['Heap', 'Bucket Sort', 'Hash Table'],
     visualizerPath: '/sorting',
   },
   {
@@ -589,34 +601,34 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 912, title: 'Sort an Array', slug: 'sort-an-array', difficulty: 'Medium',
-    topics: ['sorting'], tags: ['Merge Sort', 'Quick Sort', 'Heap Sort'],
+    topics: ['sorting', 'heap'], tags: ['Merge Sort', 'Quick Sort', 'Heap Sort'],
     visualizerPath: '/sorting',
   },
   {
     id: 973, title: 'K Closest Points to Origin', slug: 'k-closest-points-to-origin', difficulty: 'Medium',
-    topics: ['sorting'], tags: ['Heap', 'Quick Select'],
+    topics: ['sorting', 'heap'], tags: ['Heap', 'Quick Select'],
     visualizerPath: '/sorting',
   },
 
   // ─── RECURSION ───────────────────────────────────────────────────────────────
   {
     id: 22, title: 'Generate Parentheses', slug: 'generate-parentheses', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking', 'String'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking', 'String'],
     visualizerPath: '/recursion',
   },
   {
     id: 39, title: 'Combination Sum', slug: 'combination-sum', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking', 'Array'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking', 'Array'],
     visualizerPath: '/recursion',
   },
   {
     id: 46, title: 'Permutations', slug: 'permutations', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking'],
     visualizerPath: '/recursion',
   },
   {
     id: 47, title: 'Permutations II', slug: 'permutations-ii', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking'],
     visualizerPath: '/recursion',
   },
   {
@@ -626,27 +638,27 @@ export const LEETCODE_PROBLEMS: LeetcodeProblem[] = [
   },
   {
     id: 51, title: 'N-Queens', slug: 'n-queens', difficulty: 'Hard',
-    topics: ['recursion'], tags: ['Backtracking'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking'],
     visualizerPath: '/recursion',
   },
   {
     id: 70, title: 'Climbing Stairs', slug: 'climbing-stairs', difficulty: 'Easy',
-    topics: ['recursion'], tags: ['DP', 'Memoization'],
+    topics: ['recursion', 'dynamic-programming'], tags: ['DP', 'Memoization'],
     visualizerPath: '/recursion',
   },
   {
     id: 77, title: 'Combinations', slug: 'combinations', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking'],
     visualizerPath: '/recursion',
   },
   {
     id: 78, title: 'Subsets', slug: 'subsets', difficulty: 'Medium',
-    topics: ['recursion'], tags: ['Backtracking', 'Bit Manipulation'],
+    topics: ['recursion', 'backtracking'], tags: ['Backtracking', 'Bit Manipulation'],
     visualizerPath: '/recursion',
   },
   {
     id: 509, title: 'Fibonacci Number', slug: 'fibonacci-number', difficulty: 'Easy',
-    topics: ['recursion'], tags: ['DP', 'Memoization', 'Math'],
+    topics: ['recursion', 'dynamic-programming'], tags: ['DP', 'Memoization', 'Math'],
     visualizerPath: '/recursion',
   },
 ];

@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState, memo } from 'react'
+import { useMemo, useRef, useState, memo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { DASHBOARD_CARDS } from '../data/learningPaths' // Changed import
 import AuthBackground from '../components/auth/AuthBackground'
 import { LEETCODE_PROBLEMS, LeetcodeProblem, LeetcodeTopic, LeetcodeDifficulty, TOPIC_LABELS } from '../data/LeetcodeProblems'
 import { SolutionViewer } from '../components/ui/SolutionViewer'
-import { RepoReadmeDetails, fetchLeetcodeReadmeDetails, getProblemVisualizationPath } from '../services/leetcodeRepoService'
+import { RepoReadmeDetails, fetchLeetcodeReadmeDetails, getProblemVisualizationPath, fetchAllLeetcodeRepoProblems, RepoLeetcodeProblem } from '../services/leetcodeRepoService'
 
 type DashboardCardView = {
   title: string
@@ -37,30 +37,48 @@ const Home = () => {
   const [activeProblem, setActiveProblem] = useState<LeetcodeProblem | null>(null);
   const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [trainingDifficulty, setTrainingDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
+  const [repoProblems, setRepoProblems] = useState<RepoLeetcodeProblem[]>([]);
+
+  useEffect(() => {
+    fetchAllLeetcodeRepoProblems().then(setRepoProblems).catch(err => console.warn('Home: repo catalog load skipped', err));
+  }, []);
 
   const dashboardCards: DashboardCardView[] = useMemo(() => {
-    return DASHBOARD_CARDS.map(card => ({
-      title: card.title,
-      path: card.path,
-      description: card.description,
-      tags: card.category,
-      difficulty: card.difficulty,
-      count: card.count,
-      countLabel: card.countLabel,
-      icon: card.icon,
-      gradientFrom: card.gradientFrom,
-      gradientTo: card.gradientTo,
-      darkGradientFrom: card.darkGradientFrom,
-      darkGradientTo: card.darkGradientTo,
-      iconColor: card.iconColor,
-      darkIconColor: card.darkIconColor,
-      pattern: card.pattern,
-      alt: card.alt,
-      isPlaceholder: !!card.isPlaceholder,
-      image: card.image,
-      imageBg: card.imageBg
-    }))
-  }, [])
+    return DASHBOARD_CARDS.map(card => {
+      let count = card.count;
+      if (card.topic) {
+        // If we have repo problems loaded, use that count
+        if (repoProblems.length > 0) {
+          count = repoProblems.filter(p => p.topics.includes(card.topic!)).length;
+        } else {
+          // Fallback to curated count
+          count = LEETCODE_PROBLEMS.filter(p => p.topics.includes(card.topic!)).length;
+        }
+      }
+
+      return {
+        title: card.title,
+        path: card.path,
+        description: card.description,
+        tags: card.category,
+        difficulty: card.difficulty,
+        count: count,
+        countLabel: card.countLabel,
+        icon: card.icon,
+        gradientFrom: card.gradientFrom,
+        gradientTo: card.gradientTo,
+        darkGradientFrom: card.darkGradientFrom,
+        darkGradientTo: card.darkGradientTo,
+        iconColor: card.iconColor,
+        darkIconColor: card.darkIconColor,
+        pattern: card.pattern,
+        alt: card.alt,
+        isPlaceholder: !!card.isPlaceholder,
+        image: card.image,
+        imageBg: card.imageBg
+      }
+    })
+  }, [repoProblems])
 
   const categoryOptions = useMemo(() => {
     const categories = new Set<string>()
@@ -363,11 +381,11 @@ const Home = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {LEETCODE_PROBLEMS.filter(p => {
                   const topicCategoryMap: Record<string, LeetcodeTopic[]> = {
-                    'Algorithms': ['sorting','recursion','graphs'],
+                    'Algorithms': ['sorting','recursion','graphs', 'backtracking', 'dynamic-programming'],
                     'Sorting': ['sorting'],
                     'Trees': ['trees'],
                     'Graphs': ['graphs'],
-                    'Data Structures': ['arrays','linked-list','stack','queue','trees'],
+                    'Data Structures': ['arrays','linked-list','stack','queue','trees', 'heap', 'hash-table'],
                   };
                   const topicMatch = activeCategory === 'All' || (topicCategoryMap[activeCategory] || []).some(t => p.topics.includes(t));
                   const diffMatch = trainingDifficulty === 'All' || p.difficulty === trainingDifficulty;

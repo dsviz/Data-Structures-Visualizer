@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useDeferredValue, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   LeetcodeDifficulty,
   LeetcodeTopic,
@@ -33,6 +33,10 @@ const TOPIC_ICONS: Record<LeetcodeTopic, string> = {
   'graphs': 'hub',
   'sorting': 'bar_chart',
   'recursion': 'all_inclusive',
+  'backtracking': 'undo',
+  'dynamic-programming': 'memory',
+  'heap': 'storage',
+  'hash-table': 'tag',
 };
 
 const TOPIC_GRADIENT: Record<LeetcodeTopic, string> = {
@@ -44,12 +48,19 @@ const TOPIC_GRADIENT: Record<LeetcodeTopic, string> = {
   'graphs': 'from-orange-500 to-red-500',
   'sorting': 'from-indigo-500 to-purple-600',
   'recursion': 'from-violet-500 to-fuchsia-500',
+  'backtracking': 'from-slate-700 to-slate-900',
+  'dynamic-programming': 'from-blue-600 to-indigo-700',
+  'heap': 'from-yellow-400 to-amber-600',
+  'hash-table': 'from-cyan-500 to-teal-600',
 };
 
-const ALL_TOPICS: LeetcodeTopic[] = ['arrays', 'linked-list', 'stack', 'queue', 'trees', 'graphs', 'sorting', 'recursion'];
+const ALL_TOPICS: LeetcodeTopic[] = ['arrays', 'linked-list', 'stack', 'queue', 'trees', 'graphs', 'sorting', 'recursion', 'backtracking', 'dynamic-programming', 'heap', 'hash-table'];
 
 const LeetCode: React.FC = () => {
-  const [activeTopic, setActiveTopic] = useState<LeetcodeTopic | 'all'>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTopic = (searchParams.get('topic') as LeetcodeTopic) || 'all';
+
+  const [activeTopic, setActiveTopic] = useState<LeetcodeTopic | 'all'>(initialTopic);
   const [activeDifficulty, setActiveDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
@@ -57,6 +68,24 @@ const LeetCode: React.FC = () => {
   const [problems, setProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state with search params
+  useEffect(() => {
+    const topic = searchParams.get('topic') as LeetcodeTopic | 'all';
+    if (topic && topic !== activeTopic) {
+      setActiveTopic(topic);
+    }
+  }, [searchParams]);
+
+  const handleTopicChange = (topic: LeetcodeTopic | 'all') => {
+    setActiveTopic(topic);
+    if (topic === 'all') {
+      searchParams.delete('topic');
+    } else {
+      searchParams.set('topic', topic);
+    }
+    setSearchParams(searchParams);
+  };
   
   // Pagination State
   const [displayCount, setDisplayCount] = useState(60);
@@ -165,7 +194,7 @@ const LeetCode: React.FC = () => {
         <div className="max-w-[1400px] mx-auto">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             <button
-              onClick={() => setActiveTopic('all')}
+              onClick={() => handleTopicChange('all')}
               className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                 activeTopic === 'all'
                   ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25'
@@ -181,7 +210,7 @@ const LeetCode: React.FC = () => {
               return (
                 <button
                   key={topic}
-                  onClick={() => setActiveTopic(topic)}
+                  onClick={() => handleTopicChange(topic)}
                   className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                     activeTopic === topic
                       ? `bg-gradient-to-r ${TOPIC_GRADIENT[topic]} text-white border-transparent shadow-lg`

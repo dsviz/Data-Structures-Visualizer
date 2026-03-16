@@ -1,6 +1,8 @@
 import {
   LeetcodeDifficulty,
   LeetcodeProblem,
+  LEETCODE_PROBLEMS,
+  DS_TO_TOPIC,
 } from '../data/LeetcodeProblems';
 
 const OWNER = 'shubhamkumarsharma03';
@@ -11,7 +13,7 @@ const BRANCH = 'master';
 const TREE_API = `/data/leetcode/catalog.json`;
 const RAW_BASE = `/data/leetcode/problems`;
 
-const CACHE_KEY = 'leetcode_repo_catalog_v1';
+const CACHE_KEY = 'leetcode_repo_catalog_v2';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12;
 
 export interface RepoLeetcodeProblem extends LeetcodeProblem {
@@ -32,8 +34,12 @@ export interface RepoReadmeDetails {
 let inMemoryProblems: RepoLeetcodeProblem[] | null = null;
 let inFlightProblems: Promise<RepoLeetcodeProblem[]> | null = null;
 
-// The topic rules and path inference logic have been moved completely to the Node.js build script `scripts/generate-leetcode-data.ts`.
 // The React client now just consumes the precalculated values without blocking the main thread.
+// We also use local overrides from LeetcodeProblems.ts for curated problems.
+
+const CURATED_TOPIC_MAP = new Map<number, any>(
+  LEETCODE_PROBLEMS.map(p => [p.id, { topics: p.topics, visualizerPath: p.visualizerPath }])
+);
 
 
 function getDetailPath(id: number, slug: string): string {
@@ -124,16 +130,49 @@ export async function fetchAllLeetcodeRepoProblems(forceRefresh = false): Promis
 
 function enrichProblemsWithMetadata(serverProblems: any[]): RepoLeetcodeProblem[] {
   return serverProblems.map(sp => {
-    // Rely solely on the metrics pre-calculated via scripts/generate-leetcode-data.ts
+    const curated = CURATED_TOPIC_MAP.get(sp.id);
+    const tags = sp.tags || [];
+    
+    // Auto-identify topics from tags if not provided by server or curated list
+    let topics = sp.topics || curated?.topics;
+    
+    if (!topics || topics.length === 0 || (topics.length === 1 && topics[0] === 'arrays')) {
+      const identifiedTopics = new Set<string>();
+      tags.forEach((tag: string) => {
+        // Normalize tag for matching (Title Case)
+        const normalizedTag = tag.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+        
+        // Direct map from DS_TO_TOPIC
+        if (DS_TO_TOPIC[normalizedTag]) {
+          identifiedTopics.add(DS_TO_TOPIC[normalizedTag]);
+        }
+        
+        // Common aliases and case-insensitive checks
+        const upperTag = tag.toUpperCase();
+        if (upperTag === 'DP' || upperTag.includes('DYNAMIC PROGRAMMING')) identifiedTopics.add('dynamic-programming');
+        if (upperTag.includes('RECURSION')) identifiedTopics.add('recursion');
+        if (upperTag.includes('BACKTRACKING')) identifiedTopics.add('backtracking');
+        if (upperTag.includes('PRIORITY QUEUE') || upperTag.includes('HEAP')) identifiedTopics.add('heap');
+        if (upperTag.includes('HASH TABLE') || upperTag.includes('HASH MAP')) identifiedTopics.add('hash-table');
+        if (upperTag.includes('SORT')) identifiedTopics.add('sorting');
+      });
+
+      if (identifiedTopics.size > 0) {
+        topics = Array.from(identifiedTopics);
+      }
+    }
+
+    if (!topics || topics.length === 0) topics = ['arrays'];
+
     const idStr = String(sp.id).padStart(4, '0');
     return {
       id: sp.id,
       slug: sp.slug,
       title: sp.title || sp.slug,
       difficulty: sp.difficulty || 'Medium',
-      tags: sp.tags || [],
-      topics: sp.topics || ['arrays'],
-      visualizerPath: sp.visualizerPath || '/arrays',
+      tags: tags,
+      topics: topics,
+      visualizerPath: curated?.visualizerPath || (topics.includes('arrays') ? '/arrays' : undefined),
       range: sp.range,
       folderName: sp.folderName || `${idStr}.${sp.slug}`,
       readmeUrl: `${RAW_BASE}/${sp.folderName || `${idStr}.${sp.slug}`}`,

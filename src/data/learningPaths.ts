@@ -1,3 +1,4 @@
+import { LeetcodeTopic } from './LeetcodeProblems';
 
 export type Category = 'All' | 'Sorting' | 'Trees' | 'Graphs' | 'Data Structures' | 'Algorithms';
 
@@ -21,6 +22,7 @@ export interface DashboardCard {
     isPlaceholder?: boolean;
     image?: string;
     imageBg?: string;
+    topic?: LeetcodeTopic;
 }
 
 export const CATEGORIES: Category[] = ['All', 'Sorting', 'Trees', 'Graphs', 'Data Structures', 'Algorithms'];
@@ -44,7 +46,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Sorting Bars Pattern',
         alt: 'Abstract Sorting Bars Pattern',
         image: '/sorting.gif',
-        imageBg: 'bg-[#ffffff]'
+        imageBg: 'bg-[#ffffff]',
+        topic: 'sorting'
     },
     {
         title: 'Linked Lists',
@@ -64,7 +67,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Chain Link Pattern',
         alt: 'Abstract Chain Link Pattern',
         image: '/list.gif',
-        imageBg: 'bg-[#ffffff]'
+        imageBg: 'bg-[#ffffff]',
+        topic: 'linked-list'
     },
     {
         title: 'Arrays',
@@ -84,7 +88,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Key Value Grid Pattern',
         alt: 'Abstract Key Value Grid Pattern',
         image: '/array.gif',
-        imageBg: 'bg-[#f0f0f0]'
+        imageBg: 'bg-[#f0f0f0]',
+        topic: 'arrays'
     },
     {
         title: 'Stack',
@@ -104,7 +109,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Stack Layers',
         alt: 'Abstract Stack Layers',
         image: '/stack.gif',
-        imageBg: 'bg-[#ffffff]'
+        imageBg: 'bg-[#ffffff]',
+        topic: 'stack'
     },
     {
         title: 'Queue',
@@ -124,7 +130,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Queue Line',
         alt: 'Abstract Queue Line',
         image: '/queue.gif',
-        imageBg: 'bg-[#ffffff]'
+        imageBg: 'bg-[#ffffff]',
+        topic: 'queue'
     },
     {
         title: 'Binary Tree',
@@ -165,7 +172,8 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Network Nodes Pattern',
         alt: 'Abstract Network Nodes Pattern',
         image: '/graphds.gif',
-        imageBg: 'bg-[#ffffff]'
+        imageBg: 'bg-[#ffffff]',
+        topic: 'graphs'
     },
     {
         title: 'Recursion',
@@ -185,55 +193,55 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Infinite Loop Pattern',
         alt: 'Abstract Infinite Loop Pattern',
         image: '/recursion.gif',
-        isPlaceholder: true,
-        imageBg: 'bg-[#c8df82]'
+        imageBg: 'bg-[#c8df82]',
+        topic: 'recursion'
     },
     {
         title: 'Backtracking',
-        path: '/backtracking',
+        path: '/leetcode?topic=backtracking',
         description: "N-Queens, Knight's Tour, Sudoku",
         category: ['Algorithms'],
         difficulty: 'Hard',
         count: 0,
-        countLabel: 'Coming Soon',
+        countLabel: 'Problems',
         icon: 'undo',
-        gradientFrom: 'from-slate-800',
+        gradientFrom: 'from-slate-700',
         gradientTo: 'to-slate-900',
-        darkGradientFrom: '',
-        darkGradientTo: '',
-        iconColor: 'text-slate-400',
-        darkIconColor: '',
+        darkGradientFrom: 'dark:from-slate-800/50',
+        darkGradientTo: 'dark:to-slate-950/50',
+        iconColor: 'text-white',
+        darkIconColor: 'dark:text-slate-400',
         pattern: 'Abstract Maze Path Pattern',
         alt: 'Abstract Maze Path Pattern',
-        isPlaceholder: true
+        topic: 'backtracking'
     },
     {
         title: 'Dynamic Prog.',
-        path: '/dp',
+        path: '/leetcode?topic=dynamic-programming',
         description: 'Knapsack, Coin Change, LCS',
         category: ['Algorithms'],
         difficulty: 'Hard',
         count: 0,
-        countLabel: 'Coming Soon',
+        countLabel: 'Problems',
         icon: 'memory',
-        gradientFrom: 'from-blue-600/20',
-        gradientTo: 'to-indigo-600/20',
-        darkGradientFrom: '',
-        darkGradientTo: '',
-        iconColor: 'text-blue-400',
-        darkIconColor: '',
+        gradientFrom: 'from-blue-600',
+        gradientTo: 'to-indigo-700',
+        darkGradientFrom: 'dark:from-blue-900/50',
+        darkGradientTo: 'dark:to-indigo-900/50',
+        iconColor: 'text-white',
+        darkIconColor: 'dark:text-blue-400',
         pattern: 'Abstract Optimized Path Pattern',
         alt: 'Abstract Optimized Path Pattern',
-        isPlaceholder: true
+        topic: 'dynamic-programming'
     },
     {
         title: 'Heap',
-        path: '/heap',
+        path: '/leetcode?topic=heap',
         description: 'Min Heap, Max Heap, Priority Queue',
         category: ['Data Structures'],
         difficulty: 'Medium',
         count: 0,
-        countLabel: 'Coming Soon',
+        countLabel: 'Problems',
         icon: 'storage',
         gradientFrom: 'from-yellow-500',
         gradientTo: 'to-amber-500',
@@ -244,17 +252,17 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Heap Structure',
         alt: 'Abstract Heap Structure',
         image: '/heap.gif',
-        isPlaceholder: true,
-        imageBg: 'bg-[#6fc9cc]'
+        imageBg: 'bg-[#6fc9cc]',
+        topic: 'heap'
     },
     {
         title: 'Hash Table',
-        path: '/hashtable',
+        path: '/leetcode?topic=hash-table',
         description: 'Collision Resolution, Hashing',
         category: ['Data Structures'],
         difficulty: 'Medium',
         count: 0,
-        countLabel: 'Coming Soon',
+        countLabel: 'Problems',
         icon: 'tag',
         gradientFrom: 'from-cyan-500',
         gradientTo: 'to-teal-500',
@@ -265,7 +273,7 @@ export const DASHBOARD_CARDS: DashboardCard[] = [
         pattern: 'Abstract Hash Map',
         alt: 'Abstract Hash Map',
         image: '/hashtable.gif',
-        isPlaceholder: true,
-        imageBg: 'bg-[#eba964]'
+        imageBg: 'bg-[#eba964]',
+        topic: 'hash-table'
     }
 ];
