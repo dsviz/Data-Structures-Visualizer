@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState, useDeferredValue, memo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   LeetcodeDifficulty,
   LeetcodeTopic,
@@ -10,13 +10,10 @@ import { SolutionViewer } from '../components/ui/SolutionViewer';
 import AuthBackground from '../components/auth/AuthBackground';
 import {
   RepoLeetcodeProblem,
-  RepoReadmeDetails,
   fetchAllLeetcodeRepoProblems,
-  fetchLeetcodeReadmeDetails,
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../services/leetcodeRepoService';
-import ModeSwitcher from '../components/ui/ModeSwitcher';
 
 const DIFFICULTY_STYLES: Record<LeetcodeDifficulty, string> = {
   Easy: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -28,14 +25,14 @@ const TOPIC_ICONS: Record<LeetcodeTopic, string> = {
   'arrays': 'data_array',
   'linked-list': 'link',
   'stack': 'layers',
-  'queue': 'linear_scale',
+  'queue': 'queue_segment',
   'trees': 'account_tree',
   'graphs': 'hub',
   'sorting': 'bar_chart',
   'recursion': 'all_inclusive',
-  'backtracking': 'undo',
-  'dynamic-programming': 'memory',
-  'heap': 'storage',
+  'backtracking': 'route',
+  'dynamic-programming': 'schema',
+  'heap': 'view_in_ar',
   'hash-table': 'tag',
 };
 
@@ -48,50 +45,22 @@ const TOPIC_GRADIENT: Record<LeetcodeTopic, string> = {
   'graphs': 'from-orange-500 to-red-500',
   'sorting': 'from-indigo-500 to-purple-600',
   'recursion': 'from-violet-500 to-fuchsia-500',
-  'backtracking': 'from-slate-700 to-slate-900',
-  'dynamic-programming': 'from-blue-600 to-indigo-700',
-  'heap': 'from-yellow-400 to-amber-600',
-  'hash-table': 'from-cyan-500 to-teal-600',
+  'backtracking': 'from-cyan-500 to-blue-500',
+  'dynamic-programming': 'from-lime-500 to-emerald-600',
+  'heap': 'from-slate-500 to-gray-700',
+  'hash-table': 'from-rose-500 to-red-600',
 };
 
-const ALL_TOPICS: LeetcodeTopic[] = ['arrays', 'linked-list', 'stack', 'queue', 'trees', 'graphs', 'sorting', 'recursion', 'backtracking', 'dynamic-programming', 'heap', 'hash-table'];
+const ALL_TOPICS: LeetcodeTopic[] = ['arrays', 'linked-list', 'stack', 'queue', 'trees', 'graphs', 'sorting', 'recursion'];
 
 const LeetCode: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialTopic = (searchParams.get('topic') as LeetcodeTopic) || 'all';
-
-  const [activeTopic, setActiveTopic] = useState<LeetcodeTopic | 'all'>(initialTopic);
+  const [activeTopic, setActiveTopic] = useState<LeetcodeTopic | 'all'>('all');
   const [activeDifficulty, setActiveDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
-  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [problems, setProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Sync state with search params
-  useEffect(() => {
-    const topic = searchParams.get('topic') as LeetcodeTopic | 'all';
-    if (topic && topic !== activeTopic) {
-      setActiveTopic(topic);
-    }
-  }, [searchParams]);
-
-  const handleTopicChange = (topic: LeetcodeTopic | 'all') => {
-    setActiveTopic(topic);
-    if (topic === 'all') {
-      searchParams.delete('topic');
-    } else {
-      searchParams.set('topic', topic);
-    }
-    setSearchParams(searchParams);
-  };
-  
-  // Pagination State
-  const [displayCount, setDisplayCount] = useState(60);
-
-  // Debounced search to prevent UI freezing on typing over 3700 items
-  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     let alive = true;
@@ -125,7 +94,7 @@ const LeetCode: React.FC = () => {
     return problems.filter(p => {
       const matchTopic = activeTopic === 'all' || p.topics.includes(activeTopic as LeetcodeTopic);
       const matchDiff = activeDifficulty === 'All' || p.difficulty === activeDifficulty;
-      const q = deferredSearchQuery.trim().toLowerCase();
+      const q = searchQuery.trim().toLowerCase();
       const matchSearch = !q
         || p.title.toLowerCase().includes(q)
         || String(p.id).includes(q)
@@ -134,40 +103,32 @@ const LeetCode: React.FC = () => {
 
       return matchTopic && matchDiff && matchSearch;
     });
-  }, [problems, activeTopic, activeDifficulty, deferredSearchQuery]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
-    setDisplayCount(60);
-  }, [activeTopic, activeDifficulty, deferredSearchQuery]);
+  }, [problems, activeTopic, activeDifficulty, searchQuery]);
 
   return (
-    <div className="flex flex-col bg-background-light dark:bg-background-dark">
+    <div className="flex-grow flex flex-col bg-background-light dark:bg-background-dark min-h-screen">
       <Helmet>
         <title>LeetCode Practice Hub | Data Structures Visualizer</title>
         <meta name="description" content="Browse all available LeetCode problems from repository, open README details, view multi-language solutions, and visualize concepts." />
-        <link rel="canonical" href="https://dsviz.app/leetcode" />
       </Helmet>
 
-      <section className="relative py-16 px-6 overflow-hidden">
+      <section className="relative py-14 px-6 overflow-hidden">
         <AuthBackground isFixed={false} />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="relative max-w-4xl mx-auto text-center space-y-8">
-          <div className="space-y-4">
-            <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-b from-slate-900 to-slate-900/70 dark:from-white dark:to-white/70">
-              Solve, Read, and{' '}
-              <span className="text-slate-900 dark:text-white">
-                Visualize
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-gray-500 dark:text-[#9794c7] max-w-2xl mx-auto font-light">
-              Live catalog from GitHub repository. Every card opens a problem detail page with README description, examples, constraints, and solutions.
-            </p>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-500/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-bold">
+            <span className="material-symbols-outlined text-[18px]">local_library</span>
+            LeetCode Practice Hub
           </div>
-
-          <div className="flex justify-center pt-2">
-            <ModeSwitcher active="leetcode" />
-          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 dark:text-white">
+            Solve, Read, and{' '}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-pink-500">
+              Visualize
+            </span>
+          </h1>
+          <p className="text-lg text-gray-500 dark:text-[#9794c7] max-w-2xl mx-auto">
+            Live catalog from GitHub repository. Every card opens a problem detail page with README description, examples, constraints, and solutions.
+          </p>
 
           <div className="flex flex-wrap justify-center gap-4 pt-2">
             <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] shadow-sm">
@@ -194,7 +155,7 @@ const LeetCode: React.FC = () => {
         <div className="max-w-[1400px] mx-auto">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             <button
-              onClick={() => handleTopicChange('all')}
+              onClick={() => setActiveTopic('all')}
               className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                 activeTopic === 'all'
                   ? 'bg-primary text-white border-primary shadow-lg shadow-primary/25'
@@ -210,7 +171,7 @@ const LeetCode: React.FC = () => {
               return (
                 <button
                   key={topic}
-                  onClick={() => handleTopicChange(topic)}
+                  onClick={() => setActiveTopic(topic)}
                   className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all ${
                     activeTopic === topic
                       ? `bg-gradient-to-r ${TOPIC_GRADIENT[topic]} text-white border-transparent shadow-lg`
@@ -307,53 +268,23 @@ const LeetCode: React.FC = () => {
               </button>
             </div>
           ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filtered.slice(0, displayCount).map(problem => (
-                  <ProblemCard
-                    key={problem.id}
-                    problem={problem}
-                    onViewSolution={async () => {
-                      try {
-                        const details = await fetchLeetcodeReadmeDetails(problem);
-                        setActiveProblem(problem);
-                        setActiveProblemDetails(details);
-                      } catch (e) {
-                        console.error('Error fetching details for solution', e);
-                        alert('Could not load solution data.');
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-              
-              {displayCount < filtered.length && (
-                <div className="mt-12 flex justify-center">
-                  <button
-                    onClick={() => setDisplayCount(prev => prev + 60)}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] text-sm font-bold text-gray-900 dark:text-white hover:border-primary/50 hover:text-primary transition-all shadow-sm group"
-                  >
-                    <span className="material-symbols-outlined text-[20px] group-hover:animate-bounce">expand_more</span>
-                    Load More Exercises
-                    <span className="text-xs text-gray-500 dark:text-[#9794c7] font-mono ml-1">
-                      ({filtered.length - displayCount} remaining)
-                    </span>
-                  </button>
-                </div>
-              )}
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filtered.map(problem => (
+                <ProblemCard
+                  key={problem.id}
+                  problem={problem}
+                  onViewSolution={() => setActiveProblem(problem)}
+                />
+              ))}
+            </div>
           )}
         </div>
       </section>
 
-      {activeProblem && activeProblemDetails && (
+      {activeProblem && (
         <SolutionViewer
           problem={activeProblem}
-          details={activeProblemDetails}
-          onClose={() => {
-            setActiveProblem(null);
-            setActiveProblemDetails(null);
-          }}
+          onClose={() => setActiveProblem(null)}
         />
       )}
     </div>
@@ -362,11 +293,10 @@ const LeetCode: React.FC = () => {
 
 const ProblemCard: React.FC<{
   problem: RepoLeetcodeProblem;
-  onViewSolution: () => Promise<void>;
-}> = memo(({ problem, onViewSolution }) => {
+  onViewSolution: () => void;
+}> = ({ problem, onViewSolution }) => {
   const navigate = useNavigate();
   const primaryTopic = problem.topics[0] || 'arrays';
-  const [isOpeningSolution, setIsOpeningSolution] = useState(false);
 
   return (
     <div
@@ -379,56 +309,67 @@ const ProblemCard: React.FC<{
           navigate(getProblemDetailPath(problem));
         }
       }}
-      className="group flex flex-col bg-[#1e1d32] border border-[#272546] rounded-2xl p-4 gap-4 hover:border-primary/40 hover:shadow-xl hover:shadow-[0_0_30px_rgba(66,54,231,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer relative overflow-hidden"
+      className="group flex flex-col bg-white dark:bg-[#1e1d32] border border-gray-200 dark:border-[#272546] rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(66,54,231,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
       title="Open problem details"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-400">#{problem.id}</span>
-            <span className={`text-xs font-bold px-2 py-0.5 rounded border bg-transparent ${DIFFICULTY_STYLES[problem.difficulty].split(' ')[1]} ${DIFFICULTY_STYLES[problem.difficulty].split(' ')[2]}`}>
-              {problem.difficulty}
-            </span>
+      <div className={`h-1 w-full bg-gradient-to-r ${TOPIC_GRADIENT[primaryTopic]}`} />
+
+      <div className="flex flex-col flex-1 p-4 gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[11px] font-mono text-gray-400">#{problem.id}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFFICULTY_STYLES[problem.difficulty]}`}>
+                {problem.difficulty}
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+              {problem.title}
+            </h3>
           </div>
-          <h3 className="text-[15px] font-bold text-[#807fe2] leading-snug pr-8 mt-1 group-hover:text-[#908ff2] transition-colors">
-            {problem.title}
-          </h3>
+          <div className={`shrink-0 size-8 rounded-lg flex items-center justify-center bg-gradient-to-br ${TOPIC_GRADIENT[primaryTopic]}`}>
+            <span className="material-symbols-outlined text-white text-[16px]">{TOPIC_ICONS[primaryTopic]}</span>
+          </div>
         </div>
-        <div className={`absolute top-4 right-4 shrink-0 size-9 rounded-[10px] flex items-center justify-center bg-gradient-to-br ${TOPIC_GRADIENT[primaryTopic]} shadow-lg`}>
-          <span className="material-symbols-outlined text-white text-[20px]">{TOPIC_ICONS[primaryTopic]}</span>
-        </div>
-      </div>
 
-      <div className="mt-2 flex gap-3">
-        <button
-          onClick={async (e) => {
-            e.stopPropagation();
-            setIsOpeningSolution(true);
-            await onViewSolution();
-            setIsOpeningSolution(false);
-          }}
-          disabled={isOpeningSolution}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl bg-[#362f3a] text-orange-500 hover:bg-[#463a43] hover:text-orange-400 transition-colors disabled:opacity-50"
-        >
-          {isOpeningSolution ? (
-            <span className="w-4 h-4 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
-          ) : (
-            <span className="material-symbols-outlined text-[16px] font-bold">code</span>
+        {problem.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {problem.tags.slice(0, 3).map(tag => (
+              <span key={tag} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] border border-gray-200 dark:border-[#323055]">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-auto flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewSolution();
+            }}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined text-[14px]">code</span>
+            Solution
+          </button>
+
+          {problem && (
+            <Link
+              to={getProblemVisualizationPath(problem)}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold rounded-xl bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-[14px]">visibility</span>
+              Visualize
+            </Link>
           )}
-          Solution
-        </button>
+        </div>
 
-        <Link
-          to={getProblemVisualizationPath(problem)}
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl bg-[#26254a] text-primary hover:bg-[#322f60] hover:text-[#807fe2] transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]">visibility</span>
-          Visualize
-        </Link>
+        <p className="text-[10px] text-gray-400 dark:text-[#9794c7] mt-1">Click card to open full README details</p>
       </div>
     </div>
   );
-});
+};
 
 export default LeetCode;

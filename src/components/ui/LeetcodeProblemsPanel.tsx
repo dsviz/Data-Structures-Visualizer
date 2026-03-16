@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, memo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAiContextStore } from '../../store/aiContextStore';
 import {
@@ -9,9 +9,7 @@ import {
 import { SolutionViewer } from './SolutionViewer';
 import {
   RepoLeetcodeProblem,
-  RepoReadmeDetails,
   fetchAllLeetcodeRepoProblems,
-  fetchLeetcodeReadmeDetails,
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../../services/leetcodeRepoService';
@@ -25,7 +23,6 @@ const DIFFICULTY_STYLES: Record<LeetcodeDifficulty, string> = {
 export const LeetcodeProblemsPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeProblem, setActiveProblem] = useState<RepoLeetcodeProblem | null>(null);
-  const [activeProblemDetails, setActiveProblemDetails] = useState<RepoReadmeDetails | null>(null);
   const [filterDifficulty, setFilterDifficulty] = useState<LeetcodeDifficulty | 'All'>('All');
   const [allRepoProblems, setAllRepoProblems] = useState<RepoLeetcodeProblem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -137,19 +134,56 @@ export const LeetcodeProblemsPanel: React.FC = () => {
               <p className="text-center text-xs text-gray-400 dark:text-[#9794c7] mt-8">No problems found.</p>
             ) : (
               problems.map(problem => (
-                <MemoizedPanelCard
+                <div
                   key={problem.id}
-                  problem={problem}
-                  onViewSolution={async () => {
-                    try {
-                      const details = await fetchLeetcodeReadmeDetails(problem);
-                      setActiveProblem(problem);
-                      setActiveProblemDetails(details);
-                    } catch (e) {
-                      console.error('Error fetching details for solution', e);
-                    }
-                  }}
-                />
+                  className="group flex flex-col gap-1.5 p-3 rounded-xl bg-gray-50 dark:bg-[#131221]/60 border border-gray-200 dark:border-[#272546] hover:border-orange-400/50 dark:hover:border-orange-400/30 transition-colors"
+                >
+                  <Link
+                    to={getProblemDetailPath(problem)}
+                    className="flex items-start justify-between gap-2"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-mono text-gray-400">#{problem.id}</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFFICULTY_STYLES[problem.difficulty]}`}>
+                          {problem.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight line-clamp-2">
+                        {problem.title}
+                      </p>
+                    </div>
+                  </Link>
+
+                  {problem.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {problem.tags.slice(0, 2).map(tag => (
+                        <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] border border-gray-200 dark:border-[#323055]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setActiveProblem(problem)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">code</span>
+                      Solution
+                    </button>
+                    {problem && (
+                      <Link
+                        to={getProblemVisualizationPath(problem)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">visibility</span>
+                        Visualize
+                      </Link>
+                    )}
+                  </div>
+                </div>
               ))
             )}
           </div>
@@ -166,74 +200,12 @@ export const LeetcodeProblemsPanel: React.FC = () => {
         </div>
       )}
 
-      {activeProblem && activeProblemDetails && (
+      {activeProblem && (
         <SolutionViewer
           problem={activeProblem}
-          details={activeProblemDetails}
-          onClose={() => {
-            setActiveProblem(null);
-            setActiveProblemDetails(null);
-          }}
+          onClose={() => setActiveProblem(null)}
         />
       )}
     </>
   );
 };
-
-const MemoizedPanelCard = memo(({ 
-  problem, 
-  onViewSolution 
-}: { 
-  problem: RepoLeetcodeProblem; 
-  onViewSolution: () => void; 
-}) => {
-  return (
-    <div className="group flex flex-col gap-1.5 p-3 rounded-xl bg-gray-50 dark:bg-[#131221]/60 border border-gray-200 dark:border-[#272546] hover:border-orange-400/50 dark:hover:border-orange-400/30 transition-colors">
-      <Link
-        to={getProblemDetailPath(problem)}
-        className="flex items-start justify-between gap-2"
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-[10px] font-mono text-gray-400">#{problem.id}</span>
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DIFFICULTY_STYLES[problem.difficulty]}`}>
-              {problem.difficulty}
-            </span>
-          </div>
-          <p className="text-xs font-semibold text-gray-900 dark:text-white leading-tight line-clamp-2">
-            {problem.title}
-          </p>
-        </div>
-      </Link>
-
-      {problem.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {problem.tags.slice(0, 2).map(tag => (
-            <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-[#272546] text-gray-500 dark:text-[#9794c7] border border-gray-200 dark:border-[#323055]">
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="flex gap-1.5">
-        <button
-          onClick={onViewSolution}
-          className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500 hover:text-white transition-colors"
-        >
-          <span className="material-symbols-outlined text-[14px]">code</span>
-          Solution
-        </button>
-        {problem && (
-          <Link
-            to={getProblemVisualizationPath(problem)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold rounded-lg bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined text-[14px]">visibility</span>
-            Visualize
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-});

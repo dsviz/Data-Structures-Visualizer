@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  LeetcodeProblem,
   SolutionLanguage,
   ALL_LANGUAGES,
   LANGUAGE_LABELS,
+  getSolutionUrlCandidates,
 } from '../../data/LeetcodeProblems';
-import { getProblemVisualizationPath } from '../../services/leetcodeRepoService';
-
-import {
-  RepoLeetcodeProblem,
-  RepoReadmeDetails,
-} from '../../services/leetcodeRepoService';
+import { getProblemVisualizationPath, RepoReadmeDetails } from '../../services/leetcodeRepoService';
 
 interface SolutionViewerProps {
-  problem: RepoLeetcodeProblem;
-  details: RepoReadmeDetails;
+  problem: LeetcodeProblem;
+  details?: RepoReadmeDetails;
   onClose: () => void;
 }
 
@@ -24,61 +21,48 @@ const DIFFICULTY_STYLES = {
   Hard: 'bg-red-500/10 text-red-400 border-red-500/20',
 };
 
-export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, details, onClose }) => {
+export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, onClose }) => {
   const [language, setLanguage] = useState<SolutionLanguage>('py');
   const [code, setCode] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const extractSolutionFromMarkdown = useCallback((markdown: string, lang: SolutionLanguage) => {
-    // Map internal language codes to markdown labels used in the LeetCode repository
-    const langMarkdownMap: Record<SolutionLanguage, string[]> = {
-      py: ['Python3', 'Python'],
-      js: ['JavaScript'],
-      ts: ['TypeScript'],
-      java: ['Java'],
-      cpp: ['C++'],
-      go: ['Go'],
-      rs: ['Rust'],
-      cs: ['C#'],
-      kt: ['Kotlin'],
-      swift: ['Swift'],
-      rb: ['Ruby'],
-    };
+  const fetchSolution = useCallback(async (lang: SolutionLanguage) => {
+    setIsLoading(true);
+    setError(null);
+    setCode('');
+    try {
+      const candidateUrls = getSolutionUrlCandidates(problem, lang);
+      let foundCode = '';
 
-    const targetLabels = langMarkdownMap[lang] || [];
-    let foundCode = '';
+      for (const url of candidateUrls) {
+        const res = await fetch(url);
+        if (!res.ok) continue;
 
-    for (const label of targetLabels) {
-      const headerIndex = markdown.toLowerCase().indexOf(`#### ${label.toLowerCase()}`);
-      if (headerIndex !== -1) {
-        const codeBlockStart = markdown.indexOf('```', headerIndex);
-        if (codeBlockStart !== -1) {
-          const codeContentStart = markdown.indexOf('\n', codeBlockStart);
-          if (codeContentStart !== -1) {
-            const codeBlockEnd = markdown.indexOf('```', codeContentStart + 1);
-            if (codeBlockEnd !== -1) {
-              foundCode = markdown.substring(codeContentStart + 1, codeBlockEnd).trim();
-              break;
-            }
-          }
+        const text = await res.text();
+        if (text.trim().length > 0) {
+          foundCode = text;
+          break;
         }
       }
-    }
 
-    if (!foundCode) {
-      setError(`No ${LANGUAGE_LABELS[lang]} solution found in the problem description.`);
-      setCode('');
-    } else {
-      setError(null);
-      setCode(foundCode);
+      if (!foundCode) {
+        setError(`No ${LANGUAGE_LABELS[lang]} solution found in this repository.`);
+      } else {
+        setCode(foundCode);
+      }
+    } catch {
+      setError('Failed to load solution. Check your internet connection.');
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [problem]);
 
   useEffect(() => {
-    extractSolutionFromMarkdown(details.markdown, language);
-  }, [language, details.markdown, extractSolutionFromMarkdown]);
+    fetchSolution(language);
+  }, [language, fetchSolution]);
 
   // Close on Escape key
   useEffect(() => {
@@ -155,15 +139,24 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, details
 
         {/* Code Area */}
         <div className="flex-1 overflow-auto bg-[#0d0c1a] relative min-h-0">
-          {error && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
-              <span className="material-symbols-outlined text-4xl text-gray-600">code_off</span>
-              <p className="text-gray-400 text-sm font-mono">{error}</p>
-              <p className="text-gray-600 text-xs">Try a different language.</p>
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3 text-gray-500">
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <span className="text-sm font-mono">Fetching solution from GitHub...</span>
+              </div>
             </div>
           )}
 
-          {!error && code && (
+          {!isLoading && error && (
+            <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center">
+              <span className="material-symbols-outlined text-4xl text-gray-600">code_off</span>
+              <p className="text-gray-400 text-sm font-mono">{error}</p>
+              <p className="text-gray-600 text-xs">Try a different language or check the repository.</p>
+            </div>
+          )}
+
+          {!isLoading && !error && code && (
             <pre className="p-5 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed whitespace-pre">
               {code}
             </pre>
@@ -175,7 +168,7 @@ export const SolutionViewer: React.FC<SolutionViewerProps> = ({ problem, details
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
-              disabled={!code}
+              disabled={!code || isLoading}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-[#272546] border border-gray-200 dark:border-[#383564] text-gray-600 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#323055] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'content_copy'}</span>

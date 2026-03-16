@@ -39,6 +39,10 @@ const TOPIC_LABELS: Record<LeetcodeTopic, string> = {
   graphs: 'Graphs',
   sorting: 'Sorting',
   recursion: 'Recursion',
+  backtracking: 'Backtracking',
+  'dynamic-programming': 'Dynamic Programming',
+  heap: 'Heap',
+  'hash-table': 'Hash Table',
 };
 
 const FAMILY_LABELS: Record<ExecutionStep['family'], string> = {

@@ -58,6 +58,44 @@ export const ALL_LANGUAGES: SolutionLanguage[] = [
   'py', 'java', 'cpp', 'js', 'ts', 'go', 'rs', 'cs', 'kt', 'swift', 'rb',
 ];
 
+const LANGUAGE_FILE_EXTENSIONS: Record<SolutionLanguage, string> = {
+  py: 'py',
+  js: 'js',
+  ts: 'ts',
+  java: 'java',
+  cpp: 'cpp',
+  go: 'go',
+  rs: 'rs',
+  cs: 'cs',
+  kt: 'kt',
+  swift: 'swift',
+  rb: 'rb',
+};
+
+/**
+ * Builds fallback raw GitHub URLs for solution files.
+ * Some repository entries use `Solution2.<ext>`, so both filenames are included.
+ */
+export function getSolutionUrlCandidates(
+  problem: Pick<LeetcodeProblem, 'id' | 'slug'> & Partial<{ range: string; folderName: string }>,
+  language: SolutionLanguage,
+): string[] {
+  const paddedId = String(problem.id).padStart(4, '0');
+  const range = problem.range
+    ?? `${String(Math.floor(problem.id / 100) * 100).padStart(4, '0')}-${String(Math.floor(problem.id / 100) * 100 + 99).padStart(4, '0')}`;
+  const folderName = problem.folderName ?? `${paddedId}.${problem.slug}`;
+  const extension = LANGUAGE_FILE_EXTENSIONS[language];
+
+  const branches = ['master', 'main'];
+  const fileNames = [`Solution.${extension}`, `Solution2.${extension}`];
+
+  return branches.flatMap(branch =>
+    fileNames.map(
+      fileName => `https://raw.githubusercontent.com/shubhamkumarsharma03/leetcode/${branch}/solutions/${range}/${folderName}/${fileName}`,
+    ),
+  );
+}
+
 /** Returns all problems related to a given visualizer data structure name */
 export function getProblemsForTopic(topicKey: LeetcodeTopic): LeetcodeProblem[] {
   return LEETCODE_PROBLEMS.filter(p => p.topics.includes(topicKey));
