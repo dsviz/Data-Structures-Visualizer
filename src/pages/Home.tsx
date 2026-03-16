@@ -84,6 +84,22 @@ const Home = () => {
       <Helmet>
         <title>Data Structures & Algorithms Visualizer | Interactive DSA Tool</title>
         <meta name="description" content="Master Data Structures and Algorithms with our free, interactive visualizer. Step-by-step animations for learning and coding interview prep." />
+        <link rel="canonical" href="https://dsviz.app/" />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Data Structures Visualizer",
+            "operatingSystem": "Web",
+            "applicationCategory": "EducationalApplication",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "description": "Master Data Structures and Algorithms through interactive visualization. Step-by-step animations for learning and coding interview prep."
+          })}
+        </script>
       </Helmet>
 
       <section className="relative py-16 px-6 overflow-hidden">

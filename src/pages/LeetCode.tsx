@@ -117,6 +117,7 @@ const LeetCode: React.FC = () => {
       <Helmet>
         <title>LeetCode Practice Hub | Data Structures Visualizer</title>
         <meta name="description" content="Browse all available LeetCode problems from repository, open README details, view multi-language solutions, and visualize concepts." />
+        <link rel="canonical" href="https://dsviz.app/leetcode" />
       </Helmet>
 
       <section className="relative py-16 px-6 overflow-hidden">

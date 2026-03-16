@@ -230,6 +230,7 @@ export default function LinkedList() {
             <Helmet>
                 <title>Interactive Linked List Visualizer | Data Structures & Algorithms</title>
                 <meta name="description" content="Master linked lists with our interactive visualization tool. See step-by-step animations for singly, doubly, and circular linked list operations." />
+                <link rel="canonical" href="https://dsviz.app/linked-list" />
             </Helmet>
             <VisualizationLayout
                 title="Linked List"

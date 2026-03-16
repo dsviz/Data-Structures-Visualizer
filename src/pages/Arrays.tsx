@@ -231,6 +231,7 @@ const Arrays = () => {
             <Helmet>
                 <title>Interactive Array Visualizer | Data Structures & Algorithms</title>
                 <meta name="description" content="Learn array data structures with our interactive step-by-step visualizer. Watch insertions, deletions, linear search, binary search, and two-sum algorithms in real-time." />
+                <link rel="canonical" href="https://dsviz.app/arrays" />
             </Helmet>
             <VisualizationLayout
                 title="Arrays"

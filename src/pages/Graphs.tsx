@@ -337,6 +337,7 @@ const Graphs = () => {
       <Helmet>
         <title>Interactive Graph Algorithms Visualizer | Data Structures & Algorithms</title>
         <meta name="description" content="Master graph algorithms visually. Interactive Dijkstra's, A*, DFS, BFS, Kruskal's, and Network Flow animations. Build and analyze your own graphs." />
+        <link rel="canonical" href="https://dsviz.app/graphs" />
       </Helmet>
       <VisualizationLayout
         title="Graph"

@@ -7,6 +7,13 @@
     <priority>1.0</priority>
   </url>
   
+  <!-- Main Hubs -->
+  <url>
+    <loc>https://dsviz.app/leetcode</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- Visualizer Pages -->
   <url>
     <loc>https://dsviz.app/arrays</loc>
@@ -34,7 +41,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dsviz.app/graph</loc>
+    <loc>https://dsviz.app/graphs</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
