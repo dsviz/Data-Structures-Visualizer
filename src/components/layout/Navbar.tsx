@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useHeader } from '../../context/HeaderContext'
@@ -15,7 +15,6 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
   const mobileSearchRef = useRef<HTMLDivElement>(null)
   const desktopSearchRef = useRef<HTMLDivElement>(null)
   const userDropdownRef = useRef<HTMLDivElement>(null)
@@ -167,7 +166,7 @@ const Navbar = () => {
 
       {/* Desktop Topbar */}
       <div className="hidden md:flex max-w-[1400px] mx-auto items-center justify-between gap-8">
-        <div className="flex-1 min-w-0 flex items-center">
+        <div className="flex-1 flex items-center">
           <Link to="/" className="flex items-center gap-2">
             <div className="size-10 md:size-12 text-primary flex items-center justify-center">
               <img src="/Site_logo.png" alt="Logo" className="w-full h-full object-contain" />
@@ -175,7 +174,8 @@ const Navbar = () => {
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors">DS Visualizer</h1>
           </Link>
         </div>
-        <div className="flex-[2] max-w-xl">
+
+        <div className="flex-1 flex justify-center max-w-2xl px-4">
           {headerContent ? (
             <div className="w-full">
               {headerContent}
@@ -230,14 +230,8 @@ const Navbar = () => {
             </div>
           )}
         </div>
-        <div className="hidden md:flex items-center gap-3">
-          <Link
-            to="/leetcode"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#272546] rounded-lg transition-colors"
-          >
-            <span className="material-symbols-outlined text-[18px]">local_library</span>
-            <span className="hidden lg:block">LeetCode</span>
-          </Link>
+
+        <div className="flex-1 hidden md:flex items-center justify-end gap-3">
           <button className="p-2 text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#272546] rounded-lg transition-colors">
             <span className="material-symbols-outlined">language</span>
           </button>
@@ -340,29 +334,6 @@ const Navbar = () => {
 
           <div className="flex flex-col flex-1 overflow-y-auto p-6 gap-6 scrollbar-hide">
 
-            {/* Premium Mobile LeetCode Banner */}
-            <Link
-              to="/leetcode"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center justify-between p-4 rounded-2xl transition-all duration-300 ${location.pathname === '/leetcode'
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25 scale-[1.02]'
-                  : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#272546] dark:to-[#1e1d32] border border-gray-200 dark:border-white/5 text-gray-900 dark:text-white hover:scale-[1.02]'
-                }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`size-10 rounded-xl flex items-center justify-center ${location.pathname === '/leetcode'
-                    ? 'bg-white/20'
-                    : 'bg-white dark:bg-[#131221] shadow-sm'
-                  }`}>
-                  <span className={`material-symbols-outlined ${location.pathname === '/leetcode' ? 'text-white' : 'text-orange-500'}`}>local_library</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg leading-none">LeetCode Hub</h3>
-                  <p className={`text-xs mt-1 ${location.pathname === '/leetcode' ? 'text-white/80' : 'text-gray-500 dark:text-[#9794c7]'}`}>3,700+ Offline Problems</p>
-                </div>
-              </div>
-              <span className="material-symbols-outlined text-xl">arrow_forward_ios</span>
-            </Link>
 
             <div className="h-px bg-gray-200 dark:bg-[#272546] w-full" />
 
@@ -378,10 +349,6 @@ const Navbar = () => {
             </div>
 
             <div className="h-px bg-gray-200 dark:bg-[#272546] w-full" />
-            <Link to="/leetcode" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-4 text-gray-700 dark:text-gray-200 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-[#272546] transition-colors">
-              <span className="material-symbols-outlined size-6 flex items-center justify-center">local_library</span>
-              <span className="text-lg font-medium">LeetCode Hub</span>
-            </Link>
 
 
             {user ? (

@@ -16,6 +16,7 @@ import {
   getProblemDetailPath,
   getProblemVisualizationPath,
 } from '../services/leetcodeRepoService';
+import ModeSwitcher from '../components/ui/ModeSwitcher';
 
 const DIFFICULTY_STYLES: Record<LeetcodeDifficulty, string> = {
   Easy: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -132,6 +133,10 @@ const LeetCode: React.FC = () => {
             <p className="text-lg md:text-xl text-gray-500 dark:text-[#9794c7] max-w-2xl mx-auto font-light">
               Live catalog from GitHub repository. Every card opens a problem detail page with README description, examples, constraints, and solutions.
             </p>
+          </div>
+
+          <div className="flex justify-center pt-2">
+            <ModeSwitcher active="leetcode" />
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 pt-2">
