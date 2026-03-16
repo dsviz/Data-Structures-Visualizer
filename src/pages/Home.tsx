@@ -158,41 +158,57 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Code Visualizer Banner - INSERTED HERE */}
+      {/* Ultimate LeetCode Hub Feature Banner */}
       <section className="px-6 pb-12">
         <div className="max-w-[1400px] mx-auto">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-gray-900 to-[#1e1d32] px-6 py-16 sm:px-16 sm:py-24 shadow-2xl">
-            <div className="relative max-w-2xl mx-auto text-center space-y-6 z-10">
-              <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Real-Time Code Visualizer
-                <br />
-                <span className="text-primary">See your code run line by line.</span>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 px-6 py-16 sm:px-16 sm:py-20 shadow-2xl group hover:shadow-orange-500/20 transition-shadow duration-500">
+            {/* Background Texture/Decorations */}
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/20 blur-3xl rounded-full pointer-events-none group-hover:bg-white/30 transition-colors duration-700"></div>
+            
+            <div className="relative max-w-3xl mx-auto text-center space-y-6 z-10 flex flex-col items-center">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white font-bold text-xs uppercase tracking-wider mb-2">
+                <span className="relative flex size-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full size-2 bg-white"></span>
+                </span>
+                Massive Update
+              </div>
+              
+              <h2 className="text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl drop-shadow-md">
+                The Ultimate<br className="hidden sm:block"/> <span className="text-orange-100">LeetCode Hub</span>
               </h2>
-              <p className="mx-auto mt-6 max-w-xl text-lg text-gray-300">
-                Visualize memory allocation, stack frames, and variable states in real-time for C, C++, Java, and Python.
+              
+              <p className="max-w-xl text-lg sm:text-xl text-orange-50 leading-relaxed font-medium">
+                Ditch the tabs. Practice <strong className="text-white">3,700+ offline problems</strong> with integrated multi-language solutions and visualizers right inside your dashboard.
               </p>
-              <div className="mt-10 flex justify-center gap-6">
-                <button
-                  disabled
-                  className="rounded-xl bg-gray-500/50 px-8 py-3.5 text-sm font-semibold text-white/50 shadow-sm cursor-not-allowed flex items-center gap-2 border border-white/10"
+              
+              <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4 w-full sm:w-auto">
+                <Link
+                  to="/leetcode"
+                  className="rounded-xl bg-white px-8 py-4 text-orange-600 font-black shadow-xl hover:bg-orange-50 hover:scale-105 active:scale-95 transition-all outline-none focus:ring-4 focus:ring-white/50 flex items-center justify-center gap-2 text-lg group/btn"
                 >
-                  <span className="material-symbols-outlined">terminal</span>
-                  Code Visualizer (In Dev)
-                </button>
+                  <span className="material-symbols-outlined text-[24px] transition-transform group-hover/btn:-rotate-12">local_library</span>
+                  Explore 3,700+ Problems
+                </Link>
+              </div>
+
+              {/* Stats Highlights */}
+              <div className="grid grid-cols-3 gap-4 sm:gap-12 mt-12 pt-8 border-t border-white/20 text-white">
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl sm:text-4xl font-black">100%</span>
+                  <span className="text-xs sm:text-sm font-medium text-orange-100 mt-1 text-center">Offline Supported</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl sm:text-4xl font-black">0ms</span>
+                  <span className="text-xs sm:text-sm font-medium text-orange-100 mt-1 text-center">Loading Latency</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-3xl sm:text-4xl font-black">7+</span>
+                  <span className="text-xs sm:text-sm font-medium text-orange-100 mt-1 text-center">Solution Languages</span>
+                </div>
               </div>
             </div>
-
-            {/* Background Decorations */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/20 blur-[100px] rounded-full pointer-events-none"></div>
-            <svg viewBox="0 0 1024 1024" className="absolute left-1/2 top-1/2 -z-10 h-[64rem] w-[64rem] -translate-x-1/2 [mask-image:radial-gradient(closest-side,white,transparent)]" aria-hidden="true">
-              <circle cx="512" cy="512" r="512" fill="url(#gradient)" fillOpacity="0.7" />
-              <defs>
-                <radialGradient id="gradient">
-                  <stop stopColor="#4f46e5" />
-                  <stop offset="1" stopColor="#80caff" />
-                </radialGradient>
-              </defs>
-            </svg>
           </div>
         </div>
       </section>
