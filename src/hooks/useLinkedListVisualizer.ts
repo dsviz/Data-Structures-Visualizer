@@ -242,10 +242,10 @@ export const PSEUDOCODE = {
         "  traverse(node.next)"
     ],
     reverseTraversal: [
-        "function reversePrint(node):",
-        "  if (node == null) return",
-        "  reversePrint(node.next)",
-        "  print(node.val)"
+        "curr = tail",
+        "while (curr != null)",
+        "  // Process curr.val",
+        "  curr = curr.prev"
     ],
     checkPalindrome: [
         "slow = head; fast = head",
@@ -1390,28 +1390,36 @@ export const useLinkedListVisualizer = () => {
         const pLines = PSEUDOCODE.reverseTraversal;
         const frames: Frame[] = [];
         const currentNodes = [...initialNodes];
-        const callStack: number[] = [];
         const visited: number[] = [];
+        let output = "Start reverse traversal: ";
 
-        frames.push(createFrame(currentNodes, [], [], 0, `Starting reverse traversal (print on return)`, pLines, opName, {}, [], [], [], "Reverse Traversal Started"));
+        frames.push(createFrame(currentNodes, [], [], 0, `Starting reverse traversal from tail`, pLines, opName, {}, [], [], [], "Reverse Traversal Started"));
 
-        // Simulate going forward (pushing calls)
-        for (let i = 0; i < currentNodes.length; i++) {
-            const node = currentNodes[i];
-            callStack.push(node.val);
-            frames.push(createFrame(currentNodes, [node.id], [{ id: node.id, label: `call(${i})`, color: 'secondary' }], 2, `Recursing into node ${node.val}`, pLines, opName, {}, [], [], [], `Call Stack: ${callStack.join(' → ')}`));
+        if (currentNodes.length === 0) {
+            frames.push(createFrame([], [], [], 0, "List is empty", pLines, opName, {}, [], [], [], "List Empty"));
+            return { endNodes: currentNodes, timeline: frames };
         }
 
-        frames.push(createFrame(currentNodes, [], [], 1, "Base case reached: null, now returning and printing", pLines, opName, {}, [], [], [], "Unwinding..."));
+        const tailNode = currentNodes[currentNodes.length - 1];
+        frames.push(createFrame(currentNodes, [tailNode.id], [{ id: tailNode.id, label: 'CURR', color: 'primary' }], 0, `curr = tail`, pLines, opName, {}, [], [], [], "Tail identified"));
 
-        // Simulate returning (popping calls)
         for (let i = currentNodes.length - 1; i >= 0; i--) {
-            const node = currentNodes[i];
-            visited.push(node.val);
-            frames.push(createFrame(currentNodes, [node.id], [{ id: node.id, label: 'print', color: 'green' }], 3, `Returning from depth ${i}: printing ${node.val}`, pLines, opName, {}, [], [], [...visited], `Output: [${visited.join(', ')}]`));
+            const currNode = currentNodes[i];
+            visited.push(currNode.val);
+            output += (i < currentNodes.length - 1 ? " -> " : "") + currNode.val;
+
+            frames.push(createFrame(currentNodes, [currNode.id], [{ id: currNode.id, label: 'CURR', color: 'primary' }], 1, `while (curr != null) at node ${currNode.val}`, pLines, opName, {}, [], [], [...visited], output));
+
+            frames.push(createFrame(currentNodes, [currNode.id], [{ id: currNode.id, label: 'PROCESS', color: 'green' }], 2, `Processing node ${currNode.val}`, pLines, opName, {}, [], [], [...visited], output));
+
+            if (i > 0) {
+                const prevNode = currentNodes[i - 1];
+                frames.push(createFrame(currentNodes, [prevNode.id], [{ id: prevNode.id, label: 'CURR', color: 'primary' }], 3, `curr = curr.prev`, pLines, opName, {}, [], [], [...visited], output));
+            }
         }
 
-        frames.push(createFrame(currentNodes, [], [], 0, "Reverse traversal complete", pLines, opName, {}, [], [], [...visited], `Result: [${visited.join(', ')}]`));
+        frames.push(createFrame(currentNodes, [], [], 1, "while curr == null", pLines, opName, {}, [], [], [...visited], output));
+        frames.push(createFrame(currentNodes, [], [], 1, "Reverse traversal complete", pLines, opName, {}, [], [], [...visited], "Traversal: " + output));
         return { endNodes: currentNodes, timeline: frames };
     };
 

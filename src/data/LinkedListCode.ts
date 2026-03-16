@@ -618,6 +618,47 @@ export const LINKED_LIST_CODE: OperationCodes = {
             mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
         }
     },
+    reverseTraversal: {
+        c: {
+            lines: [
+                "struct Node* curr = tail;",
+                "while (curr != NULL) {",
+                "    // Process curr->data",
+                "    curr = curr->prev;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        cpp: {
+            lines: [
+                "Node* curr = tail;",
+                "while (curr != nullptr) {",
+                "    // Process curr->val",
+                "    curr = curr->prev;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        java: {
+            lines: [
+                "Node curr = tail;",
+                "while (curr != null) {",
+                "    // Process curr.val",
+                "    curr = curr.prev;",
+                "}"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        },
+        python: {
+            lines: [
+                "curr = tail",
+                "while curr is not None:",
+                "    # Process curr.val",
+                "    curr = curr.prev"
+            ],
+            mapping: { 0: 0, 1: 1, 2: 2, 3: 3 }
+        }
+    },
     convertToArray: {
         c: {
             lines: [
