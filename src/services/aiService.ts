@@ -1,5 +1,17 @@
 import { AiProvider } from '../store/aiKeyStore';
 
+import { LEETCODE_PROBLEMS, DS_TO_TOPIC } from '../data/LeetcodeProblems';
+
+/** Builds a short LeetCode context string for the AI based on the current data structure */
+export function getLeetcodeContext(dataStructure?: string): string {
+    if (!dataStructure) return '';
+    const topicKey = DS_TO_TOPIC[dataStructure];
+    if (!topicKey) return '';
+    const problems = LEETCODE_PROBLEMS.filter(p => p.topics.includes(topicKey)).slice(0, 6);
+    if (problems.length === 0) return '';
+    const list = problems.map(p => `#${p.id} ${p.title} (${p.difficulty})`).join(', ');
+    return `\nRelated LeetCode problems for ${dataStructure}: ${list}. Mention these when relevant to help students connect concepts to practice problems.`;
+}
 const normalizeBaseUrl = (value?: string) => {
     if (!value) return '';
     const trimmed = value.trim().replace(/\/+$/, '');
@@ -119,7 +131,7 @@ export const sendChatMessage = async (
         const response = await fetch(aiApiUrl('/api/chat'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, context, dataStructure, provider, apiKey })
+            body: JSON.stringify({ message, context, dataStructure, provider, apiKey, leetcodeContext: getLeetcodeContext(dataStructure) })
         });
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

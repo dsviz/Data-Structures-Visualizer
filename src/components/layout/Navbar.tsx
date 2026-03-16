@@ -174,7 +174,7 @@ const Navbar = () => {
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-white transition-colors">DS Visualizer</h1>
           </Link>
         </div>
-        <div className="flex-1 max-w-lg">
+        <div className="flex-[2] max-w-xl">
           {headerContent ? (
             <div className="w-full">
               {headerContent}
@@ -229,7 +229,8 @@ const Navbar = () => {
             </div>
           )}
         </div>
-        <div className="hidden md:flex items-center gap-3">
+        <div className="flex-1 hidden md:flex items-center justify-end gap-3">
+
           <button className="p-2 text-gray-500 dark:text-[#9794c7] hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#272546] rounded-lg transition-colors">
             <span className="material-symbols-outlined">language</span>
           </button>
@@ -343,7 +344,7 @@ const Navbar = () => {
               </button>
             </div>
 
-            <div className="h-px bg-gray-200 dark:bg-[#272546] w-full" />
+
 
             {user ? (
               <div className="flex flex-col gap-2">
